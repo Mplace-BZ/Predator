@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.0</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.1</div>
 </div>
 
 <!-- PASTE -->
@@ -893,7 +893,6 @@ function calc(){
   });
 
   // Edge% — model vs bookmaker
-  const pOver25=1-poissonCum(totalLambda,2);
   const pUnder25=poissonCum(totalLambda,2);
   const pBTTSfull=pHomeScores*pAwayScores;
   const markets=[
