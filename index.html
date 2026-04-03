@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.5</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.6</div>
 </div>
 
 <!-- PASTE -->
@@ -347,6 +347,11 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="mv" id="v4">—</div>
       <div class="ms">Game ends as-is</div>
     </div>
+    <div class="metric" id="m5">
+      <div class="ml">BTTS remaining <span class="tip" data-tip="Both Teams To Score at least 1 more goal each in remaining time.">?</span></div>
+      <div class="mv" id="v5">—</div>
+      <div class="ms">Both teams score</div>
+    </div>
   </div>
 
   <!-- MOST LIKELY FINAL SCORES -->
@@ -359,6 +364,19 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <th>Distribution</th>
       </tr></thead>
       <tbody id="scoreTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- TOP 5 FINAL SCORES -->
+  <div class="sl" style="margin:.85rem 0 .5rem">Top 5 Most Likely Final Scores</div>
+  <div class="card" style="margin-bottom:.85rem">
+    <table class="score-tbl" id="top5Table">
+      <thead><tr>
+        <th>Final Score</th>
+        <th>Prob %</th>
+        <th>Distribution</th>
+      </tr></thead>
+      <tbody id="top5Tbody"></tbody>
     </table>
   </div>
 
@@ -572,6 +590,11 @@ function calc(){
   const ngc=pNoGoal>0.4?'red':pNoGoal>0.25?'yellow':'green';
   setMV('v4',fmt(pNoGoal),ngc); setMetric('m4',ngc);
 
+  // BTTS
+  const pBTTS=pHomeScores*pAwayScores;
+  const bttsC=pBTTS>0.45?'green':pBTTS>0.25?'yellow':'red';
+  setMV('v5',fmt(pBTTS),bttsC); setMetric('m5',bttsC);
+
   // Goal count table
   const maxGP=goalCounts[0]?Math.max(...goalCounts.map(x=>x.p)):1;
   $('scoreTbody').innerHTML=goalCounts.map((r,i)=>{
@@ -587,6 +610,21 @@ function calc(){
     }
     return '<tr class="'+cls+'">'
       +'<td>'+label+detail+'</td>'
+      +'<td>'+(r.p*100).toFixed(1).replace('.',',')+'%</td>'
+      +'<td class="bar-cell"><div class="pbar"><div class="pbar-fill" style="width:'+barW+'%"></div></div></td>'
+      +'</tr>';
+  }).join('');
+
+  // Top 5 final scores
+  const top5=results.slice().sort((a,b)=>b.p-a.p).slice(0,5);
+  const maxTop5=top5[0]?top5[0].p:1;
+  $('top5Tbody').innerHTML=top5.map((r,i)=>{
+    const cls=i===0?'top-result':'';
+    const barW=(r.p/maxTop5*100).toFixed(1);
+    const label=r.h+' - '+r.a;
+    const outcome=r.h>r.a?'Home win':r.h<r.a?'Away win':'Draw';
+    return '<tr class="'+cls+'">'
+      +'<td>'+label+' <span style="font-size:10px;color:var(--text3)">('+outcome+')</span></td>'
       +'<td>'+(r.p*100).toFixed(1).replace('.',',')+'%</td>'
       +'<td class="bar-cell"><div class="pbar"><div class="pbar-fill" style="width:'+barW+'%"></div></div></td>'
       +'</tr>';
@@ -926,11 +964,32 @@ function renderValueBets(params){
   }).join('');
 }
 
-// Auto-calc on any input change
-['homeTeam','awayTeam','homeScore','awayScore','minute',
+// ── LOCAL STORAGE ────────────────────────────────────────────────
+const LS_KEY='predator_fields';
+const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
- 'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome']
-  .forEach(id=>$(id).addEventListener('input',calc));
+ 'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome'];
+
+function saveFields(){
+  const data={};
+  fieldIds.forEach(id=>data[id]=$(id).value);
+  data._ts=Date.now();
+  localStorage.setItem(LS_KEY,JSON.stringify(data));
+}
+
+function restoreFields(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    fieldIds.forEach(id=>{if(data[id]!==undefined) $(id).value=data[id];});
+  }catch(e){}
+}
+
+restoreFields();
+
+// Auto-calc on any input change + save
+fieldIds.forEach(id=>$(id).addEventListener('input',()=>{saveFields();calc();}));
 
 calc();
 </script>
