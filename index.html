@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.9</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.0</div>
 </div>
 
 <!-- PASTE -->
@@ -218,6 +218,40 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="min-wrap">
     <input type="number" class="min-inp" id="minute" value="1" min="1" max="120">
     <span class="min-lbl">' played</span>
+  </div>
+</div>
+
+<!-- HERO TILES -->
+<div class="g3" id="heroTiles" style="margin-bottom:1rem">
+  <div class="metric c-green" id="ht1">
+    <div class="ml">Any goal remaining</div>
+    <div class="mv green" id="htGoal">—</div>
+    <div class="ms" id="htGoalSub">P(≥1 goal in rem. time)</div>
+  </div>
+  <div class="metric c-blue" id="ht2">
+    <div class="ml">Home scores</div>
+    <div class="mv blue" id="htHome">—</div>
+    <div class="ms" id="htHomeSub">P(home ≥1 goal)</div>
+  </div>
+  <div class="metric" id="ht3" style="border-color:rgba(255,159,67,0.25);">
+    <div class="ml">Away scores</div>
+    <div class="mv" id="htAway" style="color:#ff9f43;">—</div>
+    <div class="ms" id="htAwaySub">P(away ≥1 goal)</div>
+  </div>
+  <div class="metric" id="ht4">
+    <div class="ml">Most likely final score</div>
+    <div class="mv green" id="htScore">—</div>
+    <div class="ms" id="htScoreSub">—</div>
+  </div>
+  <div class="metric" id="ht5">
+    <div class="ml">Corners over</div>
+    <div class="mv yellow" id="htCorners">—</div>
+    <div class="ms" id="htCornersSub">Best line >60%</div>
+  </div>
+  <div class="metric" id="ht6">
+    <div class="ml">Penalty chance</div>
+    <div class="mv red" id="htPen">—</div>
+    <div class="ms" id="htPenSub">Est. from match intensity</div>
   </div>
 </div>
 
@@ -581,6 +615,55 @@ function calc(){
   // P(team scores at least 1 goal in remaining time) = 1 - P(team scores 0)
   const pHomeScores=1-poisson(hLambdaRem,0);
   const pAwayScores=1-poisson(aLambdaRem,0);
+  // Hero tiles
+  const htGoalC=pAnyGoal>0.65?'green':pAnyGoal>0.4?'yellow':'red';
+  setMV('htGoal',fmt(pAnyGoal),htGoalC); setMetric('ht1',htGoalC);
+  $('htGoalSub').textContent=remMin+' min left, xG rem: '+fmtN(totalLambda);
+
+  $('htHome').textContent=fmt(pHomeScores);
+  $('htHomeSub').textContent=homeTeam||'Home';
+  $('htAway').textContent=fmt(pAwayScores);
+  $('htAwaySub').textContent=awayTeam||'Away';
+
+  // Top 1 final score
+  const topScore=results.slice().sort((a,b)=>b.p-a.p)[0];
+  if(topScore){
+    $('htScore').textContent=topScore.h+' - '+topScore.a;
+    $('htScoreSub').textContent=fmt(topScore.p)+' probability';
+  }
+
+  // Corners hero — best line with >60%
+  const hCornS_h=n('hCornSeason'), aCornS_h=n('aCornSeason');
+  const curCorn_h=n('lHCorn')+n('lACorn');
+  const cornLam_h=(hCornS_h+aCornS_h)*remFrac;
+  if(hCornS_h+aCornS_h>0){
+    let bestLine=null,bestP=0;
+    [10.5,9.5,8.5,7.5].forEach(line=>{
+      const need=Math.max(0,line-curCorn_h);
+      const p=1-poissonCum(cornLam_h,Math.floor(need));
+      if(p>0.60&&line>=(bestLine||0)){bestLine=line;bestP=p;}
+    });
+    if(bestLine){
+      const cc=bestP>0.65?'green':'yellow';
+      setMV('htCorners','Over '+bestLine.toFixed(1),cc); setMetric('ht5',cc);
+      $('htCornersSub').textContent=fmt(bestP)+' — '+curCorn_h+' now';
+    } else {
+      setMV('htCorners','—','red'); setMetric('ht5','red');
+      $('htCornersSub').textContent='No line >60%';
+    }
+  }
+
+  // Penalty chance from match intensity
+  const totalDA_h=lHDA+lADA;
+  const totalSOT_h=lHSOT+lASOT;
+  const basePen=0.08;
+  const daNudge=totalDA_h>30?0.06:totalDA_h>20?0.03:0;
+  const sotNudge=totalSOT_h>8?0.04:totalSOT_h>5?0.02:0;
+  const pPen=Math.min(basePen+daNudge+sotNudge,0.35);
+  const penC=pPen>0.15?'yellow':pPen>0.10?'yellow':'red';
+  setMV('htPen',fmt(pPen),penC); setMetric('ht6',penC);
+  $('htPenSub').textContent='DA: '+totalDA_h+', SOT: '+totalSOT_h;
+
   $('gpHomePct').textContent=fmt(pHomeScores);
   $('gpAwayPct').textContent=fmt(pAwayScores);
   $('gpHomeSub').textContent='xG: '+fmtN(hLambdaRem)+' \u2014 prob. to score \u22651 goal';
