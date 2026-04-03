@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.5</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.6</div>
 </div>
 
 <!-- PASTE -->
@@ -1121,15 +1121,32 @@ function parseFooty(){
     if(line>=7&&line<=12) cornHist[line]=parseInt(m[1]);
   });
 
-  // Yellow cards from FootyStats: "Yellow Cards\n3\n2"
+  // Yellow cards live from FootyStats: "Yellow Cards\n3\n2"
   const ycM=txt.match(/Yellow\s*Cards?\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
   if(ycM){$('lHYC').value=ycM[1];$('lAYC').value=ycM[2];}
 
-  // Yellow cards season avg: "X.XX Cards Per Match at Home/Away"
-  const ycHome=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
-  const ycAway=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
-  if(ycHome) $('hYCSeason').value=clamp(ycHome[1],0,10);
-  if(ycAway) $('aYCSeason').value=clamp(ycAway[1],0,10);
+  // Cards season avg: "2.78Cards\nBooked / Match\nTeamName\n2.89Cards\nBooked / Match"
+  const cardsBooked=[...txt.matchAll(/([\d.]+)\s*Cards\s*\n\s*Booked\s*\/\s*Match/gi)];
+  if(cardsBooked.length>=1) $('hYCSeason').value=clamp(cardsBooked[0][1],0,10);
+  if(cardsBooked.length>=2) $('aYCSeason').value=clamp(cardsBooked[1][1],0,10);
+
+  // Fallback: "X.XX Cards Per Match at Home/Away"
+  if(cardsBooked.length<2){
+    const ycHome=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
+    const ycAway=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
+    if(ycHome&&!cardsBooked.length) $('hYCSeason').value=clamp(ycHome[1],0,10);
+    if(ycAway) $('aYCSeason').value=clamp(ycAway[1],0,10);
+  }
+
+  // Fallback: "5.67\nTotal Cards / Match" → split evenly
+  if(!cardsBooked.length){
+    const totalCards=txt.match(/([\d.]+)\s*\n\s*Total\s*Cards\s*\/\s*Match/i);
+    if(totalCards){
+      const half=clamp(parseFloat(totalCards[1])/2,0,10);
+      if(!n('hYCSeason')) $('hYCSeason').value=half.toFixed(1);
+      if(!n('aYCSeason')) $('aYCSeason').value=half.toFixed(1);
+    }
+  }
 
   // Red card from FootyStats: "Red Cards\n1\n0" or "Red Card\n0\n1"
   const rcM=txt.match(/Red\s*Cards?\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
