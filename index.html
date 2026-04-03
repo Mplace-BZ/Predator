@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.4</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.5</div>
 </div>
 
 <!-- PASTE -->
@@ -558,6 +558,7 @@ function calc(){
   const rcHome=$('rcHome').checked;
   const rcMinute=rcActive?parseInt($('rcMinute').value)||45:0;
   if(rcActive){
+    const preH=hLambdaRem, preA=aLambdaRem;
     if(rcHome){
       hLambdaRem*=0.55;
       aLambdaRem*=1.25;
@@ -565,6 +566,7 @@ function calc(){
       aLambdaRem*=0.55;
       hLambdaRem*=1.25;
     }
+    console.log('[RED CARD]',rcHome?'Home':'Away','| lambda H:',preH.toFixed(3),'->',hLambdaRem.toFixed(3),'| lambda A:',preA.toFixed(3),'->',aLambdaRem.toFixed(3));
   }
 
   // H2H slight nudge
@@ -955,6 +957,16 @@ function parseFooty(){
     const line=parseFloat(m[2]);
     if(line>=7&&line<=12) cornHist[line]=parseInt(m[1]);
   });
+
+  // Red card from FootyStats: "Red Cards\n1\n0" or "Red Card\n0\n1"
+  const rcM=txt.match(/Red\s*Cards?\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(rcM&&(parseInt(rcM[1])>0||parseInt(rcM[2])>0)){
+    $('rcActive').checked=true;
+    $('rcOptions').style.opacity='1';
+    if(parseInt(rcM[1])>0){ $('rcHome').checked=true; }
+    else { $('rcAway').checked=true; }
+    console.log('[PARSER] Red card detected (FootyStats):',parseInt(rcM[1])>0?'Home':'Away');
+  }
 }
 
 function parseLive(){
@@ -1016,6 +1028,16 @@ function parseLive(){
   if(corn&&!isNaN(corn[0])){
     $('lHCorn').value=Math.max(n('lHCorn'),Math.round(corn[0]));
     $('lACorn').value=Math.max(n('lACorn'),Math.round(corn[1]));
+  }
+
+  // Red cards: "Czerwone kartki\n1\n0" or "Red cards\n0\n1"
+  const rc=findTriple('Czerwone kartki|Red cards');
+  if(rc&&(rc[0]>0||rc[1]>0)){
+    $('rcActive').checked=true;
+    $('rcOptions').style.opacity='1';
+    if(rc[0]>0){ $('rcHome').checked=true; }
+    else { $('rcAway').checked=true; }
+    console.log('[PARSER] Red card detected:',rc[0]>0?'Home':'Away');
   }
 }
 
