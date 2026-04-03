@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.8</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.9</div>
 </div>
 
 <!-- PASTE -->
@@ -1226,7 +1226,8 @@ function restoreFields(){
   }catch(e){}
 }
 
-restoreFields();
+// Clean start — no restoring old data
+localStorage.removeItem(LS_KEY);
 
 // Auto-calc on any input change + save
 fieldIds.forEach(id=>$(id).addEventListener('input',()=>{saveFields();calc();}));
