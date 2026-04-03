@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.6</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.7</div>
 </div>
 
 <!-- PASTE -->
@@ -210,13 +210,13 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- SCORE BAR -->
 <div class="score-bar">
-  <input type="text" class="team-name-inp" id="homeTeam" placeholder="Home Team" value="İstanbul Başakşehir">
+  <input type="text" class="team-name-inp" id="homeTeam" placeholder="Home Team" value="">
   <input type="number" class="score-inp" id="homeScore" value="0" min="0" max="20">
   <div class="score-sep">:</div>
   <input type="number" class="score-inp" id="awayScore" value="0" min="0" max="20">
-  <input type="text" class="team-name-inp" id="awayTeam" placeholder="Away Team" value="Antalyaspor">
+  <input type="text" class="team-name-inp" id="awayTeam" placeholder="Away Team" value="">
   <div class="min-wrap">
-    <input type="number" class="min-inp" id="minute" value="40" min="1" max="120">
+    <input type="number" class="min-inp" id="minute" value="1" min="1" max="120">
     <span class="min-lbl">' played</span>
   </div>
 </div>
@@ -229,26 +229,26 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="card-t home">Home Team — Season (Home)</div>
       <div class="g2" style="gap:.6rem">
         <div class="field"><label>xG per game (home) <span class="tip" data-tip="Expected Goals scored at home per match this season">?</span></label>
-          <div class="iw"><input type="number" id="hXG" value="1.37" step="0.01"><span class="u">xG</span></div></div>
+          <div class="iw"><input type="number" id="hXG" value="0" step="0.01"><span class="u">xG</span></div></div>
         <div class="field"><label>Goals scored/game (home)</label>
-          <div class="iw"><input type="number" id="hScored" value="1.77" step="0.01"><span class="u">avg</span></div></div>
+          <div class="iw"><input type="number" id="hScored" value="0" step="0.01"><span class="u">avg</span></div></div>
         <div class="field"><label>Goals conceded/game (home)</label>
-          <div class="iw"><input type="number" id="hConc" value="1.31" step="0.01"><span class="u">avg</span></div></div>
+          <div class="iw"><input type="number" id="hConc" value="0" step="0.01"><span class="u">avg</span></div></div>
         <div class="field"><label>Home clean sheet %</label>
-          <div class="iw"><input type="number" id="hCS" value="23" step="1"><span class="u">%</span></div></div>
+          <div class="iw"><input type="number" id="hCS" value="0" step="1"><span class="u">%</span></div></div>
       </div>
     </div>
     <div class="card">
       <div class="card-t away">Away Team — Season (Away)</div>
       <div class="g2" style="gap:.6rem">
         <div class="field"><label>xG per game (away) <span class="tip" data-tip="Expected Goals scored away from home per match this season">?</span></label>
-          <div class="iw"><input type="number" id="aXG" value="0.85" step="0.01"><span class="u">xG</span></div></div>
+          <div class="iw"><input type="number" id="aXG" value="0" step="0.01"><span class="u">xG</span></div></div>
         <div class="field"><label>Goals scored/game (away)</label>
-          <div class="iw"><input type="number" id="aScored" value="0.54" step="0.01"><span class="u">avg</span></div></div>
+          <div class="iw"><input type="number" id="aScored" value="0" step="0.01"><span class="u">avg</span></div></div>
         <div class="field"><label>Goals conceded/game (away)</label>
-          <div class="iw"><input type="number" id="aConc" value="0.92" step="0.01"><span class="u">avg</span></div></div>
+          <div class="iw"><input type="number" id="aConc" value="0" step="0.01"><span class="u">avg</span></div></div>
         <div class="field"><label>Away clean sheet %</label>
-          <div class="iw"><input type="number" id="aCS" value="38" step="1"><span class="u">%</span></div></div>
+          <div class="iw"><input type="number" id="aCS" value="0" step="1"><span class="u">%</span></div></div>
       </div>
     </div>
   </div>
@@ -260,23 +260,23 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <div class="card">
       <div class="card-t live">Shots</div>
       <div class="field"><label>Home shots on target</label>
-        <div class="iw"><input type="number" id="lHSOT" value="3" min="0"><span class="u">shots</span></div></div>
+        <div class="iw"><input type="number" id="lHSOT" value="0" min="0"><span class="u">shots</span></div></div>
       <div class="field"><label>Away shots on target</label>
-        <div class="iw"><input type="number" id="lASOT" value="2" min="0"><span class="u">shots</span></div></div>
+        <div class="iw"><input type="number" id="lASOT" value="0" min="0"><span class="u">shots</span></div></div>
     </div>
     <div class="card">
       <div class="card-t live">Attacks</div>
       <div class="field"><label>Home dangerous attacks</label>
-        <div class="iw"><input type="number" id="lHDA" value="25" min="0"><span class="u"></span></div></div>
+        <div class="iw"><input type="number" id="lHDA" value="0" min="0"><span class="u"></span></div></div>
       <div class="field"><label>Away dangerous attacks</label>
-        <div class="iw"><input type="number" id="lADA" value="10" min="0"><span class="u"></span></div></div>
+        <div class="iw"><input type="number" id="lADA" value="0" min="0"><span class="u"></span></div></div>
     </div>
     <div class="card">
       <div class="card-t live">Possession & H2H</div>
       <div class="field"><label>Home possession %</label>
-        <div class="iw"><input type="number" id="lHPoss" value="67" min="0" max="100"><span class="u">%</span></div></div>
+        <div class="iw"><input type="number" id="lHPoss" value="50" min="0" max="100"><span class="u">%</span></div></div>
       <div class="field"><label>H2H win rate (home team %)</label>
-        <div class="iw"><input type="number" id="h2hHome" value="67" min="0" max="100"><span class="u">%</span></div></div>
+        <div class="iw"><input type="number" id="h2hHome" value="50" min="0" max="100"><span class="u">%</span></div></div>
     </div>
   </div>
 </section>
@@ -809,9 +809,16 @@ function parseLive(){
 
 function clearAll(){
   $('rawPaste').value='';
-  ['homeScore','awayScore'].forEach(id=>$(id).value=0);
-  $('minute').value=40;
+  $('rawPaste2').value='';
+  $('homeTeam').value=''; $('awayTeam').value='';
+  $('homeScore').value=0; $('awayScore').value=0;
+  $('minute').value=1;
+  ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
+   'lHSOT','lASOT','lHDA','lADA'].forEach(id=>$(id).value=0);
+  $('lHPoss').value=50; $('h2hHome').value=50;
   liveXGH=0; liveXGA=0;
+  localStorage.removeItem(LS_KEY);
+  calc();
 }
 
 // ── VALUE BETS ───────────────────────────────────────────────────
