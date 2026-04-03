@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.0</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.2</div>
 </div>
 
 <!-- PASTE -->
@@ -646,24 +646,27 @@ function calc(){
   console.log('[CALC] topScore:',topScore,'results[0]:',results[0],'homeScore:',homeScore);
 
   // Corners hero — best line with >60%
-  const hCornS_h=n('hCornSeason')||5.0, aCornS_h=n('aCornSeason')||4.0;
+  const hCornS_h=n('hCornSeason'), aCornS_h=n('aCornSeason');
   const curCorn_h=n('lHCorn')+n('lACorn');
-  const cornIsEst_h=!n('hCornSeason')&&!n('aCornSeason');
+  const cornHasData=hCornS_h+aCornS_h>0;
   let cornLam_h=(hCornS_h+aCornS_h)*remFrac;
   if(rcActive) cornLam_h*=1.3;
   let bestCornLine=null,bestCornP=0;
-  [10.5,9.5,8.5,7.5].forEach(line=>{
-    const need=Math.max(0,line-curCorn_h);
-    const p=1-poissonCum(cornLam_h,Math.floor(need));
-    if(p>0.60&&line>=(bestCornLine||0)){bestCornLine=line;bestCornP=p;}
-  });
+  if(cornHasData){
+    [10.5,9.5,8.5,7.5].forEach(line=>{
+      const need=Math.max(0,line-curCorn_h);
+      const p=1-poissonCum(cornLam_h,Math.floor(need));
+      if(p>0.60&&line>=(bestCornLine||0)){bestCornLine=line;bestCornP=p;}
+    });
+  }
 
   // Penalty chance
   const totalDA_h=lHDA+lADA;
   const totalSOT_h=lHSOT+lASOT;
   const rcPenBonus=rcActive?0.08:0;
-  const rcRedBonus=rcActive?0.15:0;
-  const pPen=Math.min(0.08+rcPenBonus+(totalDA_h>30?0.06:totalDA_h>20?0.03:0)+(totalSOT_h>8?0.04:totalSOT_h>5?0.02:0),0.40);
+  const hasLiveData=totalDA_h>0||totalSOT_h>0;
+  const basePen=hasLiveData?0.08:0;
+  const pPen=Math.min(basePen+rcPenBonus+(totalDA_h>30?0.06:totalDA_h>20?0.03:0)+(totalSOT_h>8?0.04:totalSOT_h>5?0.02:0),0.40);
 
   function heroCard(label,value,sub,prob){
     const cls=prob>0.65?'green':prob>0.45?'yellow':'red';
@@ -691,7 +694,7 @@ function calc(){
     +heroCardFixed('Home scores',fmt(pHomeScores),homeTeam||'Home','var(--blue-bg)','var(--blue-bd)','var(--blue)')
     +heroCardFixed('Away scores',fmt(pAwayScores),awayTeam||'Away','rgba(255,159,67,0.08)','rgba(255,159,67,0.25)','#ff9f43')
     +(topScore?heroCard('Most likely final score',topScore.h+' - '+topScore.a,fmt(topScore.p)+' probability',topScore.p*3):heroCard('Most likely final score','—','—',0))
-    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now'+(cornIsEst_h?' (est.)':''),bestCornP):heroCard('Corners over','—','No line >60%',0))
+    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now',bestCornP):heroCard('Corners over','—',cornHasData?'No line >60%':'No data',0))
     +(rcActive
       ?heroCardFixed('Red card active','ACTIVE',disTeam+' 10 men ('+rcMinute+'\')','rgba(255,77,106,0.15)','var(--red)','var(--red)')
       :heroCard('Penalty chance',fmt(pPen),'DA: '+totalDA_h+', SOT: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3));
@@ -811,19 +814,20 @@ function calc(){
 
   const cornerLines=[7.5,8.5,9.5,10.5];
   const cornersGrid=$('cornersGrid');
-  const cornIsEst=hCornS+aCornS===0;
-  const cornHEff=hCornS||5.0, cornAEff=aCornS||4.0;
-  const cornLambdaEff=(cornHEff+cornAEff)*remFrac*(rcActive?1.3:1);
-  cornersGrid.innerHTML=cornerLines.map(line=>{
-    const need=Math.max(0,line-currentCorners);
-    const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
-    const histKey=line-0.5;
-    const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
-    const sub=currentCorners+' now, ~'+cornLambdaEff.toFixed(1)+' more'
-      +(cornIsEst?' (est.)':'')
-      +(histPct!==null?' | Hist: '+histPct+'%':'');
-    return heroCard('Over '+line.toFixed(1)+' corners',fmt(pOver),sub,pOver);
-  }).join('');
+  if(hCornS+aCornS>0){
+    const cornLambdaEff=(hCornS+aCornS)*remFrac*(rcActive?1.3:1);
+    cornersGrid.innerHTML=cornerLines.map(line=>{
+      const need=Math.max(0,line-currentCorners);
+      const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
+      const histKey=line-0.5;
+      const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
+      const sub=currentCorners+' now, ~'+cornLambdaEff.toFixed(1)+' more'
+        +(histPct!==null?' | Hist: '+histPct+'%':'');
+      return heroCard('Over '+line.toFixed(1)+' corners',fmt(pOver),sub,pOver);
+    }).join('');
+  } else {
+    cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season corner averages to see predictions.</div>';
+  }
 
   // Value bets
   renderValueBets({
