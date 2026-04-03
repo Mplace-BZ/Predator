@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.9</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.0</div>
 </div>
 
 <!-- PASTE -->
@@ -752,8 +752,9 @@ function calc(){
   setMV('v5',fmt(pBTTS),bttsC); setMetric('m5',bttsC);
 
   // Goal count table
-  const maxGP=goalCounts[0]?Math.max(...goalCounts.map(x=>x.p)):1;
-  $('scoreTbody').innerHTML=goalCounts.map((r,i)=>{
+  const goalCountsShow=goalCounts.slice(0,5);
+  const maxGP=goalCountsShow[0]?Math.max(...goalCountsShow.map(x=>x.p)):1;
+  $('scoreTbody').innerHTML=goalCountsShow.map((r,i)=>{
     const cls=i===0?'top-result':'';
     const barW=(r.p/maxGP*100).toFixed(1);
     const label=r.g===0?'No more goals (0)':r.g===1?'1 goal':r.g+' goals';
@@ -971,10 +972,12 @@ function parseLive(){
   if(!raw) return;
   const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
 
-  // Minuta z "73:09" (czas meczu Sofascore)
+  // Minuta z "73:09" (czas meczu Sofascore) lub "Przerwa"/"HT"
+  let minuteFound=false;
   for(let i=0;i<lines.length;i++){
+    if(/^(Przerwa|HT['′']?)$/i.test(lines[i])){$('minute').value=45;minuteFound=true;break;}
     const tm=lines[i].match(/^(\d{1,3}):\d{2}$/);
-    if(tm){const v=parseInt(tm[1]);if(v>=1&&v<=120){$('minute').value=v;break;}}
+    if(tm){const v=parseInt(tm[1]);if(v>=1&&v<=120){$('minute').value=v;minuteFound=true;break;}}
   }
 
   // Wynik z "3 - 1"
