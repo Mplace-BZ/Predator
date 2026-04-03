@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.7</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.8</div>
 </div>
 
 <!-- PASTE -->
@@ -515,6 +515,7 @@ function calc(){
   const homeScore=n('homeScore'), awayScore=n('awayScore');
   const homeTeam=s('homeTeam')||'Home';
   const awayTeam=s('awayTeam')||'Away';
+  console.log('[CALC] score:',homeScore,'-',awayScore,'min:',minute,'hXG:',hXG,'aXG:',aXG);
 
   // Base lambda for full 90 min from xG (blend xG with scored avg)
   const hBase=(hXG*0.65+hScored*0.35);
@@ -638,6 +639,7 @@ function calc(){
     return {h,a,p};
   }).sort((a,b)=>b.p-a.p);
   const topScore=aggregated[0];
+  console.log('[CALC] topScore:',topScore,'results[0]:',results[0],'homeScore:',homeScore);
 
   // Corners hero — best line with >60%
   const hCornS_h=n('hCornSeason')||5.0, aCornS_h=n('aCornSeason')||4.0;
@@ -844,6 +846,7 @@ function parseAll(){
     pm.classList.add('show');
     setTimeout(()=>pm.classList.remove('show'),3500);
   }
+  saveFields();
   calc();
 }
 
