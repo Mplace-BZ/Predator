@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Match Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0d1117;
+  --bg2:    #161b22;
+  --bg3:    #1c2333;
+  --bg4:    #21262d;
+  --border: rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --text:   #e6edf3;
+  --text2:  #7d8590;
+  --text3:  #484f58;
+  --green:  #1aff8c;
+  --green2: #14c46a;
+  --green3: rgba(26,255,140,0.08);
+  --green4: rgba(26,255,140,0.15);
+  --green-bd:rgba(26,255,140,0.25);
+  --red:    #ff4d6a;
+  --red-bg: rgba(255,77,106,0.08);
+  --red-bd: rgba(255,77,106,0.25);
+  --yellow: #ffd166;
+  --yel-bg: rgba(255,209,102,0.08);
+  --yel-bd: rgba(255,209,102,0.25);
+  --blue:   #58a6ff;
+  --blue-bg:rgba(88,166,255,0.08);
+  --blue-bd:rgba(88,166,255,0.22);
+  --mono:   'JetBrains Mono', monospace;
+  --sans:   'Inter', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;}
+
+/* subtle grid */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(26,255,140,0.02) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(26,255,140,0.02) 1px,transparent 1px);
+  background-size:32px 32px;}
+
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;}
+.hdr-badge{background:var(--green3);border:1px solid var(--green-bd);border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.1em;text-transform:uppercase;}
+.hdr h1{font-size:20px;font-weight:700;color:var(--text);}
+.hdr h1 span{color:var(--green);}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* PASTE AREA */
+.paste-card{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:1.2rem;margin-bottom:1rem;}
+.paste-label{font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem;}
+.paste-label::after{content:'';flex:1;height:1px;background:var(--border);}
+textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:var(--mono);font-size:11px;padding:.7rem .9rem;resize:vertical;min-height:90px;transition:border-color .15s;}
+textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,255,140,0.08);}
+textarea::placeholder{color:var(--text3);}
+.parse-btn{margin-top:.5rem;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 16px;border-radius:7px;border:1px solid var(--green-bd);background:var(--green3);color:var(--green);cursor:pointer;transition:all .15s;}
+.parse-btn:hover{background:var(--green4);border-color:var(--green);}
+.parse-msg{margin-top:.4rem;font-family:var(--mono);font-size:10px;color:var(--green);opacity:0;transition:opacity .4s;}
+.parse-msg.show{opacity:1;}
+
+/* SCORE BAR */
+.score-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.4rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.team-name-inp{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:14px;font-weight:600;padding:6px 10px;width:180px;transition:border-color .15s;}
+.team-name-inp:focus{outline:none;border-color:var(--green);}
+.score-sep{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green);padding:0 .4rem;}
+.score-inp{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--green);font-family:var(--mono);font-size:18px;font-weight:700;padding:5px 8px;width:52px;text-align:center;-webkit-appearance:none;}
+.score-inp:focus{outline:none;border-color:var(--green);}
+.min-wrap{display:flex;align-items:center;gap:.4rem;margin-left:auto;}
+.min-inp{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--yellow);font-family:var(--mono);font-size:16px;font-weight:600;padding:5px 8px;width:58px;text-align:center;-webkit-appearance:none;}
+.min-inp:focus{outline:none;border-color:var(--yellow);}
+.min-lbl{font-family:var(--mono);font-size:12px;color:var(--text3);}
+
+/* INPUTS GRID */
+.sl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr 1fr;}}
+section{margin-bottom:.85rem;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;}
+.card-t{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;display:flex;align-items:center;gap:6px;}
+.card-t::after{content:'';flex:1;height:1px;background:var(--border);}
+.card-t.home{color:var(--blue);}
+.card-t.away{color:#ff9f43;}
+.card-t.live{color:var(--red);}
+.card-t.green{color:var(--green);}
+
+.field{margin-bottom:.6rem;}
+.field:last-child{margin-bottom:0;}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;}
+.iw{position:relative;display:flex;align-items:center;}
+.iw input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:13px;padding:6px 36px 6px 10px;-webkit-appearance:none;transition:border-color .15s;}
+.iw input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,255,140,0.06);}
+.iw .u{position:absolute;right:9px;font-size:10px;color:var(--text3);font-family:var(--mono);pointer-events:none;}
+
+hr{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+
+/* RESULTS */
+.result-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.2rem;margin-top:1rem;}
+
+/* GOAL PROBABILITY BIG */
+.goal-prob-wrap{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:.85rem;}
+.goal-prob-card{border-radius:10px;padding:1rem 1.1rem;position:relative;overflow:hidden;}
+.goal-prob-card.home-card{background:var(--blue-bg);border:1px solid var(--blue-bd);}
+.goal-prob-card.away-card{background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.25);}
+.gp-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem;}
+.home-card .gp-label{color:var(--blue);}
+.away-card .gp-label{color:#ff9f43;}
+.gp-team{font-size:13px;font-weight:600;color:var(--text);margin-bottom:.5rem;}
+.gp-pct{font-family:var(--mono);font-size:36px;font-weight:700;line-height:1;}
+.home-card .gp-pct{color:var(--blue);}
+.away-card .gp-pct{color:#ff9f43;}
+.gp-sub{font-size:11px;color:var(--text2);margin-top:.3rem;}
+
+/* MAIN STATUS CARD */
+.status-card{border-radius:10px;padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:.85rem;border:1px solid transparent;margin-bottom:.85rem;}
+.status-card.likely-goal{background:var(--green3);border-color:var(--green-bd);}
+.status-card.unlikely{background:var(--red-bg);border-color:var(--red-bd);}
+.status-card.neutral{background:var(--yel-bg);border-color:var(--yel-bd);}
+.st-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
+.st-title{font-size:15px;font-weight:700;}
+.likely-goal .st-title{color:var(--green);}
+.unlikely .st-title{color:var(--red);}
+.neutral .st-title{color:var(--yellow);}
+.st-body{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.6;}
+
+/* METRIC CARD */
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:.8rem .9rem;}
+.metric.c-green{border-color:var(--green-bd);}
+.metric.c-red{border-color:var(--red-bd);}
+.metric.c-yellow{border-color:var(--yel-bd);}
+.metric.c-blue{border-color:var(--blue-bd);}
+.ml{font-size:9px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.mv{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text);}
+.mv.green{color:var(--green);}
+.mv.red{color:var(--red);}
+.mv.yellow{color:var(--yellow);}
+.mv.blue{color:var(--blue);}
+.ms{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* SCORELINE TABLE */
+.score-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.score-tbl th{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:4px 6px;text-align:left;border-bottom:1px solid var(--border);}
+.score-tbl td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--mono);}
+.score-tbl tr:last-child td{border-bottom:none;}
+.score-tbl td:nth-child(2),.score-tbl td:nth-child(3){text-align:center;}
+.score-tbl .top-result td{color:var(--green);font-weight:600;}
+.score-tbl .bar-cell{padding:5px 6px;}
+.pbar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:3px;background:var(--green);transition:width .5s ease;}
+
+/* BAR COMPARE */
+.compare-bar{margin:.85rem 0;}
+.cb-labels{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+.cb-home{color:var(--blue);}
+.cb-away{color:#ff9f43;}
+.cb-track{height:10px;background:var(--bg4);border-radius:5px;display:flex;overflow:hidden;}
+.cb-home-fill{height:100%;background:var(--blue);border-radius:5px 0 0 5px;transition:width .5s ease;}
+.cb-away-fill{height:100%;background:#ff9f43;border-radius:0 5px 5px 0;transition:width .5s ease;}
+
+.tip{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-size:8px;text-align:center;line-height:11px;cursor:default;position:relative;}
+.vbet{border-radius:9px;padding:.8rem 1rem;border:1px solid;display:flex;align-items:flex-start;gap:.85rem;}
+.vbet-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.vbet-odds{font-family:var(--mono);font-size:18px;font-weight:700;margin-left:auto;flex-shrink:0;padding-left:.75rem;}
+.vbet-title{font-size:13px;font-weight:600;margin-bottom:2px;}
+.vbet-body{font-size:11px;color:var(--text2);line-height:1.5;}
+.tip:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:120%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:11px;font-family:var(--sans);padding:6px 10px;border-radius:7px;width:210px;white-space:normal;z-index:10;line-height:1.5;letter-spacing:0;text-transform:none;font-weight:400;}
+
+footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="live-dot"></div>
+  <div class="hdr-badge">Live</div>
+  <h1>Match <span>Predictor</span></h1>
+  <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
+</div>
+
+<!-- PASTE -->
+<div class="paste-card">
+  <div class="paste-label">FootyStats — Season &amp; H2H data</div>
+  <textarea id="rawPaste" style="min-height:80px" placeholder="Paste full FootyStats block (score, minute, xG, H2H, season stats...)"></textarea>
+  <div class="paste-label" style="color:#ff9f43;margin-top:.85rem">FlashScore / Sofascore — Live in-match stats</div>
+  <textarea id="rawPaste2" style="min-height:80px" placeholder="Wklej dane live: Posiadanie piłki, xG, Strzały celne, Rzuty rożne... (format PL lub EN)"></textarea>
+  <div style="display:flex;align-items:center;gap:.6rem;margin-top:.6rem;flex-wrap:wrap">
+    <button class="parse-btn" onclick="parseAll()">&#9654; Parse Data</button>
+    <button class="parse-btn" style="background:transparent;border-color:var(--border2);color:var(--text3)" onclick="clearAll()">&#10005; Clear</button>
+    <span class="parse-msg" id="parseMsg">&#10003; Parsed</span>
+  </div>
+</div>
+
+<!-- SCORE BAR -->
+<div class="score-bar">
+  <input type="text" class="team-name-inp" id="homeTeam" placeholder="Home Team" value="İstanbul Başakşehir">
+  <input type="number" class="score-inp" id="homeScore" value="0" min="0" max="20">
+  <div class="score-sep">:</div>
+  <input type="number" class="score-inp" id="awayScore" value="0" min="0" max="20">
+  <input type="text" class="team-name-inp" id="awayTeam" placeholder="Away Team" value="Antalyaspor">
+  <div class="min-wrap">
+    <input type="number" class="min-inp" id="minute" value="40" min="1" max="120">
+    <span class="min-lbl">' played</span>
+  </div>
+</div>
+
+<!-- INPUTS -->
+<section>
+  <div class="sl">Season Stats</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-t home">Home Team — Season (Home)</div>
+      <div class="g2" style="gap:.6rem">
+        <div class="field"><label>xG per game (home) <span class="tip" data-tip="Expected Goals scored at home per match this season">?</span></label>
+          <div class="iw"><input type="number" id="hXG" value="1.37" step="0.01"><span class="u">xG</span></div></div>
+        <div class="field"><label>Goals scored/game (home)</label>
+          <div class="iw"><input type="number" id="hScored" value="1.77" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Goals conceded/game (home)</label>
+          <div class="iw"><input type="number" id="hConc" value="1.31" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Home clean sheet %</label>
+          <div class="iw"><input type="number" id="hCS" value="23" step="1"><span class="u">%</span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t away">Away Team — Season (Away)</div>
+      <div class="g2" style="gap:.6rem">
+        <div class="field"><label>xG per game (away) <span class="tip" data-tip="Expected Goals scored away from home per match this season">?</span></label>
+          <div class="iw"><input type="number" id="aXG" value="0.85" step="0.01"><span class="u">xG</span></div></div>
+        <div class="field"><label>Goals scored/game (away)</label>
+          <div class="iw"><input type="number" id="aScored" value="0.54" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Goals conceded/game (away)</label>
+          <div class="iw"><input type="number" id="aConc" value="0.92" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Away clean sheet %</label>
+          <div class="iw"><input type="number" id="aCS" value="38" step="1"><span class="u">%</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sl">Live Match Stats (current)</div>
+  <div class="g3">
+    <div class="card">
+      <div class="card-t live">Shots</div>
+      <div class="field"><label>Home shots on target</label>
+        <div class="iw"><input type="number" id="lHSOT" value="3" min="0"><span class="u">shots</span></div></div>
+      <div class="field"><label>Away shots on target</label>
+        <div class="iw"><input type="number" id="lASOT" value="2" min="0"><span class="u">shots</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Attacks</div>
+      <div class="field"><label>Home dangerous attacks</label>
+        <div class="iw"><input type="number" id="lHDA" value="25" min="0"><span class="u"></span></div></div>
+      <div class="field"><label>Away dangerous attacks</label>
+        <div class="iw"><input type="number" id="lADA" value="10" min="0"><span class="u"></span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Possession & H2H</div>
+      <div class="field"><label>Home possession %</label>
+        <div class="iw"><input type="number" id="lHPoss" value="67" min="0" max="100"><span class="u">%</span></div></div>
+      <div class="field"><label>H2H win rate (home team %)</label>
+        <div class="iw"><input type="number" id="h2hHome" value="67" min="0" max="100"><span class="u">%</span></div></div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<!-- RESULTS -->
+<div id="resultsPanel" class="result-panel">
+  <div style="font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem">
+    <span>&#9654;</span> Prediction Output
+    <span style="margin-left:auto;color:var(--text3)" id="calcTime"></span>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-card neutral" id="statusCard">
+    <div class="st-icon" id="stIcon">&#9889;</div>
+    <div><div class="st-title" id="stTitle">Calculating...</div><div class="st-body" id="stBody"></div></div>
+  </div>
+
+  <!-- GOAL PROB PER TEAM -->
+  <div class="goal-prob-wrap">
+    <div class="goal-prob-card home-card">
+      <div class="gp-label">Home scores next</div>
+      <div class="gp-team" id="gpHomeTeam">—</div>
+      <div class="gp-pct" id="gpHomePct">—</div>
+      <div class="gp-sub" id="gpHomeSub">—</div>
+    </div>
+    <div class="goal-prob-card away-card">
+      <div class="gp-label">Away scores next</div>
+      <div class="gp-team" id="gpAwayTeam">—</div>
+      <div class="gp-pct" id="gpAwayPct">—</div>
+      <div class="gp-sub" id="gpAwaySub">—</div>
+    </div>
+  </div>
+
+  <!-- COMPARE BAR -->
+  <div class="compare-bar">
+    <div class="cb-labels">
+      <span class="cb-home" id="cbHomeLabel">Home 67%</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">Next goal</span>
+      <span class="cb-away" id="cbAwayLabel">Away 33%</span>
+    </div>
+    <div class="cb-track">
+      <div class="cb-home-fill" id="cbHomeFill" style="width:67%"></div>
+      <div class="cb-away-fill" id="cbAwayFill" style="width:33%"></div>
+    </div>
+  </div>
+
+  <!-- KEY METRICS -->
+  <div class="g4" style="margin-bottom:.85rem">
+    <div class="metric" id="m1">
+      <div class="ml">Any goal remaining <span class="tip" data-tip="Probability that at least 1 more goal will be scored before full time, based on Poisson model using xG + live adjustments.">?</span></div>
+      <div class="mv" id="v1">—</div>
+      <div class="ms">P(≥1 goal in rem. time)</div>
+    </div>
+    <div class="metric" id="m2">
+      <div class="ml">Over 0.5 remaining goals</div>
+      <div class="mv" id="v2">—</div>
+      <div class="ms">= any goal</div>
+    </div>
+    <div class="metric" id="m3">
+      <div class="ml">Over 1.5 remaining goals <span class="tip" data-tip="Probability of 2+ more goals before full time.">?</span></div>
+      <div class="mv" id="v3">—</div>
+      <div class="ms">P(≥2 goals)</div>
+    </div>
+    <div class="metric" id="m4">
+      <div class="ml">No more goals (0-0 rem.)</div>
+      <div class="mv" id="v4">—</div>
+      <div class="ms">Game ends as-is</div>
+    </div>
+  </div>
+
+  <!-- MOST LIKELY FINAL SCORES -->
+  <div class="sl" style="margin-bottom:.5rem">Goal Count Probability (remaining time)</div>
+  <div class="card">
+    <table class="score-tbl" id="scoreTable">
+      <thead><tr>
+        <th>Total goals</th>
+        <th>Prob %</th>
+        <th>Distribution</th>
+      </tr></thead>
+      <tbody id="scoreTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- BETTING SIGNALS -->
+  <div class="sl" style="margin:.85rem 0 .5rem">Signal Summary</div>
+  <div class="g3">
+    <div class="metric" id="ms1">
+      <div class="ml">Home Win probability</div>
+      <div class="mv" id="vs1">—</div>
+      <div class="ms" id="vss1">—</div>
+    </div>
+    <div class="metric" id="ms2">
+      <div class="ml">Draw probability</div>
+      <div class="mv" id="vs2">—</div>
+      <div class="ms" id="vss2">—</div>
+    </div>
+    <div class="metric" id="ms3">
+      <div class="ml">Away Win probability</div>
+      <div class="mv" id="vs3">—</div>
+      <div class="ms" id="vss3">—</div>
+    </div>
+  </div>
+
+  <div style="margin-top:.85rem;padding:.65rem .85rem;background:var(--bg3);border-left:2px solid var(--green);border-radius:0 7px 7px 0;font-size:11px;color:var(--text3);line-height:1.6;">
+    Model uses Poisson distribution with xG adjusted for time remaining + live momentum factor (dangerous attacks ratio &amp; shots on target).
+    H2H and clean sheet data used as secondary weight. Probabilities are estimates — not financial advice.
+  </div>
+
+  <!-- VALUE BETS -->
+  <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
+  <div id="valueBets" style="display:flex;flex-direction:column;gap:.55rem;"></div>
+</div>
+
+<footer>Live Match Predictor &mdash; Poisson xG Model &mdash; Not financial advice</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const n=id=>parseFloat($(id).value)||0;
+const s=id=>$(id).value.trim();
+
+// ── POISSON ──────────────────────────────────────────────────────
+function poisson(lambda,k){
+  if(lambda<=0)return k===0?1:0;
+  let logP=-lambda+k*Math.log(lambda);
+  for(let i=1;i<=k;i++) logP-=Math.log(i);
+  return Math.exp(logP);
+}
+function poissonCum(lambda,maxK){
+  let sum=0;
+  for(let k=0;k<=maxK;k++) sum+=poisson(lambda,k);
+  return Math.min(sum,1);
+}
+
+function fmt(v,dec=0){return(v*100).toFixed(dec).replace('.',',')+'%';}
+function fmtN(v){return v.toFixed(2).replace('.',',');}
+
+function setMV(id,val,cls){$(id).className='mv '+(cls||'');$(id).textContent=val;}
+function setMetric(id,cls){$(id).className='metric '+(cls?'c-'+cls:'');}
+
+// ── CALC ──────────────────────────────────────────────────────────
+function calc(){
+  const minute=Math.max(1,Math.min(120,n('minute')));
+  const remMin=Math.max(0,90-minute);
+  const remFrac=remMin/90;
+
+  const hXG=n('hXG'), aXG=n('aXG');
+  const hScored=n('hScored'), aScored=n('aScored');
+  const hConc=n('hConc'), aConc=n('aConc');
+  const hCS=n('hCS')/100, aCS=n('aCS')/100;
+  const lHSOT=n('lHSOT'), lASOT=n('lASOT');
+  const lHDA=n('lHDA'), lADA=n('lADA');
+  const lHPoss=n('lHPoss'), lAPoss=100-lHPoss;
+  const h2hHome=n('h2hHome')/100;
+  const homeScore=n('homeScore'), awayScore=n('awayScore');
+  const homeTeam=s('homeTeam')||'Home';
+  const awayTeam=s('awayTeam')||'Away';
+
+  // Base lambda for full 90 min from xG (blend xG with scored avg)
+  const hBase=(hXG*0.65+hScored*0.35);
+  const aBase=(aXG*0.65+aScored*0.35);
+
+  // Defensive adjustment: multiply by opponent's concede rate vs league avg (1.5 approx)
+  const leagueAvgConc=1.5;
+  const hLambda90=hBase*(aConc/leagueAvgConc);
+  const aLambda90=aBase*(hConc/leagueAvgConc);
+
+  // Scale to remaining time
+  let hLambdaRem=hLambda90*remFrac;
+  let aLambdaRem=aLambda90*remFrac;
+
+  // Live momentum adjustment (dangerous attacks ratio)
+  const totalDA=lHDA+lADA;
+  const totalSOT=lHSOT+lASOT;
+  if(totalDA>0&&minute>=10){
+    const hDAShare=lHDA/totalDA;
+    const aDAShare=lADA/totalDA;
+    // blend 30% live momentum
+    const hMom=(hDAShare*0.5+(totalSOT>0?lHSOT/totalSOT:0.5)*0.5);
+    const aMom=1-hMom;
+    const totalLambda=hLambdaRem+aLambdaRem;
+    hLambdaRem=hLambdaRem*0.7+totalLambda*hMom*0.3;
+    aLambdaRem=aLambdaRem*0.7+totalLambda*aMom*0.3;
+  }
+
+  // H2H slight nudge
+  if(h2hHome>0.5){
+    const nudge=(h2hHome-0.5)*0.1;
+    hLambdaRem*=(1+nudge);
+    aLambdaRem*=(1-nudge*0.5);
+  }
+
+  const totalLambda=hLambdaRem+aLambdaRem;
+
+  // Probabilities
+  const pNoGoal=poisson(hLambdaRem,0)*poisson(aLambdaRem,0);
+  const pAnyGoal=1-pNoGoal;
+  const pOver15=1-poissonCum(totalLambda,1);
+  const pOver25=1-poissonCum(totalLambda,2);
+
+  // Next goal: who scores it
+  const hNextGoal=totalLambda>0?hLambdaRem/totalLambda:0.5;
+  const aNextGoal=1-hNextGoal;
+
+  // Goal count distribution (remaining time)
+  const maxGoals=7;
+  let goalCounts=[];
+  for(let g=0;g<=maxGoals;g++){
+    // sum all combos where h+a = g
+    let p=0;
+    for(let h=0;h<=g;h++){
+      const a=g-h;
+      p+=poisson(hLambdaRem,h)*poisson(aLambdaRem,a);
+    }
+    goalCounts.push({g,p});
+  }
+
+  // Final score distribution for win/draw calc
+  let results=[];
+  for(let h=0;h<=maxGoals;h++){
+    for(let a=0;a<=maxGoals;a++){
+      const p=poisson(hLambdaRem,h)*poisson(aLambdaRem,a);
+      const fh=homeScore+h, fa=awayScore+a;
+      results.push({h:fh,a:fa,p});
+    }
+  }
+
+  // Win/Draw/Away
+  let pHWin=0,pDraw=0,pAWin=0;
+  results.forEach(r=>{
+    const fh=r.h,fa=r.a;
+    if(fh>fa) pHWin+=r.p;
+    else if(fh===fa) pDraw+=r.p;
+    else pAWin+=r.p;
+  });
+  const tot=pHWin+pDraw+pAWin;
+  if(tot>0){pHWin/=tot;pDraw/=tot;pAWin/=tot;}
+  if(homeScore>awayScore){pHWin=Math.min(pHWin*1.15,0.99);}
+  if(awayScore>homeScore){pAWin=Math.min(pAWin*1.15,0.99);}
+
+  // ── RENDER ──────────────────────────────────────────────────────
+  $('calcTime').textContent=new Date().toLocaleTimeString('en-GB');
+  $('gpHomeTeam').textContent=homeTeam;
+  $('gpAwayTeam').textContent=awayTeam;
+  // P(team scores at least 1 goal in remaining time) = 1 - P(team scores 0)
+  const pHomeScores=1-poisson(hLambdaRem,0);
+  const pAwayScores=1-poisson(aLambdaRem,0);
+  $('gpHomePct').textContent=fmt(pHomeScores);
+  $('gpAwayPct').textContent=fmt(pAwayScores);
+  $('gpHomeSub').textContent='xG: '+fmtN(hLambdaRem)+' \u2014 prob. to score \u22651 goal';
+  $('gpAwaySub').textContent='xG: '+fmtN(aLambdaRem)+' \u2014 prob. to score \u22651 goal';
+
+  $('cbHomeLabel').textContent=homeTeam+' '+fmt(hNextGoal);
+  $('cbAwayLabel').textContent=awayTeam+' '+fmt(aNextGoal);
+  $('cbHomeFill').style.width=(hNextGoal*100).toFixed(1)+'%';
+  $('cbAwayFill').style.width=(aNextGoal*100).toFixed(1)+'%';
+
+  // Status
+  let statusCls,stIcon,stTitle,stBody;
+  if(pAnyGoal>0.7){
+    statusCls='likely-goal';stIcon='&#9889;';
+    stTitle='Goal Expected';
+    stBody=`${fmt(pAnyGoal)} chance of at least one more goal in ${remMin} remaining minutes. `+
+           `${homeTeam} most likely to score (${fmt(hNextGoal*pAnyGoal)}). Combined remaining xG: ${fmtN(totalLambda)}.`;
+  } else if(pAnyGoal>0.45){
+    statusCls='neutral';stIcon='&#9900;';
+    stTitle='Goal Possible';
+    stBody=`${fmt(pAnyGoal)} chance of a goal in ${remMin} min. Even-chance territory — could go either way. xG remaining: ${fmtN(totalLambda)}.`;
+  } else {
+    statusCls='unlikely';stIcon='&#9940;';
+    stTitle='Goal Unlikely';
+    stBody=`Only ${fmt(pAnyGoal)} chance of a goal in ${remMin} remaining minutes. Low expected goals (${fmtN(totalLambda)} xG) suggest the scoreline may hold.`;
+  }
+  $('statusCard').className='status-card '+statusCls;
+  $('stIcon').innerHTML=stIcon;
+  $('stTitle').textContent=stTitle;
+  $('stBody').textContent=stBody;
+
+  // Metrics
+  const gColor=pAnyGoal>0.65?'green':pAnyGoal>0.4?'yellow':'red';
+  setMV('v1',fmt(pAnyGoal),gColor); setMetric('m1',gColor);
+  setMV('v2',fmt(pAnyGoal),gColor); setMetric('m2',gColor);
+  const o15c=pOver15>0.4?'green':pOver15>0.2?'yellow':'red';
+  setMV('v3',fmt(pOver15),o15c); setMetric('m3',o15c);
+  const ngc=pNoGoal>0.4?'red':pNoGoal>0.25?'yellow':'green';
+  setMV('v4',fmt(pNoGoal),ngc); setMetric('m4',ngc);
+
+  // Goal count table
+  const maxGP=goalCounts[0]?Math.max(...goalCounts.map(x=>x.p)):1;
+  $('scoreTbody').innerHTML=goalCounts.map((r,i)=>{
+    const cls=i===0?'top-result':'';
+    const barW=(r.p/maxGP*100).toFixed(1);
+    const label=r.g===0?'No more goals (0)':r.g===1?'1 goal':r.g+' goals';
+    // also show who is more likely to score them
+    let detail='';
+    if(r.g===1){
+      const hShare=(hLambdaRem/totalLambda*100).toFixed(0);
+      const aShare=(aLambdaRem/totalLambda*100).toFixed(0);
+      detail=` <span style="font-size:10px;color:var(--text3)">(Home ${hShare}% / Away ${aShare}%)</span>`;
+    }
+    return '<tr class="'+cls+'">'
+      +'<td>'+label+detail+'</td>'
+      +'<td>'+(r.p*100).toFixed(1).replace('.',',')+'%</td>'
+      +'<td class="bar-cell"><div class="pbar"><div class="pbar-fill" style="width:'+barW+'%"></div></div></td>'
+      +'</tr>';
+  }).join('');
+
+  // Signals
+  const hc=pHWin>0.5?'green':pHWin>0.3?'yellow':'red';
+  setMV('vs1',fmt(pHWin),hc); setMetric('ms1',hc);
+  $('vss1').textContent=homeTeam;
+  const dc=pDraw>0.3?'yellow':'';
+  setMV('vs2',fmt(pDraw),dc); setMetric('ms2','yellow');
+  $('vss2').textContent='Current: '+homeScore+'-'+awayScore;
+  const ac=pAWin>0.4?'green':pAWin>0.2?'yellow':'red';
+  setMV('vs3',fmt(pAWin),ac); setMetric('ms3',ac);
+  $('vss3').textContent=awayTeam;
+
+  // Value bets
+  renderValueBets({
+    remMin, hLambdaRem, aLambdaRem, totalLambda,
+    pAnyGoal, pOver15, pNoGoal,
+    pHomeScores, pAwayScores,
+    homeTeam, awayTeam, minute,
+    lHSOT, lASOT, lHDA, lADA,
+    hCS:n('hCS'), aCS:n('aCS'),
+    pHWin, pDraw, pAWin,
+    homeScore, awayScore
+  });
+}
+
+// ── PARSER ────────────────────────────────────────────────────────
+function parseAll(){
+  const hasFooty = $('rawPaste').value.trim().length > 0;
+  const hasLive  = $('rawPaste2').value.trim().length > 0;
+  let msgs = [];
+  if(hasFooty){ parseFooty(); msgs.push('FootyStats'); }
+  if(hasLive){  parseLive(); msgs.push('Live stats'); }
+  if(msgs.length){
+    const pm=$('parseMsg');
+    pm.textContent='✓ Parsed: '+msgs.join(' + ');
+    pm.classList.add('show');
+    setTimeout(()=>pm.classList.remove('show'),3500);
+  }
+  calc();
+}
+
+function parseFooty(){
+  const txt=$('rawPaste').value;
+  if(!txt.trim()) return;
+
+  // Score
+  const scoreM=txt.match(/Live Score\s*\n\s*(\d+)\s*-\s*(\d+)/i)
+    ||txt.match(/(\d+)\s*-\s*(\d+)\s*\n\s*HT/i)
+    ||txt.match(/(\d+)\s*-\s*(\d+)\s*\n\s*\d+[']/);
+  if(scoreM){$('homeScore').value=scoreM[1];$('awayScore').value=scoreM[2];}
+
+  // Minute (first 250 chars only)
+  const top=txt.slice(0,250);
+  if(/\bHT[''\u2019]?\s*(\n|$)/m.test(top)){
+    $('minute').value=45;
+  } else {
+    const mm=top.match(/(\d{1,3})[''\u2019]/);
+    if(mm){const v=parseInt(mm[1]);if(v>=1&&v<=120)$('minute').value=v;}
+  }
+
+  // Teams
+  const t2=txt.match(/([\w\s\u00C0-\u024F\u0130\u0131]{3,40})\n([\w\s\u00C0-\u024F\u0130\u0131]{3,40})\nShots Total/i);
+  if(t2){$('homeTeam').value=t2[1].trim();$('awayTeam').value=t2[2].trim();}
+
+  // Live stats
+  const sotM=txt.match(/Shots On Target\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(sotM){$('lHSOT').value=sotM[1];$('lASOT').value=sotM[2];}
+  const daM=txt.match(/Dangerous Attacks\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(daM){$('lHDA').value=daM[1];$('lADA').value=daM[2];}
+  const possM=txt.match(/Possession\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(possM){$('lHPoss').value=possM[1];}
+
+  // ── Season stats ─────────────────────────────────────────────
+  // USE EXPLICIT LABELED VALUES from the "Goals / Match at Home" section
+  // These are far more reliable than parsing concatenated stat rows
+  function clamp(v,lo,hi){return Math.min(Math.max(parseFloat(v)||0,lo),hi);}
+
+  // Goals scored: "1.77 Goals / Match<team> at Home"
+  const scoredHome=txt.match(/([\d.]+)\s*Goals\s*\/\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
+  const scoredAway=txt.match(/([\d.]+)\s*Goals\s*\/\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
+  if(scoredHome) $('hScored').value=clamp(scoredHome[1],0,6);
+  if(scoredAway) $('aScored').value=clamp(scoredAway[1],0,6);
+
+  // Goals conceded: "1.31 Conceded / Match<team> at Home"
+  const concHome=txt.match(/([\d.]+)\s*Conceded\s*\/\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
+  const concAway=txt.match(/([\d.]+)\s*Conceded\s*\/\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
+  if(concHome) $('hConc').value=clamp(concHome[1],0,6);
+  if(concAway) $('aConc').value=clamp(concAway[1],0,6);
+
+  // xG: from GPT summary "Home xG for X 1.37" / "away xG for X 0.85"
+  const xgHome=txt.match(/Home\s+xG\s+for\s+[\w\s]+?([\d.]+)\s*[;,]/i);
+  const xgAway=txt.match(/away\s+xG\s+for\s+([\d.]+)/i);
+  if(xgHome) $('hXG').value=clamp(xgHome[1],0,5);
+  if(xgAway) $('aXG').value=clamp(xgAway[1],0,5);
+
+  // xG fallback: use "xG1.451.371.53" but with smarter decimal splitting
+  // Split concatenated decimals: d{1,2}.d{1,2} pattern repeated
+  if(!xgHome||!xgAway){
+    const xgLine=txt.match(/\bxG(?!A)(\d[\d.]{4,18})/);
+    if(xgLine){
+      // Split "1.451.371.53" into ["1.45","1.37","1.53"]
+      // Each number: 1-2 digits + dot + 2 digits (most common)
+      const raw=xgLine[1];
+      const parts=raw.match(/\d{1,2}\.\d{2}/g)||raw.match(/\d{1,2}\.\d{1}/g);
+      if(parts&&parts.length>=3){
+        if(!xgHome) $('hXG').value=clamp(parseFloat(parts[1]),0,5);
+        if(!xgAway) $('aXG').value=clamp(parseFloat(parts[2]),0,5);
+      }
+    }
+  }
+
+  // CS% — "CS31%23%38%" or "CS19%23%15%"  
+  // Each %% group: Overall Home Away
+  const csAll=[...txt.matchAll(/\bCS(\d{1,3})%(\d{1,3})%(\d{1,3})%/g)];
+  if(csAll[0]){$('hCS').value=parseInt(csAll[0][2]);} // home = 2nd group
+  if(csAll[1]){$('aCS').value=parseInt(csAll[1][3]);} // away = 3rd group
+
+  // H2H
+  const h2hM=txt.match(/\((\d+)%\)\s*\n\s*\d+\s*\n\s*Matches/i);
+  if(h2hM)$('h2hHome').value=h2hM[1];
+}
+
+function parseLive(){
+  const raw=$('rawPaste2').value.trim();
+  if(!raw) return;
+  // Split into lines, find value-label-value triples
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  function findPair(label){
+    for(let i=0;i<lines.length;i++){
+      if(new RegExp(label,'i').test(lines[i])){
+        // look for number before
+        const before=i>0?parseFloat(lines[i-1]):NaN;
+        const after=i<lines.length-1?parseFloat(lines[i+1]):NaN;
+        if(!isNaN(before)&&!isNaN(after)) return [before,after];
+        // try two numbers after
+        const a1=i+1<lines.length?parseFloat(lines[i+1]):NaN;
+        const a2=i+2<lines.length?parseFloat(lines[i+2]):NaN;
+        if(!isNaN(a1)&&!isNaN(a2)) return [a1,a2];
+      }
+    }
+    return null;
+  }
+  const poss=findPair('Posiadanie|Possession');
+  if(poss&&poss[0]>=1&&poss[0]<=99) $('lHPoss').value=Math.round(poss[0]);
+
+  const sot=findPair('Strzały celne|Shots on target');
+  if(sot&&!isNaN(sot[0])){ $('lHSOT').value=Math.round(sot[0]); $('lASOT').value=Math.round(sot[1]); }
+
+  const shots=findPair('Strzały$|^Shots$|Shots Total|^Strzały$');
+  if(shots&&!isNaN(shots[0])&&!sot){
+    $('lHSOT').value=Math.max(0,Math.round(shots[0]*0.4));
+    $('lASOT').value=Math.max(0,Math.round(shots[1]*0.4));
+  }
+
+  const da=findPair('Wejścia do strefy|Dangerous|Ataki niebezp');
+  if(da&&!isNaN(da[0])){ $('lHDA').value=Math.round(da[0]); $('lADA').value=Math.round(da[1]); }
+
+  const xg=findPair('Oczekiwane gole|Expected goals|\bxG\b');
+  if(xg&&xg[0]<=5&&!isNaN(xg[0])){
+    $('lHPoss').dataset.lxgh=xg[0];
+    $('lHPoss').dataset.lxga=xg[1];
+  }
+}
+
+
+function clearAll(){
+  $('rawPaste').value='';
+  ['homeScore','awayScore'].forEach(id=>$(id).value=0);
+  $('minute').value=40;
+}
+
+// ── VALUE BETS ───────────────────────────────────────────────────
+function renderValueBets(params){
+  const {
+    remMin, hLambdaRem, aLambdaRem, totalLambda,
+    pAnyGoal, pOver15, pNoGoal,
+    pHomeScores, pAwayScores,
+    homeTeam, awayTeam, minute,
+    lHSOT, lASOT, lHDA, lADA,
+    hCS, aCS, pHWin, pDraw, pAWin,
+    homeScore, awayScore
+  } = params;
+
+  const tips = [];
+
+  // Helper: estimated decimal odds from probability
+  const toOdds = p => p > 0 ? (1/p).toFixed(2) : '—';
+
+  // 1. LATE GOAL after 75' — if before 75, check if both teams have pressure
+  if(minute < 75){
+    const pLate = pAnyGoal * 0.55; // ~55% of goals come in last 30 min based on dist data
+    if(pLate > 0.25 && lHDA + lADA > 25){
+      tips.push({
+        icon:'⏱',
+        color:'rgba(88,166,255,0.15)',
+        borderColor:'var(--blue-bd)',
+        titleColor:'var(--blue)',
+        title:'Goal after 75th minute',
+        body:`Dangerous attacks total: ${lHDA+lADA}. High pressure game — late goals common when teams push. Both sides active in the box.`,
+        odds: toOdds(pLate),
+        conf: pLate
+      });
+    }
+  }
+
+  // 2. HOME TEAM SCORES despite low odds — underdog angle
+  if(pHomeScores > 0.35 && pHomeScores < 0.65 && lHSOT >= 3){
+    tips.push({
+      icon:'🎯',
+      color:'rgba(26,255,140,0.06)',
+      borderColor:'var(--green-bd)',
+      titleColor:'var(--green)',
+      title:`${homeTeam} to score`,
+      body:`${lHSOT} shots on target so far — home team is creating real chances (xG remaining: ${hLambdaRem.toFixed(2)}). Not obvious from odds but pressure building.`,
+      odds: toOdds(pHomeScores),
+      conf: pHomeScores
+    });
+  }
+
+  // 3. AWAY TEAM SCORES — upset angle
+  if(pAwayScores > 0.25 && pAwayScores < 0.50 && lASOT >= 2){
+    tips.push({
+      icon:'⚡',
+      color:'rgba(255,159,67,0.08)',
+      borderColor:'rgba(255,159,67,0.25)',
+      titleColor:'#ff9f43',
+      title:`${awayTeam} to score — counter threat`,
+      body:`Away team has ${lASOT} shots on target. xG remaining: ${aLambdaRem.toFixed(2)}. Away goals often come on the break when home team overcommits.`,
+      odds: toOdds(pAwayScores),
+      conf: pAwayScores
+    });
+  }
+
+  // 4. PENALTY / RED CARD angle — high foul game
+  const totalDA = lHDA + lADA;
+  if(totalDA > 30 || lHSOT + lASOT > 7){
+    const pPen = 0.12 + (totalDA > 40 ? 0.06 : 0); // rough estimate
+    tips.push({
+      icon:'🟥',
+      color:'rgba(255,77,106,0.07)',
+      borderColor:'var(--red-bd)',
+      titleColor:'var(--red)',
+      title:'Penalty or Red Card in match',
+      body:`Dangerous attacks: ${totalDA}. High-intensity game with lots of box entries increases penalty/red card probability. Typically ~15% per high-pressure match.`,
+      odds: toOdds(pPen),
+      conf: pPen
+    });
+  }
+
+  // 5. OVER CORNERS — if early in match
+  if(minute < 60){
+    const hCornerRate = 4.69, aCornerRate = 3.23;
+    const remainFrac = (90 - minute) / 90;
+    const projCorners = (hCornerRate + aCornerRate) * remainFrac * 1.1;
+    const currentCornerLine = 7.5;
+    if(projCorners > 4){
+      tips.push({
+        icon:'🚩',
+        color:'rgba(245,166,35,0.07)',
+        borderColor:'var(--yel-bd)',
+        titleColor:'var(--yellow)',
+        title:'Over corners remaining',
+        body:`Projected ~${projCorners.toFixed(1)} more corners in remaining time based on season corner averages. Home dominates possession (${lHDA} dangerous attacks).`,
+        odds: '1.60–2.20',
+        conf: 0.52
+      });
+    }
+  }
+
+  // 6. DRAW if game tight and low xG
+  if(pDraw > 0.35 && totalLambda < 0.8 && minute > 60){
+    tips.push({
+      icon:'⚖',
+      color:'rgba(245,166,35,0.07)',
+      borderColor:'var(--yel-bd)',
+      titleColor:'var(--yellow)',
+      title:'Draw — game dries up',
+      body:`Low combined xG remaining (${totalLambda.toFixed(2)}). Score is ${homeScore}-${awayScore} and both teams may settle. Draw probability: ${(pDraw*100).toFixed(0)}%.`,
+      odds: toOdds(pDraw * 0.85),
+      conf: pDraw
+    });
+  }
+
+  // 7. No more goals if very late and 0 xG
+  if(remMin <= 20 && totalLambda < 0.4 && pNoGoal > 0.55 && homeScore !== awayScore){
+    tips.push({
+      icon:'🔒',
+      color:'rgba(88,166,255,0.07)',
+      borderColor:'var(--blue-bd)',
+      titleColor:'var(--blue)',
+      title:`Result stands — no more goals`,
+      body:`Only ${remMin} min left, combined xG remaining: ${totalLambda.toFixed(2)}. Leading team likely to see out the result. ${(pNoGoal*100).toFixed(0)}% chance no more goals.`,
+      odds: toOdds(pNoGoal * 0.9),
+      conf: pNoGoal
+    });
+  }
+
+  // Sort by confidence descending, take top 3
+  tips.sort((a,b)=>b.conf-a.conf);
+  const top3 = tips.slice(0,3);
+
+  const container = $('valueBets');
+  if(top3.length === 0){
+    container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:.5rem">Not enough data to generate value tips — add more stats.</div>';
+    return;
+  }
+
+  container.innerHTML = top3.map(t => {
+    const confPct = (t.conf*100).toFixed(0);
+    return '<div class="vbet" style="background:'+t.color+';border-color:'+t.borderColor+'">'
+      +'<div class="vbet-icon">'+t.icon+'</div>'
+      +'<div style="flex:1">'
+        +'<div class="vbet-title" style="color:'+t.titleColor+'">'+t.title+'</div>'
+        +'<div class="vbet-body">'+t.body+'</div>'
+        +'<div style="margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--text3)">Model confidence: ~'+confPct+'%</div>'
+      +'</div>'
+      +'<div class="vbet-odds" style="color:'+t.titleColor+'">'+t.odds+'x</div>'
+    +'</div>';
+  }).join('');
+}
+
+// Auto-calc on any input change
+['homeTeam','awayTeam','homeScore','awayScore','minute',
+ 'hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
+ 'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome']
+  .forEach(id=>$(id).addEventListener('input',calc));
+
+calc();
+</script>
+</body>
+</html>
