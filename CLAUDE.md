@@ -9,15 +9,37 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - GitHub Pages: https://mplace-bz.github.io/Predator/
 - Jeden plik: index.html
 
-## Źródła danych
-- **FootyStats** — cała strona meczu (sezon, H2H, xG, corners, cards)
-- **Sofascore** — live stats po polsku (Posiadanie, xG, Strzały celne, Wejścia do strefy ataku)
+## Aktualna wersja: v2.2
 
-## Priorytety rozwoju
-1. Parser FootyStats + Sofascore PL — musi wyciągać dane niezawodnie
-2. Model — lepsze prawdopodobieństwa w końcówkach (75'+)
-3. Nowe rynki — BTTS, kartki, rzuty rożne
-4. Value bets — realne kursy bukmacherów
+## Red Card Model Logic
+When red card checkbox is active (rcActive) with team selection (home/away) and minute:
+
+1. **Lambda modifiers (xG) in calc():**
+   - Team with red card: lambda *= 0.55 (survival mode)
+   - Team with advantage: lambda *= 1.25 (more space)
+
+2. **Corners modifiers:**
+   - Total corners lambda *= 1.3 (advantage team pushes more)
+
+3. **Cards/penalty modifiers:**
+   - Penalty risk += 8% (advantage team enters box more)
+   - Second red card risk += 15% (desperation fouls)
+
+4. **Status card:** Purple with "RED CARD ACTIVE" label
+
+5. **Value bets:** Should auto-suggest advantage team to win/score, over corners
+
+## Źródła danych
+- **FootyStats** — cała strona meczu (sezon, H2H, xG, corners, cards) → parseFooty()
+- **Sofascore** — live stats po polsku (Posiadanie, xG, Strzały celne, Wejścia do strefy ataku) → parseLive()
+- Sofascore xG live trafia do globalnych liveXGH/liveXGA (momentum), NIE nadpisuje sezonowego hXG/aXG
+- parseLive() używa Math.max() — nie nadpisuje wyższych wartości niższymi (np. 2. połowa)
+- Dropdown okresu: Cały mecz / 1. połowa / 2. połowa
+
+## Następne zadania
+1. Więcej value betów — rozszerzyć renderValueBets() o nowe sygnały
+2. Yellow cards parser + betting market
+3. Matchday form (last 5 games) parser
 
 ## Styl kodu
 - Komentarze po polsku lub angielsku

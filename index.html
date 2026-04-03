@@ -31,6 +31,9 @@
   --blue:   #58a6ff;
   --blue-bg:rgba(88,166,255,0.08);
   --blue-bd:rgba(88,166,255,0.22);
+  --purple: #c084fc;
+  --purple-bg:rgba(192,132,252,0.08);
+  --purple-bd:rgba(192,132,252,0.25);
   --mono:   'JetBrains Mono', monospace;
   --sans:   'Inter', sans-serif;
 }
@@ -125,11 +128,13 @@ hr{border:none;border-top:1px solid var(--border);margin:1rem 0;}
 .status-card.likely-goal{background:var(--green3);border-color:var(--green-bd);}
 .status-card.unlikely{background:var(--red-bg);border-color:var(--red-bd);}
 .status-card.neutral{background:var(--yel-bg);border-color:var(--yel-bd);}
+.status-card.red-card-active{background:var(--purple-bg);border-color:var(--purple-bd);}
 .st-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
 .st-title{font-size:15px;font-weight:700;}
 .likely-goal .st-title{color:var(--green);}
 .unlikely .st-title{color:var(--red);}
 .neutral .st-title{color:var(--yellow);}
+.red-card-active .st-title{color:var(--purple);}
 .st-body{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.6;}
 
 /* METRIC CARD */
@@ -185,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.1</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.2</div>
 </div>
 
 <!-- PASTE -->
@@ -218,6 +223,26 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="min-wrap">
     <input type="number" class="min-inp" id="minute" value="1" min="1" max="120">
     <span class="min-lbl">' played</span>
+  </div>
+</div>
+
+<!-- RED CARD -->
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.7rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
+  <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--red);">
+    <input type="checkbox" id="rcActive" style="accent-color:var(--red);width:16px;height:16px;cursor:pointer;">
+    Red Card in match
+  </label>
+  <div style="display:flex;align-items:center;gap:.6rem;opacity:0.4;" id="rcOptions">
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);">
+      <input type="radio" name="rcWho" value="home" id="rcHome" checked style="accent-color:var(--blue);cursor:pointer;"> Home
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:#ff9f43;">
+      <input type="radio" name="rcWho" value="away" id="rcAway" style="accent-color:#ff9f43;cursor:pointer;"> Away
+    </label>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <input type="number" id="rcMinute" value="45" min="1" max="120" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--red);font-family:var(--mono);font-size:12px;padding:4px 6px;width:50px;text-align:center;">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">' red card</span>
+    </div>
   </div>
 </div>
 
@@ -522,6 +547,20 @@ function calc(){
     aLambdaRem=aLambdaRem*0.7+totalLambda*aMom*0.3;
   }
 
+  // Red card adjustment
+  const rcActive=$('rcActive').checked;
+  const rcHome=$('rcHome').checked;
+  const rcMinute=rcActive?parseInt($('rcMinute').value)||45:0;
+  if(rcActive){
+    if(rcHome){
+      hLambdaRem*=0.55;
+      aLambdaRem*=1.25;
+    } else {
+      aLambdaRem*=0.55;
+      hLambdaRem*=1.25;
+    }
+  }
+
   // H2H slight nudge
   if(h2hHome>0.5){
     const nudge=(h2hHome-0.5)*0.1;
@@ -590,7 +629,8 @@ function calc(){
   // Corners hero — best line with >60%
   const hCornS_h=n('hCornSeason'), aCornS_h=n('aCornSeason');
   const curCorn_h=n('lHCorn')+n('lACorn');
-  const cornLam_h=(hCornS_h+aCornS_h)*remFrac;
+  let cornLam_h=(hCornS_h+aCornS_h)*remFrac;
+  if(rcActive) cornLam_h*=1.3; // team with advantage pushes more corners
   let bestCornLine=null,bestCornP=0;
   if(hCornS_h+aCornS_h>0){
     [10.5,9.5,8.5,7.5].forEach(line=>{
@@ -603,7 +643,9 @@ function calc(){
   // Penalty chance
   const totalDA_h=lHDA+lADA;
   const totalSOT_h=lHSOT+lASOT;
-  const pPen=Math.min(0.08+(totalDA_h>30?0.06:totalDA_h>20?0.03:0)+(totalSOT_h>8?0.04:totalSOT_h>5?0.02:0),0.35);
+  const rcPenBonus=rcActive?0.08:0;
+  const rcRedBonus=rcActive?0.15:0;
+  const pPen=Math.min(0.08+rcPenBonus+(totalDA_h>30?0.06:totalDA_h>20?0.03:0)+(totalSOT_h>8?0.04:totalSOT_h>5?0.02:0),0.40);
 
   function heroCard(label,value,sub,prob){
     const cls=prob>0.65?'green':prob>0.45?'yellow':'red';
@@ -646,7 +688,13 @@ function calc(){
 
   // Status
   let statusCls,stIcon,stTitle,stBody;
-  if(pAnyGoal>0.7){
+  const advTeam=rcHome?awayTeam:homeTeam;
+  const disTeam=rcHome?homeTeam:awayTeam;
+  if(rcActive){
+    statusCls='red-card-active';stIcon='&#9646;';
+    stTitle='RED CARD ACTIVE';
+    stBody=`${disTeam} down to 10 men (red card ${rcMinute}'). ${advTeam} with numerical advantage — lambda boosted 1.25x. Penalty risk +8%, corners +30%.`;
+  } else if(pAnyGoal>0.7){
     statusCls='likely-goal';stIcon='&#9889;';
     stTitle='Goal Expected';
     stBody=`${fmt(pAnyGoal)} chance of at least one more goal in ${remMin} remaining minutes. `+
@@ -1146,6 +1194,15 @@ restoreFields();
 
 // Auto-calc on any input change + save
 fieldIds.forEach(id=>$(id).addEventListener('input',()=>{saveFields();calc();}));
+
+// Red card controls
+$('rcActive').addEventListener('change',()=>{
+  $('rcOptions').style.opacity=$('rcActive').checked?'1':'0.4';
+  calc();
+});
+$('rcHome').addEventListener('change',calc);
+$('rcAway').addEventListener('change',calc);
+$('rcMinute').addEventListener('input',calc);
 
 calc();
 </script>
