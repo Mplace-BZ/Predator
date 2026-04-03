@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.2</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.3</div>
 </div>
 
 <!-- PASTE -->
@@ -399,6 +399,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 const $=id=>document.getElementById(id);
 const n=id=>parseFloat($(id).value)||0;
 const s=id=>$(id).value.trim();
+let liveXGH=0, liveXGA=0;
 
 // ── POISSON ──────────────────────────────────────────────────────
 function poisson(lambda,k){
@@ -450,14 +451,19 @@ function calc(){
   let hLambdaRem=hLambda90*remFrac;
   let aLambdaRem=aLambda90*remFrac;
 
-  // Live momentum adjustment (dangerous attacks ratio)
+  // Live momentum adjustment (dangerous attacks + shots + live xG)
   const totalDA=lHDA+lADA;
   const totalSOT=lHSOT+lASOT;
-  if(totalDA>0&&minute>=10){
-    const hDAShare=lHDA/totalDA;
-    const aDAShare=lADA/totalDA;
-    // blend 30% live momentum
-    const hMom=(hDAShare*0.5+(totalSOT>0?lHSOT/totalSOT:0.5)*0.5);
+  const totalLiveXG=liveXGH+liveXGA;
+  if((totalDA>0||totalLiveXG>0)&&minute>=10){
+    // Build momentum score from available signals
+    let hMom=0.5;
+    let signals=0;
+    if(totalDA>0){ hMom+=(lHDA/totalDA-0.5)*0.5; signals++; }
+    if(totalSOT>0){ hMom+=(lHSOT/totalSOT-0.5)*0.3; signals++; }
+    if(totalLiveXG>0){ hMom+=(liveXGH/totalLiveXG-0.5)*0.4; signals++; }
+    if(signals>1) hMom=0.5+(hMom-0.5)/signals*signals; // keep weighted sum
+    hMom=Math.max(0.1,Math.min(0.9,hMom));
     const aMom=1-hMom;
     const totalLambda=hLambdaRem+aLambdaRem;
     hLambdaRem=hLambdaRem*0.7+totalLambda*hMom*0.3;
@@ -728,11 +734,11 @@ function parseLive(){
   const poss=findTriple('Posiadanie piłki|Possession');
   if(poss&&poss[0]>=1&&poss[0]<=99) $('lHPoss').value=Math.round(poss[0]);
 
-  // xG → wpisz do hXG i aXG
+  // xG live → osobne zmienne (nie nadpisuj sezonowego hXG/aXG)
   const xg=findTriple('Oczekiwane gole|Expected goals|xG');
   if(xg&&xg[0]<=5&&!isNaN(xg[0])){
-    $('hXG').value=xg[0];
-    $('aXG').value=xg[1];
+    liveXGH=xg[0];
+    liveXGA=xg[1];
   }
 
   // Strzały celne
@@ -761,6 +767,7 @@ function clearAll(){
   $('rawPaste').value='';
   ['homeScore','awayScore'].forEach(id=>$(id).value=0);
   $('minute').value=40;
+  liveXGH=0; liveXGA=0;
 }
 
 // ── VALUE BETS ───────────────────────────────────────────────────
