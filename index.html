@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.3</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.4</div>
 </div>
 
 <!-- PASTE -->
@@ -248,92 +248,6 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- HERO TILES -->
 <div class="g3" id="heroTiles" style="margin-bottom:1rem"></div>
-
-<!-- INPUTS -->
-<section>
-  <div class="sl">Season Stats</div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-t home">Home Team — Season (Home)</div>
-      <div class="g2" style="gap:.6rem">
-        <div class="field"><label>xG per game (home) <span class="tip" data-tip="Expected Goals scored at home per match this season">?</span></label>
-          <div class="iw"><input type="number" id="hXG" value="0" step="0.01"><span class="u">xG</span></div></div>
-        <div class="field"><label>Goals scored/game (home)</label>
-          <div class="iw"><input type="number" id="hScored" value="0" step="0.01"><span class="u">avg</span></div></div>
-        <div class="field"><label>Goals conceded/game (home)</label>
-          <div class="iw"><input type="number" id="hConc" value="0" step="0.01"><span class="u">avg</span></div></div>
-        <div class="field"><label>Home clean sheet %</label>
-          <div class="iw"><input type="number" id="hCS" value="0" step="1"><span class="u">%</span></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-t away">Away Team — Season (Away)</div>
-      <div class="g2" style="gap:.6rem">
-        <div class="field"><label>xG per game (away) <span class="tip" data-tip="Expected Goals scored away from home per match this season">?</span></label>
-          <div class="iw"><input type="number" id="aXG" value="0" step="0.01"><span class="u">xG</span></div></div>
-        <div class="field"><label>Goals scored/game (away)</label>
-          <div class="iw"><input type="number" id="aScored" value="0" step="0.01"><span class="u">avg</span></div></div>
-        <div class="field"><label>Goals conceded/game (away)</label>
-          <div class="iw"><input type="number" id="aConc" value="0" step="0.01"><span class="u">avg</span></div></div>
-        <div class="field"><label>Away clean sheet %</label>
-          <div class="iw"><input type="number" id="aCS" value="0" step="1"><span class="u">%</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="sl">Live Match Stats (current)</div>
-  <div class="g3">
-    <div class="card">
-      <div class="card-t live">Shots</div>
-      <div class="field"><label>Home shots on target</label>
-        <div class="iw"><input type="number" id="lHSOT" value="0" min="0"><span class="u">shots</span></div></div>
-      <div class="field"><label>Away shots on target</label>
-        <div class="iw"><input type="number" id="lASOT" value="0" min="0"><span class="u">shots</span></div></div>
-    </div>
-    <div class="card">
-      <div class="card-t live">Attacks</div>
-      <div class="field"><label>Home dangerous attacks</label>
-        <div class="iw"><input type="number" id="lHDA" value="0" min="0"><span class="u"></span></div></div>
-      <div class="field"><label>Away dangerous attacks</label>
-        <div class="iw"><input type="number" id="lADA" value="0" min="0"><span class="u"></span></div></div>
-    </div>
-    <div class="card">
-      <div class="card-t live">Possession & H2H</div>
-      <div class="field"><label>Home possession %</label>
-        <div class="iw"><input type="number" id="lHPoss" value="50" min="0" max="100"><span class="u">%</span></div></div>
-      <div class="field"><label>H2H win rate (home team %)</label>
-        <div class="iw"><input type="number" id="h2hHome" value="50" min="0" max="100"><span class="u">%</span></div></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="sl">Corners</div>
-  <div class="g4">
-    <div class="card">
-      <div class="card-t home">Home corners/match</div>
-      <div class="field"><label>Season avg (home)</label>
-        <div class="iw"><input type="number" id="hCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
-    </div>
-    <div class="card">
-      <div class="card-t away">Away corners/match</div>
-      <div class="field"><label>Season avg (away)</label>
-        <div class="iw"><input type="number" id="aCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
-    </div>
-    <div class="card">
-      <div class="card-t live">Home corners now</div>
-      <div class="field"><label>Current match</label>
-        <div class="iw"><input type="number" id="lHCorn" value="0" min="0"><span class="u">corners</span></div></div>
-    </div>
-    <div class="card">
-      <div class="card-t live">Away corners now</div>
-      <div class="field"><label>Current match</label>
-        <div class="iw"><input type="number" id="lACorn" value="0" min="0"><span class="u">corners</span></div></div>
-    </div>
-  </div>
-</section>
 
 <hr>
 
@@ -473,6 +387,92 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
   <div id="valueBets" style="display:flex;flex-direction:column;gap:.55rem;"></div>
 </div>
+
+<!-- INPUTS (bottom) -->
+<section>
+  <div class="sl">Season Stats</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-t home">Home Team — Season (Home)</div>
+      <div class="g2" style="gap:.6rem">
+        <div class="field"><label>xG per game (home) <span class="tip" data-tip="Expected Goals scored at home per match this season">?</span></label>
+          <div class="iw"><input type="number" id="hXG" value="0" step="0.01"><span class="u">xG</span></div></div>
+        <div class="field"><label>Goals scored/game (home)</label>
+          <div class="iw"><input type="number" id="hScored" value="0" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Goals conceded/game (home)</label>
+          <div class="iw"><input type="number" id="hConc" value="0" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Home clean sheet %</label>
+          <div class="iw"><input type="number" id="hCS" value="0" step="1"><span class="u">%</span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t away">Away Team — Season (Away)</div>
+      <div class="g2" style="gap:.6rem">
+        <div class="field"><label>xG per game (away) <span class="tip" data-tip="Expected Goals scored away from home per match this season">?</span></label>
+          <div class="iw"><input type="number" id="aXG" value="0" step="0.01"><span class="u">xG</span></div></div>
+        <div class="field"><label>Goals scored/game (away)</label>
+          <div class="iw"><input type="number" id="aScored" value="0" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Goals conceded/game (away)</label>
+          <div class="iw"><input type="number" id="aConc" value="0" step="0.01"><span class="u">avg</span></div></div>
+        <div class="field"><label>Away clean sheet %</label>
+          <div class="iw"><input type="number" id="aCS" value="0" step="1"><span class="u">%</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sl">Live Match Stats (current)</div>
+  <div class="g3">
+    <div class="card">
+      <div class="card-t live">Shots</div>
+      <div class="field"><label>Home shots on target</label>
+        <div class="iw"><input type="number" id="lHSOT" value="0" min="0"><span class="u">shots</span></div></div>
+      <div class="field"><label>Away shots on target</label>
+        <div class="iw"><input type="number" id="lASOT" value="0" min="0"><span class="u">shots</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Attacks</div>
+      <div class="field"><label>Home dangerous attacks</label>
+        <div class="iw"><input type="number" id="lHDA" value="0" min="0"><span class="u"></span></div></div>
+      <div class="field"><label>Away dangerous attacks</label>
+        <div class="iw"><input type="number" id="lADA" value="0" min="0"><span class="u"></span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Possession & H2H</div>
+      <div class="field"><label>Home possession %</label>
+        <div class="iw"><input type="number" id="lHPoss" value="50" min="0" max="100"><span class="u">%</span></div></div>
+      <div class="field"><label>H2H win rate (home team %)</label>
+        <div class="iw"><input type="number" id="h2hHome" value="50" min="0" max="100"><span class="u">%</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sl">Corners</div>
+  <div class="g4">
+    <div class="card">
+      <div class="card-t home">Home corners/match</div>
+      <div class="field"><label>Season avg (home)</label>
+        <div class="iw"><input type="number" id="hCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t away">Away corners/match</div>
+      <div class="field"><label>Season avg (away)</label>
+        <div class="iw"><input type="number" id="aCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Home corners now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lHCorn" value="0" min="0"><span class="u">corners</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Away corners now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lACorn" value="0" min="0"><span class="u">corners</span></div></div>
+    </div>
+  </div>
+</section>
 
 <footer>Live Match Predictor &mdash; Poisson xG Model &mdash; Not financial advice</footer>
 </div>
