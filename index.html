@@ -185,14 +185,21 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.1</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.2</div>
 </div>
 
 <!-- PASTE -->
 <div class="paste-card">
   <div class="paste-label">FootyStats — Season &amp; H2H data</div>
   <textarea id="rawPaste" style="min-height:80px" placeholder="Paste full FootyStats block (score, minute, xG, H2H, season stats...)"></textarea>
-  <div class="paste-label" style="color:#ff9f43;margin-top:.85rem">FlashScore / Sofascore — Live in-match stats</div>
+  <div style="display:flex;align-items:center;gap:.6rem;margin-top:.85rem">
+    <div class="paste-label" style="color:#ff9f43;margin-bottom:0">FlashScore / Sofascore — Live in-match stats</div>
+    <select id="statsPeriod" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:var(--mono);font-size:10px;padding:4px 8px;cursor:pointer;">
+      <option value="full">Caly mecz</option>
+      <option value="1h">1. polowa</option>
+      <option value="2h">2. polowa</option>
+    </select>
+  </div>
   <textarea id="rawPaste2" style="min-height:80px" placeholder="Wklej dane live: Posiadanie piłki, xG, Strzały celne, Rzuty rożne... (format PL lub EN)"></textarea>
   <div style="display:flex;align-items:center;gap:.6rem;margin-top:.6rem;flex-wrap:wrap">
     <button class="parse-btn" onclick="parseAll()">&#9654; Parse Data</button>
