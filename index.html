@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.0</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.1</div>
 </div>
 
 <!-- PASTE -->
@@ -222,38 +222,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </div>
 
 <!-- HERO TILES -->
-<div class="g3" id="heroTiles" style="margin-bottom:1rem">
-  <div class="metric c-green" id="ht1">
-    <div class="ml">Any goal remaining</div>
-    <div class="mv green" id="htGoal">—</div>
-    <div class="ms" id="htGoalSub">P(≥1 goal in rem. time)</div>
-  </div>
-  <div class="metric c-blue" id="ht2">
-    <div class="ml">Home scores</div>
-    <div class="mv blue" id="htHome">—</div>
-    <div class="ms" id="htHomeSub">P(home ≥1 goal)</div>
-  </div>
-  <div class="metric" id="ht3" style="border-color:rgba(255,159,67,0.25);">
-    <div class="ml">Away scores</div>
-    <div class="mv" id="htAway" style="color:#ff9f43;">—</div>
-    <div class="ms" id="htAwaySub">P(away ≥1 goal)</div>
-  </div>
-  <div class="metric" id="ht4">
-    <div class="ml">Most likely final score</div>
-    <div class="mv green" id="htScore">—</div>
-    <div class="ms" id="htScoreSub">—</div>
-  </div>
-  <div class="metric" id="ht5">
-    <div class="ml">Corners over</div>
-    <div class="mv yellow" id="htCorners">—</div>
-    <div class="ms" id="htCornersSub">Best line >60%</div>
-  </div>
-  <div class="metric" id="ht6">
-    <div class="ml">Penalty chance</div>
-    <div class="mv red" id="htPen">—</div>
-    <div class="ms" id="htPenSub">Est. from match intensity</div>
-  </div>
-</div>
+<div class="g3" id="heroTiles" style="margin-bottom:1rem"></div>
 
 <!-- INPUTS -->
 <section>
@@ -615,54 +584,55 @@ function calc(){
   // P(team scores at least 1 goal in remaining time) = 1 - P(team scores 0)
   const pHomeScores=1-poisson(hLambdaRem,0);
   const pAwayScores=1-poisson(aLambdaRem,0);
-  // Hero tiles
-  const htGoalC=pAnyGoal>0.65?'green':pAnyGoal>0.4?'yellow':'red';
-  setMV('htGoal',fmt(pAnyGoal),htGoalC); setMetric('ht1',htGoalC);
-  $('htGoalSub').textContent=remMin+' min left, xG rem: '+fmtN(totalLambda);
-
-  $('htHome').textContent=fmt(pHomeScores);
-  $('htHomeSub').textContent=homeTeam||'Home';
-  $('htAway').textContent=fmt(pAwayScores);
-  $('htAwaySub').textContent=awayTeam||'Away';
-
-  // Top 1 final score
+  // Hero tiles (corner-card style)
   const topScore=results.slice().sort((a,b)=>b.p-a.p)[0];
-  if(topScore){
-    $('htScore').textContent=topScore.h+' - '+topScore.a;
-    $('htScoreSub').textContent=fmt(topScore.p)+' probability';
-  }
 
   // Corners hero — best line with >60%
   const hCornS_h=n('hCornSeason'), aCornS_h=n('aCornSeason');
   const curCorn_h=n('lHCorn')+n('lACorn');
   const cornLam_h=(hCornS_h+aCornS_h)*remFrac;
+  let bestCornLine=null,bestCornP=0;
   if(hCornS_h+aCornS_h>0){
-    let bestLine=null,bestP=0;
     [10.5,9.5,8.5,7.5].forEach(line=>{
       const need=Math.max(0,line-curCorn_h);
       const p=1-poissonCum(cornLam_h,Math.floor(need));
-      if(p>0.60&&line>=(bestLine||0)){bestLine=line;bestP=p;}
+      if(p>0.60&&line>=(bestCornLine||0)){bestCornLine=line;bestCornP=p;}
     });
-    if(bestLine){
-      const cc=bestP>0.65?'green':'yellow';
-      setMV('htCorners','Over '+bestLine.toFixed(1),cc); setMetric('ht5',cc);
-      $('htCornersSub').textContent=fmt(bestP)+' — '+curCorn_h+' now';
-    } else {
-      setMV('htCorners','—','red'); setMetric('ht5','red');
-      $('htCornersSub').textContent='No line >60%';
-    }
   }
 
-  // Penalty chance from match intensity
+  // Penalty chance
   const totalDA_h=lHDA+lADA;
   const totalSOT_h=lHSOT+lASOT;
-  const basePen=0.08;
-  const daNudge=totalDA_h>30?0.06:totalDA_h>20?0.03:0;
-  const sotNudge=totalSOT_h>8?0.04:totalSOT_h>5?0.02:0;
-  const pPen=Math.min(basePen+daNudge+sotNudge,0.35);
-  const penC=pPen>0.15?'yellow':pPen>0.10?'yellow':'red';
-  setMV('htPen',fmt(pPen),penC); setMetric('ht6',penC);
-  $('htPenSub').textContent='DA: '+totalDA_h+', SOT: '+totalSOT_h;
+  const pPen=Math.min(0.08+(totalDA_h>30?0.06:totalDA_h>20?0.03:0)+(totalSOT_h>8?0.04:totalSOT_h>5?0.02:0),0.35);
+
+  function heroCard(label,value,sub,prob){
+    const cls=prob>0.65?'green':prob>0.45?'yellow':'red';
+    const colors={
+      green:{bg:'var(--green3)',bd:'var(--green-bd)',fg:'var(--green)'},
+      yellow:{bg:'var(--yel-bg)',bd:'var(--yel-bd)',fg:'var(--yellow)'},
+      red:{bg:'var(--red-bg)',bd:'var(--red-bd)',fg:'var(--red)'}
+    }[cls];
+    return '<div style="background:'+colors.bg+';border:1px solid '+colors.bd+';border-radius:10px;padding:1rem;text-align:center;">'
+      +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colors.fg+';margin-bottom:.4rem;">'+label+'</div>'
+      +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colors.fg+';line-height:1;">'+value+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+sub+'</div>'
+    +'</div>';
+  }
+  function heroCardFixed(label,value,sub,bg,bd,fg){
+    return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:10px;padding:1rem;text-align:center;">'
+      +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+fg+';margin-bottom:.4rem;">'+label+'</div>'
+      +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+fg+';line-height:1;">'+value+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+sub+'</div>'
+    +'</div>';
+  }
+
+  $('heroTiles').innerHTML=
+    heroCard('Any goal remaining',fmt(pAnyGoal),remMin+' min left, xG: '+fmtN(totalLambda),pAnyGoal)
+    +heroCardFixed('Home scores',fmt(pHomeScores),homeTeam||'Home','var(--blue-bg)','var(--blue-bd)','var(--blue)')
+    +heroCardFixed('Away scores',fmt(pAwayScores),awayTeam||'Away','rgba(255,159,67,0.08)','rgba(255,159,67,0.25)','#ff9f43')
+    +(topScore?heroCard('Most likely final score',topScore.h+' - '+topScore.a,fmt(topScore.p)+' probability',topScore.p*3):heroCard('Most likely final score','—','—',0))
+    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now',bestCornP):heroCard('Corners over','—','No data / no line >60%',0))
+    +heroCard('Penalty chance',fmt(pPen),'DA: '+totalDA_h+', SOT: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3);
 
   $('gpHomePct').textContent=fmt(pHomeScores);
   $('gpAwayPct').textContent=fmt(pAwayScores);
