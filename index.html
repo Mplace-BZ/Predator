@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.4</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.5</div>
 </div>
 
 <!-- PASTE -->
@@ -753,18 +753,18 @@ function parseLive(){
     liveXGA=xg[1];
   }
 
-  // Strzały celne
+  // Strzały celne — nie nadpisuj niższymi wartościami (np. 2. połowa < cały mecz)
   const sot=findTriple('Strzały celne|Shots on target');
   if(sot&&!isNaN(sot[0])){
-    $('lHSOT').value=Math.round(sot[0]);
-    $('lASOT').value=Math.round(sot[1]);
+    $('lHSOT').value=Math.max(n('lHSOT'),Math.round(sot[0]));
+    $('lASOT').value=Math.max(n('lASOT'),Math.round(sot[1]));
   }
 
-  // Wejścia do strefy ataku
+  // Wejścia do strefy ataku — j.w.
   const da=findTriple('Wejścia do strefy|Dangerous|Ataki niebezp');
   if(da&&!isNaN(da[0])){
-    $('lHDA').value=Math.round(da[0]);
-    $('lADA').value=Math.round(da[1]);
+    $('lHDA').value=Math.max(n('lHDA'),Math.round(da[0]));
+    $('lADA').value=Math.max(n('lADA'),Math.round(da[1]));
   }
 }
 
