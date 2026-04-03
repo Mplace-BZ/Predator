@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.1</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.2</div>
 </div>
 
 <!-- PASTE -->
@@ -278,6 +278,12 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <div style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:10px;color:var(--green);font-family:var(--mono);">BTTS</span>
       <input type="number" id="oddBTTS" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="width:1px;height:20px;background:var(--border2);"></div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--purple);font-family:var(--mono);">Bankroll</span>
+      <input type="number" id="bankroll" value="1000" step="100" min="0" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--purple);font-family:var(--mono);font-size:12px;padding:4px 6px;width:75px;text-align:center;">
+      <span style="font-size:10px;color:var(--text3);font-family:var(--mono);">zl</span>
     </div>
   </div>
 </div>
@@ -414,6 +420,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="sl" style="margin:1.1rem 0 .6rem">Corners Betting</div>
   <div class="g4" id="cornersGrid" style="margin-bottom:.85rem"></div>
 
+  <!-- YELLOW CARDS BETTING -->
+  <div class="sl" style="margin:1.1rem 0 .6rem">Yellow Cards Betting</div>
+  <div class="g2" id="cardsGrid" style="margin-bottom:.85rem"></div>
+
   <!-- EDGE% TABLE -->
   <div class="sl" style="margin:1.1rem 0 .6rem">Edge% — Model vs Bookmaker</div>
   <div id="edgeGrid" style="margin-bottom:.85rem"></div>
@@ -505,6 +515,32 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="card-t live">Away corners now</div>
       <div class="field"><label>Current match</label>
         <div class="iw"><input type="number" id="lACorn" value="0" min="0"><span class="u">corners</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sl">Yellow Cards</div>
+  <div class="g4">
+    <div class="card">
+      <div class="card-t home">Home cards/match</div>
+      <div class="field"><label>Season avg</label>
+        <div class="iw"><input type="number" id="hYCSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t away">Away cards/match</div>
+      <div class="field"><label>Season avg</label>
+        <div class="iw"><input type="number" id="aYCSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Home cards now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lHYC" value="0" min="0"><span class="u">cards</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Away cards now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lAYC" value="0" min="0"><span class="u">cards</span></div></div>
     </div>
   </div>
 </section>
@@ -893,6 +929,24 @@ function calc(){
   });
 
   // Edge% — model vs bookmaker
+  // Yellow cards
+  const hYCS=n('hYCSeason'), aYCS=n('aYCSeason');
+  const lHYC=n('lHYC'), lAYC=n('lAYC');
+  const currentCards=lHYC+lAYC;
+  const cardsGrid=$('cardsGrid');
+  if(hYCS+aYCS>0){
+    const cardsLambdaRem=(hYCS+aYCS)*remFrac*(rcActive?1.2:1);
+    const cardLines=[3.5,4.5];
+    cardsGrid.innerHTML=cardLines.map(line=>{
+      const need=Math.max(0,line-currentCards);
+      const pOver=1-poissonCum(cardsLambdaRem,Math.floor(need));
+      const sub=currentCards+' cards now, ~'+cardsLambdaRem.toFixed(1)+' more expected';
+      return heroCard('Over '+line.toFixed(1)+' cards',fmt(pOver),sub,pOver);
+    }).join('');
+  } else {
+    cardsGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season card averages to see predictions.</div>';
+  }
+
   const pUnder25=poissonCum(totalLambda,2);
   const pBTTSfull=pHomeScores*pAwayScores;
   const markets=[
@@ -904,6 +958,7 @@ function calc(){
     {label:'BTTS Yes',model:pBTTSfull,odds:n('oddBTTS'),color:'var(--green)'},
   ];
   const edgeGrid=$('edgeGrid');
+  const bankroll=n('bankroll')||1000;
   const hasOdds=markets.some(m=>m.odds>=1.01);
   if(hasOdds){
     edgeGrid.innerHTML='<div class="g3">'+markets.filter(m=>m.odds>=1.01).map(m=>{
@@ -911,6 +966,11 @@ function calc(){
       const edge=m.model-implied;
       const edgePct=(edge*100).toFixed(1);
       const rating=edge>0.10?'STRONG':edge>0.05?'VALUE':edge>0?'SLIM':'NO EDGE';
+      // Kelly: fractional (25%) capped at 5% bankroll
+      const kellyFull=edge>0?(m.model*m.odds-1)/(m.odds-1):0;
+      const kellyFrac=Math.min(kellyFull*0.25,0.05);
+      const stake=edge>0?Math.round(bankroll*kellyFrac):0;
+      const kellyLine=edge>0?'<div style="font-family:var(--mono);font-size:10px;color:var(--purple);margin-top:4px;">Stake: '+stake+' zl ('+(kellyFrac*100).toFixed(1)+'%)</div>':'';
       const cls=edge>0.05?'green':edge>0?'yellow':'red';
       const bg=cls==='green'?'var(--green3)':cls==='yellow'?'var(--yel-bg)':'var(--red-bg)';
       const bd=cls==='green'?'var(--green-bd)':cls==='yellow'?'var(--yel-bd)':'var(--red-bd)';
@@ -920,6 +980,7 @@ function calc(){
         +'<div style="font-family:var(--mono);font-size:24px;font-weight:700;color:'+fg+';line-height:1;">'+edgePct+'%</div>'
         +'<div style="font-size:10px;color:var(--text2);margin-top:.3rem;">Model: '+fmt(m.model)+' | Implied: '+fmt(implied)+'</div>'
         +'<div style="font-family:var(--mono);font-size:9px;color:'+fg+';margin-top:3px;">'+rating+' @ '+m.odds.toFixed(2)+'</div>'
+        +kellyLine
       +'</div>';
     }).join('')+'</div>';
   } else {
@@ -1049,6 +1110,16 @@ function parseFooty(){
     if(line>=7&&line<=12) cornHist[line]=parseInt(m[1]);
   });
 
+  // Yellow cards from FootyStats: "Yellow Cards\n3\n2"
+  const ycM=txt.match(/Yellow\s*Cards?\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(ycM){$('lHYC').value=ycM[1];$('lAYC').value=ycM[2];}
+
+  // Yellow cards season avg: "X.XX Cards Per Match at Home/Away"
+  const ycHome=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
+  const ycAway=txt.match(/([\d.]+)\s*Cards?\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
+  if(ycHome) $('hYCSeason').value=clamp(ycHome[1],0,10);
+  if(ycAway) $('aYCSeason').value=clamp(ycAway[1],0,10);
+
   // Red card from FootyStats: "Red Cards\n1\n0" or "Red Card\n0\n1"
   const rcM=txt.match(/Red\s*Cards?\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
   if(rcM&&(parseInt(rcM[1])>0||parseInt(rcM[2])>0)){
@@ -1123,6 +1194,13 @@ function parseLive(){
     $('lACorn').value=Math.max(n('lACorn'),Math.round(corn[1]));
   }
 
+  // Yellow cards: "Zolte kartki\n3\n2" or "Yellow cards\n3\n2"
+  const yc=findTriple('Żółte kartki|Zolte kartki|Yellow cards');
+  if(yc&&!isNaN(yc[0])){
+    $('lHYC').value=Math.max(n('lHYC'),Math.round(yc[0]));
+    $('lAYC').value=Math.max(n('lAYC'),Math.round(yc[1]));
+  }
+
   // Red cards: "Czerwone kartki\n1\n0" or "Red cards\n0\n1"
   const rc=findTriple('Czerwone kartki|Red cards');
   if(rc&&(rc[0]>0||rc[1]>0)){
@@ -1143,7 +1221,9 @@ function clearAll(){
   $('minute').value=1;
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
    'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn',
-   'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS'].forEach(id=>$(id).value=0);
+   'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
+   'hYCSeason','aYCSeason','lHYC','lAYC'].forEach(id=>$(id).value=0);
+  $('bankroll').value=1000;
   $('lHPoss').value=50; $('h2hHome').value=50;
   liveXGH=0; liveXGA=0; cornHist={};
   localStorage.removeItem(LS_KEY);
@@ -1306,7 +1386,8 @@ const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
  'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome',
  'hCornSeason','aCornSeason','lHCorn','lACorn',
- 'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS'];
+ 'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
+ 'bankroll','hYCSeason','aYCSeason','lHYC','lAYC'];
 
 function saveFields(){
   const data={};
