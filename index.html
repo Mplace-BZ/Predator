@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.2</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.3</div>
 </div>
 
 <!-- PASTE -->
@@ -416,6 +416,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     H2H and clean sheet data used as secondary weight. Probabilities are estimates — not financial advice.
   </div>
 
+  <!-- EDGE% TABLE -->
+  <div class="sl" style="margin:1.1rem 0 .6rem">Edge% — Model vs Bookmaker</div>
+  <div id="edgeGrid" style="margin-bottom:.85rem"></div>
+
   <!-- CORNERS BETTING -->
   <div class="sl" style="margin:1.1rem 0 .6rem">Corners Betting</div>
   <div class="g4" id="cornersGrid" style="margin-bottom:.85rem"></div>
@@ -423,10 +427,6 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <!-- YELLOW CARDS BETTING -->
   <div class="sl" style="margin:1.1rem 0 .6rem">Yellow Cards Betting</div>
   <div class="g2" id="cardsGrid" style="margin-bottom:.85rem"></div>
-
-  <!-- EDGE% TABLE -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">Edge% — Model vs Bookmaker</div>
-  <div id="edgeGrid" style="margin-bottom:.85rem"></div>
 
   <!-- VALUE BETS -->
   <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
@@ -947,16 +947,27 @@ function calc(){
     cardsGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season card averages to see predictions.</div>';
   }
 
-  const pUnder25=poissonCum(totalLambda,2);
-  const pBTTSfull=pHomeScores*pAwayScores;
+  // Dynamic markets based on current score
+  const currentGoals=homeScore+awayScore;
   const markets=[
     {label:'Home Win (1)',model:pHWin,odds:n('oddHome'),color:'var(--blue)'},
     {label:'Draw (X)',model:pDraw,odds:n('oddDraw'),color:'var(--yellow)'},
     {label:'Away Win (2)',model:pAWin,odds:n('oddAway'),color:'#ff9f43'},
-    {label:'Over 2.5',model:pOver25,odds:n('oddOver'),color:'var(--green)'},
-    {label:'Under 2.5',model:pUnder25,odds:n('oddUnder'),color:'var(--red)'},
-    {label:'BTTS Yes',model:pBTTSfull,odds:n('oddBTTS'),color:'var(--green)'},
   ];
+  // Over/Under: use next relevant line based on current goals
+  const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
+  const pOverNext=1-poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
+  const pUnderNext=poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
+  if(n('oddOver')>=1.01) markets.push({label:'Over '+nextLine.toFixed(1),model:pOverNext,odds:n('oddOver'),color:'var(--green)'});
+  if(n('oddUnder')>=1.01) markets.push({label:'Under '+nextLine.toFixed(1),model:pUnderNext,odds:n('oddUnder'),color:'var(--red)'});
+  // BTTS: only if not already done
+  if(!(homeScore>0&&awayScore>0)&&n('oddBTTS')>=1.01){
+    const pBTTSfull=homeScore>0?pAwayScores:awayScore>0?pHomeScores:pHomeScores*pAwayScores;
+    const bttsLabel=homeScore>0?'BTTS ('+awayTeam+' to score)':awayScore>0?'BTTS ('+homeTeam+' to score)':'BTTS Yes';
+    markets.push({label:bttsLabel,model:pBTTSfull,odds:n('oddBTTS'),color:'var(--green)'});
+  } else if(homeScore>0&&awayScore>0&&n('oddBTTS')>=1.01){
+    markets.push({label:'BTTS DONE',model:1,odds:n('oddBTTS'),color:'var(--green)'});
+  }
   const edgeGrid=$('edgeGrid');
   const bankroll=n('bankroll')||1000;
   const hasOdds=markets.some(m=>m.odds>=1.01);
