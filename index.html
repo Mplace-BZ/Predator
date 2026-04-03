@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.8</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.9</div>
 </div>
 
 <!-- PASTE -->
@@ -405,6 +405,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <div style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:10px;color:var(--green);font-family:var(--mono);">BTTS</span>
       <input type="number" id="oddBTTS" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--blue);font-family:var(--mono);">Goal</span>
+      <input type="number" id="oddNextGoal" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
     <div style="width:1px;height:20px;background:var(--border);"></div>
     <div style="display:flex;align-items:center;gap:4px;">
@@ -968,6 +972,10 @@ function calc(){
   } else if(homeScore>0&&awayScore>0&&n('oddBTTS')>=1.01){
     markets.push({label:'BTTS DONE',model:1,odds:n('oddBTTS'),color:'var(--green)'});
   }
+  // Next Goal
+  if(n('oddNextGoal')>=1.01){
+    markets.push({label:'Next Goal (Any)',model:pAnyGoal,odds:n('oddNextGoal'),color:'var(--blue)'});
+  }
   const edgeGrid=$('edgeGrid');
   const bankroll=n('bankroll')||1000;
   const hasOdds=markets.some(m=>m.odds>=1.01);
@@ -1254,7 +1262,7 @@ function clearAll(){
   $('minute').value=1;
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
    'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn',
-   'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
+   'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS','oddNextGoal',
    'hYCSeason','aYCSeason','lHYC','lAYC'].forEach(id=>$(id).value=0);
   $('bankroll').value=1000;
   $('lHPoss').value=50; $('h2hHome').value=50;
@@ -1420,7 +1428,7 @@ const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome',
  'hCornSeason','aCornSeason','lHCorn','lACorn',
  'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
- 'bankroll','hYCSeason','aYCSeason','lHYC','lAYC'];
+ 'bankroll','oddNextGoal','hYCSeason','aYCSeason','lHYC','lAYC'];
 
 function saveFields(){
   const data={};
