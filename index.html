@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.3</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.4</div>
 </div>
 
 <!-- PASTE -->
@@ -754,9 +754,21 @@ function calc(){
   setMV('v4',fmt(pNoGoal),ngc); setMetric('m4',ngc);
 
   // BTTS
-  const pBTTS=pHomeScores*pAwayScores;
-  const bttsC=pBTTS>0.45?'green':pBTTS>0.25?'yellow':'red';
-  setMV('v5',fmt(pBTTS),bttsC); setMetric('m5',bttsC);
+  if(homeScore>0&&awayScore>0){
+    setMV('v5','DONE','green'); setMetric('m5','green');
+    $('m5').querySelector('.ms').textContent='Both teams already scored';
+  } else if(homeScore>0||awayScore>0){
+    const pMissing=homeScore===0?pHomeScores:pAwayScores;
+    const missTeam=homeScore===0?homeTeam:awayTeam;
+    const mc=pMissing>0.45?'green':pMissing>0.25?'yellow':'red';
+    setMV('v5',fmt(pMissing),mc); setMetric('m5',mc);
+    $('m5').querySelector('.ms').textContent=missTeam+' still needs to score';
+  } else {
+    const pBTTS=pHomeScores*pAwayScores;
+    const bttsC=pBTTS>0.45?'green':pBTTS>0.25?'yellow':'red';
+    setMV('v5',fmt(pBTTS),bttsC); setMetric('m5',bttsC);
+    $('m5').querySelector('.ms').textContent='Both teams score';
+  }
 
   // Goal count table
   const goalCountsShow=goalCounts.slice(0,5);
