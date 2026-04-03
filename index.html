@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.4</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.5</div>
 </div>
 
 <!-- PASTE -->
@@ -395,11 +395,11 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     </div>
     <div style="width:1px;height:20px;background:var(--border);"></div>
     <div style="display:flex;align-items:center;gap:4px;">
-      <span style="font-size:10px;color:var(--green);font-family:var(--mono);">O2.5</span>
+      <span style="font-size:10px;color:var(--green);font-family:var(--mono);" id="lblOver">O2.5</span>
       <input type="number" id="oddOver" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
     <div style="display:flex;align-items:center;gap:4px;">
-      <span style="font-size:10px;color:var(--red);font-family:var(--mono);">U2.5</span>
+      <span style="font-size:10px;color:var(--red);font-family:var(--mono);" id="lblUnder">U2.5</span>
       <input type="number" id="oddUnder" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
     <div style="display:flex;align-items:center;gap:4px;">
@@ -953,7 +953,9 @@ function calc(){
     {label:'Away Win (2)',model:pAWin,odds:n('oddAway'),color:'#ff9f43'},
   ];
   // Over/Under: use next relevant line based on current goals
-  const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
+  const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:currentGoals<5?5.5:6.5;
+  $('lblOver').textContent='O'+nextLine.toFixed(1);
+  $('lblUnder').textContent='U'+nextLine.toFixed(1);
   const pOverNext=1-poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
   const pUnderNext=poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
   if(n('oddOver')>=1.01) markets.push({label:'Over '+nextLine.toFixed(1),model:pOverNext,odds:n('oddOver'),color:'var(--green)'});
