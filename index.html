@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.7</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.8</div>
 </div>
 
 <!-- PASTE -->
@@ -977,12 +977,12 @@ function calc(){
       const edge=m.model-implied;
       const edgePct=(edge*100).toFixed(1);
       const edgeVal=edge*100;
-      const rating=edgeVal>=15?'STRONG':edgeVal>=8?'VALUE':edgeVal>=3?'SLIM':edgeVal>=0?'WEAK':'NO EDGE';
+      const rating=edgeVal>=15?'STRONG':edgeVal>=5?'VALUE':edgeVal>=2?'SLIM':edgeVal>=0?'WEAK':'NO EDGE';
       // Kelly: fractional (25%) capped at 5% bankroll — only for SLIM+
-      const kellyFull=edgeVal>=3?(m.model*m.odds-1)/(m.odds-1):0;
+      const kellyFull=edgeVal>=2?(m.model*m.odds-1)/(m.odds-1):0;
       const kellyFrac=Math.min(kellyFull*0.25,0.05);
-      const stake=edgeVal>=3?Math.round(bankroll*kellyFrac):0;
-      const kellyLine=edgeVal>=3?'<div style="font-family:var(--mono);font-size:10px;color:var(--purple);margin-top:4px;">Stake: '+stake+' zl ('+(kellyFrac*100).toFixed(1)+'%)</div>':'';
+      const stake=edgeVal>=2?Math.round(bankroll*kellyFrac):0;
+      const kellyLine=edgeVal>=2?'<div style="font-family:var(--mono);font-size:10px;color:var(--purple);margin-top:4px;">Stake: '+stake+' zl ('+(kellyFrac*100).toFixed(1)+'%)</div>':'';
       const colors={
         STRONG:{bg:'var(--green3)',bd:'var(--green-bd)',fg:'#1aff8c'},
         VALUE:{bg:'var(--yel-bg)',bd:'var(--yel-bd)',fg:'#ffd166'},
