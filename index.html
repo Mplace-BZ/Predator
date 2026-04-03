@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.8</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.9</div>
 </div>
 
 <!-- PASTE -->
@@ -448,6 +448,7 @@ const $=id=>document.getElementById(id);
 const n=id=>parseFloat($(id).value)||0;
 const s=id=>$(id).value.trim();
 let liveXGH=0, liveXGA=0;
+let cornHist={}; // e.g. {8:60, 9:45, 10:30} from FootyStats historical Over% for corners
 
 // ── POISSON ──────────────────────────────────────────────────────
 function poisson(lambda,k){
@@ -688,11 +689,15 @@ function calc(){
       const borderVar=cls==='green'?'var(--green-bd)':cls==='yellow'?'var(--yel-bd)':'var(--red-bd)';
       const bgVar=cls==='green'?'var(--green3)':cls==='yellow'?'var(--yel-bg)':'var(--red-bg)';
       const colorVar=cls==='green'?'var(--green)':cls==='yellow'?'var(--yellow)':'var(--red)';
+      const histKey=line-0.5; // 7.5→7, 8.5→8 etc.
+      const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
+      const histLine=histPct!==null?'<div style="font-family:var(--mono);font-size:10px;color:var(--blue);margin-top:4px;">Hist: '+histPct+'%</div>':'';
       return '<div style="background:'+bgVar+';border:1px solid '+borderVar+';border-radius:10px;padding:1rem;text-align:center;">'
         +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colorVar+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners</div>'
         +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colorVar+';line-height:1;">'+fmt(pOver)+'</div>'
         +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+currentCorners+' corners now</div>'
         +'<div style="font-size:10px;color:var(--text3);margin-top:2px;">~'+cornLambdaRem.toFixed(1)+' more expected</div>'
+        +histLine
       +'</div>';
     }).join('');
   } else {
@@ -817,6 +822,21 @@ function parseFooty(){
   const cornAway=txt.match(/([\d.]+)\s*Corners\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
   if(cornHome) $('hCornSeason').value=clamp(cornHome[1],0,15);
   if(cornAway) $('aCornSeason').value=clamp(cornAway[1],0,15);
+
+  // Corners season avg fallback: "6.83/ Match\nCorners Earned"
+  if(!cornHome||!cornAway){
+    const cornEarned=[...txt.matchAll(/([\d.]+)\s*\/\s*Match\s*\n\s*Corners\s*Earned/gi)];
+    if(cornEarned.length>=1&&!cornHome) $('hCornSeason').value=clamp(cornEarned[0][1],0,15);
+    if(cornEarned.length>=2&&!cornAway) $('aCornSeason').value=clamp(cornEarned[1][1],0,15);
+  }
+
+  // Historical corners Over%: "60%Over 8" or "Over 8.5\n60%"
+  cornHist={};
+  const cornOverAll=[...txt.matchAll(/(\d{1,3})%\s*Over\s+([\d.]+)\b/gi)];
+  cornOverAll.forEach(m=>{
+    const line=parseFloat(m[2]);
+    if(line>=7&&line<=12) cornHist[line]=parseInt(m[1]);
+  });
 }
 
 function parseLive(){
@@ -891,7 +911,7 @@ function clearAll(){
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
    'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn'].forEach(id=>$(id).value=0);
   $('lHPoss').value=50; $('h2hHome').value=50;
-  liveXGH=0; liveXGA=0;
+  liveXGH=0; liveXGA=0; cornHist={};
   localStorage.removeItem(LS_KEY);
   calc();
 }
