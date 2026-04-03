@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v3.5</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.0</div>
 </div>
 
 <!-- PASTE -->
@@ -246,6 +246,38 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <div style="display:flex;align-items:center;gap:4px;">
       <input type="number" id="rcMinute" value="45" min="1" max="120" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--red);font-family:var(--mono);font-size:12px;padding:4px 6px;width:50px;text-align:center;">
       <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">' red card</span>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKMAKER ODDS -->
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem;">
+  <div class="sl" style="margin-bottom:.6rem">Bookmaker Odds (optional — enables Edge%)</div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--blue);font-family:var(--mono);">1</span>
+      <input type="number" id="oddHome" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--yellow);font-family:var(--mono);">X</span>
+      <input type="number" id="oddDraw" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:#ff9f43;font-family:var(--mono);">2</span>
+      <input type="number" id="oddAway" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="width:1px;height:20px;background:var(--border2);"></div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--green);font-family:var(--mono);">O2.5</span>
+      <input type="number" id="oddOver" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--red);font-family:var(--mono);">U2.5</span>
+      <input type="number" id="oddUnder" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--green);font-family:var(--mono);">BTTS</span>
+      <input type="number" id="oddBTTS" value="0" step="0.01" min="1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
   </div>
 </div>
@@ -381,6 +413,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <!-- CORNERS BETTING -->
   <div class="sl" style="margin:1.1rem 0 .6rem">Corners Betting</div>
   <div class="g4" id="cornersGrid" style="margin-bottom:.85rem"></div>
+
+  <!-- EDGE% TABLE -->
+  <div class="sl" style="margin:1.1rem 0 .6rem">Edge% — Model vs Bookmaker</div>
+  <div id="edgeGrid" style="margin-bottom:.85rem"></div>
 
   <!-- VALUE BETS -->
   <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
@@ -549,8 +585,11 @@ function calc(){
     hMom=Math.max(0.1,Math.min(0.9,hMom));
     const aMom=1-hMom;
     const totalLambda=hLambdaRem+aLambdaRem;
-    hLambdaRem=hLambdaRem*0.7+totalLambda*hMom*0.3;
-    aLambdaRem=aLambdaRem*0.7+totalLambda*aMom*0.3;
+    // Dynamic blend: 30% base, 40% when DA diff > 15, 45% when > 25
+    const daDiff=Math.abs(lHDA-lADA);
+    const momBlend=daDiff>25?0.45:daDiff>15?0.40:0.30;
+    hLambdaRem=hLambdaRem*(1-momBlend)+totalLambda*hMom*momBlend;
+    aLambdaRem=aLambdaRem*(1-momBlend)+totalLambda*aMom*momBlend;
   }
 
   // Red card adjustment
@@ -852,6 +891,41 @@ function calc(){
     pHWin, pDraw, pAWin,
     homeScore, awayScore
   });
+
+  // Edge% — model vs bookmaker
+  const pOver25=1-poissonCum(totalLambda,2);
+  const pUnder25=poissonCum(totalLambda,2);
+  const pBTTSfull=pHomeScores*pAwayScores;
+  const markets=[
+    {label:'Home Win (1)',model:pHWin,odds:n('oddHome'),color:'var(--blue)'},
+    {label:'Draw (X)',model:pDraw,odds:n('oddDraw'),color:'var(--yellow)'},
+    {label:'Away Win (2)',model:pAWin,odds:n('oddAway'),color:'#ff9f43'},
+    {label:'Over 2.5',model:pOver25,odds:n('oddOver'),color:'var(--green)'},
+    {label:'Under 2.5',model:pUnder25,odds:n('oddUnder'),color:'var(--red)'},
+    {label:'BTTS Yes',model:pBTTSfull,odds:n('oddBTTS'),color:'var(--green)'},
+  ];
+  const edgeGrid=$('edgeGrid');
+  const hasOdds=markets.some(m=>m.odds>=1.01);
+  if(hasOdds){
+    edgeGrid.innerHTML='<div class="g3">'+markets.filter(m=>m.odds>=1.01).map(m=>{
+      const implied=1/m.odds;
+      const edge=m.model-implied;
+      const edgePct=(edge*100).toFixed(1);
+      const rating=edge>0.10?'STRONG':edge>0.05?'VALUE':edge>0?'SLIM':'NO EDGE';
+      const cls=edge>0.05?'green':edge>0?'yellow':'red';
+      const bg=cls==='green'?'var(--green3)':cls==='yellow'?'var(--yel-bg)':'var(--red-bg)';
+      const bd=cls==='green'?'var(--green-bd)':cls==='yellow'?'var(--yel-bd)':'var(--red-bd)';
+      const fg=cls==='green'?'var(--green)':cls==='yellow'?'var(--yellow)':'var(--red)';
+      return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:10px;padding:.85rem;text-align:center;">'
+        +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+m.color+';margin-bottom:.3rem;">'+m.label+'</div>'
+        +'<div style="font-family:var(--mono);font-size:24px;font-weight:700;color:'+fg+';line-height:1;">'+edgePct+'%</div>'
+        +'<div style="font-size:10px;color:var(--text2);margin-top:.3rem;">Model: '+fmt(m.model)+' | Implied: '+fmt(implied)+'</div>'
+        +'<div style="font-family:var(--mono);font-size:9px;color:'+fg+';margin-top:3px;">'+rating+' @ '+m.odds.toFixed(2)+'</div>'
+      +'</div>';
+    }).join('')+'</div>';
+  } else {
+    edgeGrid.innerHTML='<div style="font-size:12px;color:var(--text3);padding:.5rem">Enter bookmaker odds above to see edge calculations.</div>';
+  }
 }
 
 // ── PARSER ────────────────────────────────────────────────────────
@@ -1069,7 +1143,8 @@ function clearAll(){
   $('homeScore').value=0; $('awayScore').value=0;
   $('minute').value=1;
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
-   'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn'].forEach(id=>$(id).value=0);
+   'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn',
+   'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS'].forEach(id=>$(id).value=0);
   $('lHPoss').value=50; $('h2hHome').value=50;
   liveXGH=0; liveXGA=0; cornHist={};
   localStorage.removeItem(LS_KEY);
@@ -1231,7 +1306,8 @@ const LS_KEY='predator_fields';
 const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
  'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome',
- 'hCornSeason','aCornSeason','lHCorn','lACorn'];
+ 'hCornSeason','aCornSeason','lHCorn','lACorn',
+ 'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS'];
 
 function saveFields(){
   const data={};
