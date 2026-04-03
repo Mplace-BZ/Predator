@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.5</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.6</div>
 </div>
 
 <!-- PASTE -->
@@ -305,11 +305,6 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="ml">Any goal remaining <span class="tip" data-tip="Probability that at least 1 more goal will be scored before full time, based on Poisson model using xG + live adjustments.">?</span></div>
       <div class="mv" id="v1">—</div>
       <div class="ms">P(≥1 goal in rem. time)</div>
-    </div>
-    <div class="metric" id="m2">
-      <div class="ml">Over 0.5 remaining goals</div>
-      <div class="mv" id="v2">—</div>
-      <div class="ms">= any goal</div>
     </div>
     <div class="metric" id="m3">
       <div class="ml">Over 1.5 remaining goals <span class="tip" data-tip="Probability of 2+ more goals before full time.">?</span></div>
@@ -635,18 +630,17 @@ function calc(){
   const topScore=results.slice().sort((a,b)=>b.p-a.p)[0];
 
   // Corners hero — best line with >60%
-  const hCornS_h=n('hCornSeason'), aCornS_h=n('aCornSeason');
+  const hCornS_h=n('hCornSeason')||5.0, aCornS_h=n('aCornSeason')||4.0;
   const curCorn_h=n('lHCorn')+n('lACorn');
+  const cornIsEst_h=!n('hCornSeason')&&!n('aCornSeason');
   let cornLam_h=(hCornS_h+aCornS_h)*remFrac;
-  if(rcActive) cornLam_h*=1.3; // team with advantage pushes more corners
+  if(rcActive) cornLam_h*=1.3;
   let bestCornLine=null,bestCornP=0;
-  if(hCornS_h+aCornS_h>0){
-    [10.5,9.5,8.5,7.5].forEach(line=>{
-      const need=Math.max(0,line-curCorn_h);
-      const p=1-poissonCum(cornLam_h,Math.floor(need));
-      if(p>0.60&&line>=(bestCornLine||0)){bestCornLine=line;bestCornP=p;}
-    });
-  }
+  [10.5,9.5,8.5,7.5].forEach(line=>{
+    const need=Math.max(0,line-curCorn_h);
+    const p=1-poissonCum(cornLam_h,Math.floor(need));
+    if(p>0.60&&line>=(bestCornLine||0)){bestCornLine=line;bestCornP=p;}
+  });
 
   // Penalty chance
   const totalDA_h=lHDA+lADA;
@@ -681,7 +675,7 @@ function calc(){
     +heroCardFixed('Home scores',fmt(pHomeScores),homeTeam||'Home','var(--blue-bg)','var(--blue-bd)','var(--blue)')
     +heroCardFixed('Away scores',fmt(pAwayScores),awayTeam||'Away','rgba(255,159,67,0.08)','rgba(255,159,67,0.25)','#ff9f43')
     +(topScore?heroCard('Most likely final score',topScore.h+' - '+topScore.a,fmt(topScore.p)+' probability',topScore.p*3):heroCard('Most likely final score','—','—',0))
-    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now',bestCornP):heroCard('Corners over','—','No data / no line >60%',0))
+    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now'+(cornIsEst_h?' (est.)':''),bestCornP):heroCard('Corners over','—','No line >60%',0))
     +(rcActive
       ?heroCardFixed('Red card active','ACTIVE',disTeam+' 10 men ('+rcMinute+'\')','rgba(255,77,106,0.15)','var(--red)','var(--red)')
       :heroCard('Penalty chance',fmt(pPen),'DA: '+totalDA_h+', SOT: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3));
@@ -735,7 +729,6 @@ function calc(){
   // Metrics
   const gColor=pAnyGoal>0.65?'green':pAnyGoal>0.4?'yellow':'red';
   setMV('v1',fmt(pAnyGoal),gColor); setMetric('m1',gColor);
-  setMV('v2',fmt(pAnyGoal),gColor); setMetric('m2',gColor);
   const o15c=pOver15>0.4?'green':pOver15>0.2?'yellow':'red';
   setMV('v3',fmt(pOver15),o15c); setMetric('m3',o15c);
   const ngc=pNoGoal>0.4?'red':pNoGoal>0.25?'yellow':'green';
@@ -801,28 +794,19 @@ function calc(){
 
   const cornerLines=[7.5,8.5,9.5,10.5];
   const cornersGrid=$('cornersGrid');
-  if(hCornS+aCornS>0){
-    cornersGrid.innerHTML=cornerLines.map(line=>{
-      const need=Math.max(0,line-currentCorners);
-      const pOver=1-poissonCum(cornLambdaRem,Math.floor(need));
-      const cls=pOver>0.65?'green':pOver>0.45?'yellow':'red';
-      const borderVar=cls==='green'?'var(--green-bd)':cls==='yellow'?'var(--yel-bd)':'var(--red-bd)';
-      const bgVar=cls==='green'?'var(--green3)':cls==='yellow'?'var(--yel-bg)':'var(--red-bg)';
-      const colorVar=cls==='green'?'var(--green)':cls==='yellow'?'var(--yellow)':'var(--red)';
-      const histKey=line-0.5; // 7.5→7, 8.5→8 etc.
-      const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
-      const histLine=histPct!==null?'<div style="font-family:var(--mono);font-size:10px;color:var(--blue);margin-top:4px;">Hist: '+histPct+'%</div>':'';
-      return '<div style="background:'+bgVar+';border:1px solid '+borderVar+';border-radius:10px;padding:1rem;text-align:center;">'
-        +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colorVar+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners</div>'
-        +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colorVar+';line-height:1;">'+fmt(pOver)+'</div>'
-        +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+currentCorners+' corners now</div>'
-        +'<div style="font-size:10px;color:var(--text3);margin-top:2px;">~'+cornLambdaRem.toFixed(1)+' more expected</div>'
-        +histLine
-      +'</div>';
-    }).join('');
-  } else {
-    cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season corner averages to see predictions.</div>';
-  }
+  const cornIsEst=hCornS+aCornS===0;
+  const cornHEff=hCornS||5.0, cornAEff=aCornS||4.0;
+  const cornLambdaEff=(cornHEff+cornAEff)*remFrac*(rcActive?1.3:1);
+  cornersGrid.innerHTML=cornerLines.map(line=>{
+    const need=Math.max(0,line-currentCorners);
+    const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
+    const histKey=line-0.5;
+    const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
+    const sub=currentCorners+' now, ~'+cornLambdaEff.toFixed(1)+' more'
+      +(cornIsEst?' (est.)':'')
+      +(histPct!==null?' | Hist: '+histPct+'%':'');
+    return heroCard('Over '+line.toFixed(1)+' corners',fmt(pOver),sub,pOver);
+  }).join('');
 
   // Value bets
   renderValueBets({
