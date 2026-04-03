@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.3</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.4</div>
 </div>
 
 <!-- PASTE -->
@@ -718,6 +718,18 @@ function parseLive(){
   if(!raw) return;
   const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
 
+  // Minuta z "73:09" (czas meczu Sofascore)
+  for(let i=0;i<lines.length;i++){
+    const tm=lines[i].match(/^(\d{1,3}):\d{2}$/);
+    if(tm){const v=parseInt(tm[1]);if(v>=1&&v<=120){$('minute').value=v;break;}}
+  }
+
+  // Wynik z "3 - 1"
+  for(let i=0;i<lines.length;i++){
+    const sc=lines[i].match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+    if(sc){$('homeScore').value=sc[1];$('awayScore').value=sc[2];break;}
+  }
+
   // Format: home_value \n Label \n away_value
   function findTriple(labelRe){
     for(let i=0;i<lines.length;i++){
@@ -730,11 +742,11 @@ function parseLive(){
     return null;
   }
 
-  // Posiadanie piłki: "67%" \n label \n "33%"
+  // Posiadanie piłki
   const poss=findTriple('Posiadanie piłki|Possession');
   if(poss&&poss[0]>=1&&poss[0]<=99) $('lHPoss').value=Math.round(poss[0]);
 
-  // xG live → osobne zmienne (nie nadpisuj sezonowego hXG/aXG)
+  // xG live → tylko do globalnych zmiennych momentum (NIE nadpisuj hXG/aXG)
   const xg=findTriple('Oczekiwane gole|Expected goals|xG');
   if(xg&&xg[0]<=5&&!isNaN(xg[0])){
     liveXGH=xg[0];
@@ -753,12 +765,6 @@ function parseLive(){
   if(da&&!isNaN(da[0])){
     $('lHDA').value=Math.round(da[0]);
     $('lADA').value=Math.round(da[1]);
-  }
-
-  // Minuta z formatu "Nazwisko77'" lub "Nazwisko 77'"
-  for(let i=lines.length-1;i>=0;i--){
-    const mm=lines[i].match(/(\d{1,3})['′']/);
-    if(mm){const v=parseInt(mm[1]);if(v>=1&&v<=120){$('minute').value=v;break;}}
   }
 }
 
