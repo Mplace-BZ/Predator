@@ -194,7 +194,14 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v4.9</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.0</div>
+</div>
+
+<!-- TRAFFIC LIGHT -->
+<div id="trafficLight" style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1rem;margin-bottom:1rem;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);">
+  <div id="tlDot" style="width:14px;height:14px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
+  <div id="tlLabel" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text3);">WAITING</div>
+  <div id="tlSub" style="font-size:11px;color:var(--text3);margin-left:auto;">Enter odds to activate</div>
 </div>
 
 <!-- PASTE -->
@@ -1009,6 +1016,33 @@ function calc(){
     }).join('')+'</div>';
   } else {
     edgeGrid.innerHTML='<div style="font-size:12px;color:var(--text3);padding:.5rem">Enter bookmaker odds above to see edge calculations.</div>';
+  }
+
+  // Traffic light
+  if(hasOdds){
+    const bestEdge=Math.max(...markets.filter(m=>m.odds>=1.01).map(m=>m.model-1/m.odds))*100;
+    const tl=$('trafficLight'),dot=$('tlDot'),lbl=$('tlLabel'),sub=$('tlSub');
+    if(bestEdge>=5){
+      dot.style.background='var(--green)';dot.style.boxShadow='0 0 8px var(--green)';
+      lbl.style.color='var(--green)';lbl.textContent='BET';
+      tl.style.borderColor='var(--green-bd)';tl.style.background='var(--green3)';
+      sub.textContent='Best edge: +'+bestEdge.toFixed(1)+'%';sub.style.color='var(--green)';
+    } else if(bestEdge>=2){
+      dot.style.background='var(--yellow)';dot.style.boxShadow='0 0 8px var(--yellow)';
+      lbl.style.color='var(--yellow)';lbl.textContent='WATCH';
+      tl.style.borderColor='var(--yel-bd)';tl.style.background='var(--yel-bg)';
+      sub.textContent='Best edge: +'+bestEdge.toFixed(1)+'% (SLIM)';sub.style.color='var(--yellow)';
+    } else {
+      dot.style.background='var(--red)';dot.style.boxShadow='0 0 8px var(--red)';
+      lbl.style.color='var(--red)';lbl.textContent='NO BET';
+      tl.style.borderColor='var(--red-bd)';tl.style.background='var(--red-bg)';
+      sub.textContent=bestEdge>0?'Best edge: +'+bestEdge.toFixed(1)+'% (too low)':'No edge found';sub.style.color='var(--red)';
+    }
+  } else {
+    $('tlDot').style.background='var(--text3)';$('tlDot').style.boxShadow='none';
+    $('tlLabel').style.color='var(--text3)';$('tlLabel').textContent='WAITING';
+    $('trafficLight').style.borderColor='var(--border2)';$('trafficLight').style.background='var(--bg2)';
+    $('tlSub').textContent='Enter odds to activate';$('tlSub').style.color='var(--text3)';
   }
 }
 
