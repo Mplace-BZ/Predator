@@ -190,7 +190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.6</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v2.7</div>
 </div>
 
 <!-- PASTE -->
@@ -627,7 +627,17 @@ function calc(){
   const pHomeScores=1-poisson(hLambdaRem,0);
   const pAwayScores=1-poisson(aLambdaRem,0);
   // Hero tiles (corner-card style)
-  const topScore=results.slice().sort((a,b)=>b.p-a.p)[0];
+  // Aggregate results by final score (multiple remaining combos can give same final)
+  const scoreMap={};
+  results.forEach(r=>{
+    const key=r.h+'-'+r.a;
+    scoreMap[key]=(scoreMap[key]||0)+r.p;
+  });
+  const aggregated=Object.entries(scoreMap).map(([k,p])=>{
+    const [h,a]=k.split('-').map(Number);
+    return {h,a,p};
+  }).sort((a,b)=>b.p-a.p);
+  const topScore=aggregated[0];
 
   // Corners hero — best line with >60%
   const hCornS_h=n('hCornSeason')||5.0, aCornS_h=n('aCornSeason')||4.0;
@@ -760,7 +770,7 @@ function calc(){
   }).join('');
 
   // Top 5 final scores
-  const top5=results.slice().sort((a,b)=>b.p-a.p).slice(0,5);
+  const top5=aggregated.slice(0,5);
   const maxTop5=top5[0]?top5[0].p:1;
   $('top5Tbody').innerHTML=top5.map((r,i)=>{
     const cls=i===0?'top-result':'';
