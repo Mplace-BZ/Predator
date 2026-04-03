@@ -185,7 +185,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.7</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v1.8</div>
 </div>
 
 <!-- PASTE -->
@@ -277,6 +277,32 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <div class="iw"><input type="number" id="lHPoss" value="50" min="0" max="100"><span class="u">%</span></div></div>
       <div class="field"><label>H2H win rate (home team %)</label>
         <div class="iw"><input type="number" id="h2hHome" value="50" min="0" max="100"><span class="u">%</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sl">Corners</div>
+  <div class="g4">
+    <div class="card">
+      <div class="card-t home">Home corners/match</div>
+      <div class="field"><label>Season avg (home)</label>
+        <div class="iw"><input type="number" id="hCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t away">Away corners/match</div>
+      <div class="field"><label>Season avg (away)</label>
+        <div class="iw"><input type="number" id="aCornSeason" value="0" step="0.1" min="0"><span class="u">avg</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Home corners now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lHCorn" value="0" min="0"><span class="u">corners</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-t live">Away corners now</div>
+      <div class="field"><label>Current match</label>
+        <div class="iw"><input type="number" id="lACorn" value="0" min="0"><span class="u">corners</span></div></div>
     </div>
   </div>
 </section>
@@ -404,6 +430,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     Model uses Poisson distribution with xG adjusted for time remaining + live momentum factor (dangerous attacks ratio &amp; shots on target).
     H2H and clean sheet data used as secondary weight. Probabilities are estimates — not financial advice.
   </div>
+
+  <!-- CORNERS BETTING -->
+  <div class="sl" style="margin:1.1rem 0 .6rem">Corners Betting</div>
+  <div class="g4" id="cornersGrid" style="margin-bottom:.85rem"></div>
 
   <!-- VALUE BETS -->
   <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
@@ -641,6 +671,34 @@ function calc(){
   setMV('vs3',fmt(pAWin),ac); setMetric('ms3',ac);
   $('vss3').textContent=awayTeam;
 
+  // Corners
+  const hCornS=n('hCornSeason'), aCornS=n('aCornSeason');
+  const lHCorn=n('lHCorn'), lACorn=n('lACorn');
+  const currentCorners=lHCorn+lACorn;
+  const cornLambdaRem=(hCornS+aCornS)*remFrac;
+  const projectedTotal=currentCorners+cornLambdaRem;
+
+  const cornerLines=[7.5,8.5,9.5,10.5];
+  const cornersGrid=$('cornersGrid');
+  if(hCornS+aCornS>0){
+    cornersGrid.innerHTML=cornerLines.map(line=>{
+      const need=Math.max(0,line-currentCorners);
+      const pOver=1-poissonCum(cornLambdaRem,Math.floor(need));
+      const cls=pOver>0.65?'green':pOver>0.45?'yellow':'red';
+      const borderVar=cls==='green'?'var(--green-bd)':cls==='yellow'?'var(--yel-bd)':'var(--red-bd)';
+      const bgVar=cls==='green'?'var(--green3)':cls==='yellow'?'var(--yel-bg)':'var(--red-bg)';
+      const colorVar=cls==='green'?'var(--green)':cls==='yellow'?'var(--yellow)':'var(--red)';
+      return '<div style="background:'+bgVar+';border:1px solid '+borderVar+';border-radius:10px;padding:1rem;text-align:center;">'
+        +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colorVar+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners</div>'
+        +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colorVar+';line-height:1;">'+fmt(pOver)+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+currentCorners+' corners now</div>'
+        +'<div style="font-size:10px;color:var(--text3);margin-top:2px;">~'+cornLambdaRem.toFixed(1)+' more expected</div>'
+      +'</div>';
+    }).join('');
+  } else {
+    cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season corner averages to see predictions.</div>';
+  }
+
   // Value bets
   renderValueBets({
     remMin, hLambdaRem, aLambdaRem, totalLambda,
@@ -749,6 +807,16 @@ function parseFooty(){
   // H2H
   const h2hM=txt.match(/\((\d+)%\)\s*\n\s*\d+\s*\n\s*Matches/i);
   if(h2hM)$('h2hHome').value=h2hM[1];
+
+  // Corners live from FootyStats: "Corners\n6\n3"
+  const cornM=txt.match(/Corners\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
+  if(cornM){$('lHCorn').value=cornM[1];$('lACorn').value=cornM[2];}
+
+  // Corners season avg: "X.XX Corners Per Match <team> at Home/Away"
+  const cornHome=txt.match(/([\d.]+)\s*Corners\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Home/i);
+  const cornAway=txt.match(/([\d.]+)\s*Corners\s*Per\s*Match[\w\s\u00C0-\u024F\u0130\u0131]*at\s*Away/i);
+  if(cornHome) $('hCornSeason').value=clamp(cornHome[1],0,15);
+  if(cornAway) $('aCornSeason').value=clamp(cornAway[1],0,15);
 }
 
 function parseLive(){
@@ -804,6 +872,13 @@ function parseLive(){
     $('lHDA').value=Math.max(n('lHDA'),Math.round(da[0]));
     $('lADA').value=Math.max(n('lADA'),Math.round(da[1]));
   }
+
+  // Rzuty rożne
+  const corn=findTriple('Rzuty rożne|Corners');
+  if(corn&&!isNaN(corn[0])){
+    $('lHCorn').value=Math.max(n('lHCorn'),Math.round(corn[0]));
+    $('lACorn').value=Math.max(n('lACorn'),Math.round(corn[1]));
+  }
 }
 
 
@@ -814,7 +889,7 @@ function clearAll(){
   $('homeScore').value=0; $('awayScore').value=0;
   $('minute').value=1;
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
-   'lHSOT','lASOT','lHDA','lADA'].forEach(id=>$(id).value=0);
+   'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn'].forEach(id=>$(id).value=0);
   $('lHPoss').value=50; $('h2hHome').value=50;
   liveXGH=0; liveXGA=0;
   localStorage.removeItem(LS_KEY);
@@ -975,7 +1050,8 @@ function renderValueBets(params){
 const LS_KEY='predator_fields';
 const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
- 'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome'];
+ 'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome',
+ 'hCornSeason','aCornSeason','lHCorn','lACorn'];
 
 function saveFields(){
   const data={};
