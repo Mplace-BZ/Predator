@@ -9,7 +9,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - GitHub Pages: https://mplace-bz.github.io/Predator/
 - Jeden plik: index.html
 
-## Aktualna wersja: v2.2
+## Aktualna wersja: v3.2
 
 ## Red Card Model Logic
 When red card checkbox is active (rcActive) with team selection (home/away) and minute:
@@ -36,10 +36,14 @@ When red card checkbox is active (rcActive) with team selection (home/away) and 
 - parseLive() używa Math.max() — nie nadpisuje wyższych wartości niższymi (np. 2. połowa)
 - Dropdown okresu: Cały mecz / 1. połowa / 2. połowa
 
+## Momentum tuning
+Wejścia do strefy ataku z Sofascore (lHDA/lADA) powinny mocniej wpływać na predykcję następnego gola gdy dysproporcja jest duża (np. 21 vs 40). Obecnie model blenduje 30% momentum — rozważ zwiększenie do 40% gdy różnica > 15.
+
 ## Następne zadania
 1. Więcej value betów — rozszerzyć renderValueBets() o nowe sygnały
 2. Yellow cards parser + betting market
 3. Matchday form (last 5 games) parser
+4. Momentum blend dynamiczny (30% → 40% przy dużej dysproporcji DA)
 
 ## Styl kodu
 - Komentarze po polsku lub angielsku
