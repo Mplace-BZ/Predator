@@ -14,7 +14,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v6.2
+## Aktualna wersja: v6.3
 
 ## Red Card Model Logic
 When red card checkbox is active (rcActive) with team selection (home/away) and minute:
@@ -79,6 +79,8 @@ Gdy xG home > 0.6 ale wynik 0:0 i minuta > 30:
 - Pokazuj alert "ANOMALIA — dominacja bez gola"
 - To sygnał że kurs na gola rośnie niesłusznie
 - Idealny moment wejścia na Next Goal lub Over
+
+Przykład: Pescara vs Spezia — 0:0 w przerwie, aktywna gra, wynik 1:1 w 86'. Klasyczna anomalia gdzie brak gola przy aktywnej grze = okazja live.
 
 ## Czego NIE typować
 - Kursy < 1.80 (za mało zysku — filozofia to 2.1+)
