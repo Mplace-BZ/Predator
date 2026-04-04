@@ -180,6 +180,17 @@ hr{border:none;border-top:1px solid var(--border);margin:1rem 0;}
 .tip:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:120%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:11px;font-family:var(--sans);padding:6px 10px;border-radius:7px;width:210px;white-space:normal;z-index:10;line-height:1.5;letter-spacing:0;text-transform:none;font-weight:400;}
 
 footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);font-family:var(--mono);}
+
+/* SCANNER CARDS */
+.scan-card{background:var(--bg3);border:1px solid var(--purple-bd);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.5rem;}
+.scan-card .sc-header{display:flex;align-items:center;justify-content:space-between;}
+.scan-card .sc-teams{font-size:14px;font-weight:700;color:var(--text);}
+.scan-card .sc-score{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--purple);}
+.scan-card .sc-minute{font-family:var(--mono);font-size:11px;color:var(--yellow);background:var(--yel-bg);border:1px solid var(--yel-bd);border-radius:5px;padding:2px 7px;}
+.scan-card .sc-reason{font-size:11px;color:var(--text2);line-height:1.5;}
+.scan-card .sc-market{font-family:var(--mono);font-size:10px;color:var(--green);background:var(--green3);border:1px solid var(--green-bd);border-radius:5px;padding:3px 8px;display:inline-block;}
+.scan-card .sc-analyze{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:7px;border:1px solid var(--purple-bd);background:var(--purple-bg);color:var(--purple);cursor:pointer;transition:all .15s;margin-top:auto;}
+.scan-card .sc-analyze:hover{background:rgba(192,132,252,0.15);border-color:var(--purple);}
 </style>
 </head>
 <body>
@@ -199,7 +210,22 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.4</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.5</div>
+  </div>
+</div>
+
+<!-- MATCH SCANNER -->
+<div class="paste-card" style="border-color:var(--purple-bd);margin-bottom:1rem;">
+  <div class="paste-label" style="color:var(--purple);">Match Scanner</div>
+  <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+    <label class="parse-btn" style="border-color:var(--purple-bd);background:var(--purple-bg);color:var(--purple);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+      <span style="font-size:14px;">&#128247;</span> Scan Matches
+      <input type="file" id="scanFile" accept="image/*" style="display:none;" onchange="scanMatches(this)">
+    </label>
+    <span id="scanStatus" style="font-family:var(--mono);font-size:10px;color:var(--text3);"></span>
+  </div>
+  <div id="scanResults" style="display:none;margin-top:.85rem;">
+    <div class="g3" id="scanCards"></div>
   </div>
 </div>
 
@@ -1502,6 +1528,95 @@ $('rcAway').addEventListener('change',calc);
 $('rcMinute').addEventListener('input',calc);
 
 calc();
+
+// ── MATCH SCANNER ────────────────────────────────────────────────
+async function scanMatches(input){
+  const file=input.files[0];
+  if(!file) return;
+  const status=$('scanStatus');
+  status.textContent='Analizuję screenshot...';
+  status.style.color='var(--purple)';
+
+  // Convert to base64
+  const reader=new FileReader();
+  reader.onload=async function(){
+    const base64=reader.result.split(',')[1];
+    const mediaType=file.type||'image/png';
+
+    try{
+      const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:2048,
+          messages:[{
+            role:'user',
+            content:[
+              {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+              {type:'text',text:'Jesteś ekspertem od typowania. Przeanalizuj listę meczów live na tym screenshocie. Wybierz TOP 3 mecze według kryteriów:\n- Minuta 60-85\n- Corners łącznie > 8\n- Wynik wyrównany lub 1 gol różnicy\n- Jest kurs Over/Under\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}'}
+            ]
+          }]
+        })
+      });
+
+      if(!resp.ok){
+        const err=await resp.text();
+        throw new Error('API '+resp.status+': '+err);
+      }
+
+      const data=await resp.json();
+      const text=(data.content&&data.content[0]&&data.content[0].text)||'';
+
+      // Parse JSON from response
+      const jsonMatch=text.match(/\{[\s\S]*"matches"[\s\S]*\}/);
+      if(!jsonMatch) throw new Error('Brak JSON w odpowiedzi');
+
+      const result=JSON.parse(jsonMatch[0]);
+      if(!result.matches||!result.matches.length) throw new Error('Brak meczów w odpowiedzi');
+
+      renderScanCards(result.matches.slice(0,3));
+      status.textContent='Znaleziono '+result.matches.length+' meczów';
+      status.style.color='var(--green)';
+
+    }catch(e){
+      console.error('[SCANNER]',e);
+      status.textContent='Błąd: '+e.message;
+      status.style.color='var(--red)';
+      $('scanResults').style.display='none';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderScanCards(matches){
+  const container=$('scanCards');
+  container.innerHTML=matches.map(m=>{
+    return '<div class="scan-card">'
+      +'<div class="sc-header">'
+        +'<span class="sc-teams">'+m.home+' vs '+m.away+'</span>'
+        +'<span class="sc-minute">'+m.minute+'\'</span>'
+      +'</div>'
+      +'<div class="sc-score">'+m.score+'</div>'
+      +'<div class="sc-reason">'+m.reason+'</div>'
+      +'<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">'
+        +'<span class="sc-market">'+m.market+'</span>'
+        +(m.corners?'<span style="font-family:var(--mono);font-size:10px;color:var(--text3);">Corners: '+m.corners+'</span>':'')
+      +'</div>'
+      +'<button class="sc-analyze" onclick="scrollToPaste(\''+m.home.replace(/'/g,"\\'")+'\',\''+m.away.replace(/'/g,"\\'")+'\')">'
+        +'\u25B6 Analizuj'
+      +'</button>'
+    +'</div>';
+  }).join('');
+  $('scanResults').style.display='block';
+}
+
+function scrollToPaste(home,away){
+  $('homeTeam').value=home;
+  $('awayTeam').value=away;
+  $('rawPaste').scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>$('rawPaste').focus(),400);
+}
 </script>
 
 <!-- STRATEGY CHEATSHEET -->

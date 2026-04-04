@@ -9,7 +9,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - GitHub Pages: https://mplace-bz.github.io/Predator/
 - Jeden plik: index.html
 
-## Aktualna wersja: v3.2
+## Aktualna wersja: v5.5
 
 ## Red Card Model Logic
 When red card checkbox is active (rcActive) with team selection (home/away) and minute:
