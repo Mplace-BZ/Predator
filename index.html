@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.0</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.1</div>
 </div>
 
 <!-- TRAFFIC LIGHT -->
@@ -917,9 +917,16 @@ function calc(){
       const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
       const histKey=line-0.5;
       const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
+      const badge=histPct!==null?(histPct>75?'<span style="color:var(--green);font-family:var(--mono);font-size:10px;font-weight:700;"> HOT</span>':histPct>=60?'<span style="color:var(--yellow);font-family:var(--mono);font-size:10px;"> OK</span>':''):'';
       const sub=currentCorners+' now, ~'+cornLambdaEff.toFixed(1)+' more'
         +(histPct!==null?' | Hist: '+histPct+'%':'');
-      return heroCard('Over '+line.toFixed(1)+' corners',fmt(pOver),sub,pOver);
+      const cls=pOver>0.65?'green':pOver>0.45?'yellow':'red';
+      const colors={green:{bg:'var(--green3)',bd:'var(--green-bd)',fg:'var(--green)'},yellow:{bg:'var(--yel-bg)',bd:'var(--yel-bd)',fg:'var(--yellow)'},red:{bg:'var(--red-bg)',bd:'var(--red-bd)',fg:'var(--red)'}}[cls];
+      return '<div style="background:'+colors.bg+';border:1px solid '+colors.bd+';border-radius:10px;padding:1rem;text-align:center;">'
+        +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colors.fg+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners'+badge+'</div>'
+        +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colors.fg+';line-height:1;">'+fmt(pOver)+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+sub+'</div>'
+      +'</div>';
     }).join('');
   } else {
     cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season corner averages to see predictions.</div>';
