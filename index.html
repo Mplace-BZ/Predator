@@ -218,7 +218,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.7</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.8</div>
   </div>
 </div>
 
@@ -1653,9 +1653,12 @@ async function runScan(){
 
     // Build content: all images + one text prompt
     const content=imgs.map(img=>({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}}));
+    const minuteRule='- Minuta 45-75 (IDEALNIE 45-68, OK 69-75, ODRZUC 76+)';
+    const criteria=minuteRule+'\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under';
+    const jsonFmt='{"matches":[{"home":"...","away":"...","score":"...","minute":62,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}';
     const prompt=imgs.length>1
-      ?'Masz '+imgs.length+' screenshotow. Jeden lub wiecej to lista meczow live (Aiscore/Sofascore), pozostale to bukmacher (BC.game/Betway).\n\nZnajdz mecze ktore sa JEDNOCZESNIE:\n1. Widoczne na liscie live (maja statystyki)\n2. Dostepne u bukmachera (maja kursy)\n\nNastepnie z tej wspolnej listy wybierz TOP 3 wedlug:\n- Minuta 60-85\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku dlaczego ten mecz + ze jest dostepny u bukmachera...","market":"Corners/Goals/1X2"}]}'
-      :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live na tym urzadzeniu. Wybierz TOP 3 mecze wedlug kryteriow:\n- Minuta 60-85\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Jest kurs Over/Under\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}';
+      ?'Masz '+imgs.length+' screenshotow. Jeden lub wiecej to lista meczow live (Aiscore/Sofascore), pozostale to bukmacher (BC.game/Betway).\n\nZnajdz mecze ktore sa JEDNOCZESNIE:\n1. Widoczne na liscie live (maja statystyki)\n2. Dostepne u bukmachera (maja kursy)\n\nNastepnie z tej wspolnej listy wybierz TOP 3 wedlug:\n'+criteria+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt
+      :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live. Wybierz TOP 3 mecze wedlug kryteriow:\n'+criteria+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt;
     content.push({type:'text',text:prompt});
 
     const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
@@ -1695,20 +1698,39 @@ async function runScan(){
 }
 
 function renderScanCards(matches){
-  $('scanCards').innerHTML=matches.map(m=>
-    '<div class="scan-card">'
+  // Filter out 76+ minute matches
+  const valid=matches.filter(m=>(m.minute||0)<76);
+  if(!valid.length){
+    $('scanCards').innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--red);padding:.5rem;font-family:var(--mono);">Wszystkie mecze maja 76+ minut — za pozno na analize.</div>';
+    $('scanResults').style.display='block';
+    return;
+  }
+  $('scanCards').innerHTML=valid.slice(0,3).map(m=>{
+    const min=m.minute||0;
+    const remMin=90-min;
+    const isIdeal=min>=45&&min<=68;
+    const timeIcon=isIdeal?'\u2B50':'\u26A1';
+    const timeColor=isIdeal?'var(--green)':'var(--yellow)';
+    const timeBg=isIdeal?'var(--green3)':'var(--yel-bg)';
+    const timeBd=isIdeal?'var(--green-bd)':'var(--yel-bd)';
+    const timeText=isIdeal?'~'+(90-min)+' min na analize':'~'+(90-min)+' min — dzialaj szybko!';
+    return '<div class="scan-card">'
       +'<div class="sc-header">'
         +'<span class="sc-teams">'+m.home+' vs '+m.away+'</span>'
         +'<span class="sc-minute">'+m.minute+'\'</span>'
       +'</div>'
       +'<div class="sc-score">'+m.score+'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:5px;background:'+timeBg+';border:1px solid '+timeBd+';width:fit-content;">'
+        +'<span style="font-size:12px;">'+timeIcon+'</span>'
+        +'<span style="font-family:var(--mono);font-size:10px;color:'+timeColor+';">'+timeText+'</span>'
+      +'</div>'
       +'<div class="sc-reason">'+m.reason+'</div>'
       +'<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">'
         +'<span class="sc-market">'+m.market+'</span>'
         +(m.corners?'<span style="font-family:var(--mono);font-size:10px;color:var(--text3);">Corners: '+m.corners+'</span>':'')
       +'</div>'
-    +'</div>'
-  ).join('');
+    +'</div>';
+  }).join('');
   $('scanResults').style.display='block';
 }
 </script>
