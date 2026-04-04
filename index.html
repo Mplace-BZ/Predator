@@ -1653,12 +1653,11 @@ async function runScan(){
 
     // Build content: all images + one text prompt
     const content=imgs.map(img=>({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}}));
-    const minuteRule='- Minuta 45-75 (IDEALNIE 45-68, OK 69-75, ODRZUC 76+)';
-    const criteria=minuteRule+'\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under';
     const jsonFmt='{"matches":[{"home":"...","away":"...","score":"...","minute":62,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}';
+    const noMatchJson='{"matches":[]}';
     const prompt=imgs.length>1
-      ?'Masz '+imgs.length+' screenshotow. Jeden lub wiecej to lista meczow live (Aiscore/Sofascore), pozostale to bukmacher (BC.game/Betway).\n\nZnajdz mecze ktore sa JEDNOCZESNIE:\n1. Widoczne na liscie live (maja statystyki)\n2. Dostepne u bukmachera (maja kursy)\n\nNastepnie z tej wspolnej listy wybierz TOP 3 wedlug:\n'+criteria+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt
-      :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live. Wybierz TOP 3 mecze wedlug kryteriow:\n'+criteria+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt;
+      ?'Masz '+imgs.length+' screenshotow. Jeden to lista meczow live (Aiscore/Sofascore), drugi to bukmacher (BC.game/Betway).\n\nKROK 1: Z screenu live — wypisz WSZYSTKIE mecze (nazwa + minuta + wynik)\nKROK 2: Z screenu bukmachera — wypisz WSZYSTKIE mecze dostepne do typowania\nKROK 3: Znajdz PRZECIECIE — mecze ktore sa NA OBU listach. Jesli mecz jest TYLKO na jednym screenie, IGNORUJ GO calkowicie.\nKROK 4: Z przeciecia wybierz TOP 3 wedlug:\n- Minuta MAX 72 (zostalo min 18 min na analize i postawienie). ODRZUC mecze 73+\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under na bukmacherze\n\nJesli brak wspolnych meczow, odpowiedz: '+noMatchJson+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt
+      :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live. Wybierz TOP 3 mecze wedlug kryteriow:\n- Minuta MAX 72 (ODRZUC 73+)\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt;
     content.push({type:'text',text:prompt});
 
     const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
@@ -1682,11 +1681,11 @@ async function runScan(){
     if(!jsonMatch) throw new Error('Brak JSON w odpowiedzi');
 
     const result=JSON.parse(jsonMatch[0]);
-    if(!result.matches||!result.matches.length) throw new Error('Brak meczow w odpowiedzi');
+    if(!result.matches) throw new Error('Brak JSON matches w odpowiedzi');
 
-    renderScanCards(result.matches.slice(0,3));
-    status.textContent='Znaleziono '+result.matches.length+' meczow';
-    status.style.color='var(--green)';
+    renderScanCards(result.matches.slice(0,3),imgs.length>1);
+    status.textContent=result.matches.length?'Znaleziono '+result.matches.length+' meczow':'Brak wspolnych meczow';
+    status.style.color=result.matches.length?'var(--green)':'var(--yellow)';
 
   }catch(e){
     console.error('[SCANNER]',e);
@@ -1697,11 +1696,16 @@ async function runScan(){
   $('scanBtn').disabled=false;
 }
 
-function renderScanCards(matches){
-  // Filter out 76+ minute matches
-  const valid=matches.filter(m=>(m.minute||0)<76);
+function renderScanCards(matches,isMulti){
+  // Filter out 73+ minute matches
+  const valid=matches.filter(m=>(m.minute||0)<=72);
+  if(!matches.length&&isMulti){
+    $('scanCards').innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--yellow);padding:.5rem;font-family:var(--mono);">Brak wspolnych meczow — wrzuc nowe screenshoty.</div>';
+    $('scanResults').style.display='block';
+    return;
+  }
   if(!valid.length){
-    $('scanCards').innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--red);padding:.5rem;font-family:var(--mono);">Wszystkie mecze maja 76+ minut — za pozno na analize.</div>';
+    $('scanCards').innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--red);padding:.5rem;font-family:var(--mono);">Wszystkie mecze maja 73+ minut — za pozno na analize.</div>';
     $('scanResults').style.display='block';
     return;
   }
@@ -1713,7 +1717,7 @@ function renderScanCards(matches){
     const timeColor=isIdeal?'var(--green)':'var(--yellow)';
     const timeBg=isIdeal?'var(--green3)':'var(--yel-bg)';
     const timeBd=isIdeal?'var(--green-bd)':'var(--yel-bd)';
-    const timeText=isIdeal?'~'+(90-min)+' min na analize':'~'+(90-min)+' min — dzialaj szybko!';
+    const timeText=isIdeal?'~'+remMin+' min na analize':'~'+remMin+' min — dzialaj szybko!';
     return '<div class="scan-card">'
       +'<div class="sc-header">'
         +'<span class="sc-teams">'+m.home+' vs '+m.away+'</span>'
