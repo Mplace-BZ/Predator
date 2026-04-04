@@ -218,7 +218,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.8</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.9</div>
   </div>
 </div>
 
@@ -1654,9 +1654,8 @@ async function runScan(){
     // Build content: all images + one text prompt
     const content=imgs.map(img=>({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}}));
     const jsonFmt='{"matches":[{"home":"...","away":"...","score":"...","minute":62,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}';
-    const noMatchJson='{"matches":[]}';
     const prompt=imgs.length>1
-      ?'Masz '+imgs.length+' screenshotow. Jeden to lista meczow live (Aiscore/Sofascore), drugi to bukmacher (BC.game/Betway).\n\nKROK 1: Z screenu live — wypisz WSZYSTKIE mecze (nazwa + minuta + wynik)\nKROK 2: Z screenu bukmachera — wypisz WSZYSTKIE mecze dostepne do typowania\nKROK 3: Znajdz PRZECIECIE — mecze ktore sa NA OBU listach. Jesli mecz jest TYLKO na jednym screenie, IGNORUJ GO calkowicie.\nKROK 4: Z przeciecia wybierz TOP 3 wedlug:\n- Minuta MAX 72 (zostalo min 18 min na analize i postawienie). ODRZUC mecze 73+\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under na bukmacherze\n\nJesli brak wspolnych meczow, odpowiedz: '+noMatchJson+'\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt
+      ?'Masz '+imgs.length+' screenshotow.\n\nKROK 1: Z screenshotu 1 wypisz WSZYSTKIE nazwy druzyn ktore widzisz.\nKROK 2: Z screenshotu 2 wypisz WSZYSTKIE nazwy druzyn ktore widzisz.\nKROK 3: Znajdz mecze gdzie OBIE druzyny pojawiaja sie NA OBYDWU screenshotach. Nazwy moga sie nieco roznic (np. skroty) — dopasuj inteligentnie.\nKROK 4: Z tych wspolnych meczow wybierz MAX 3 wedlug: minuta < 73, corners > 8, wynik max 1 gol roznicy.\nKROK 5: Jesli nie ma wspolnych meczow odpowiedz: {"matches":[],"error":"Brak wspolnych meczow"}\n\nZWROC TYLKO JSON (bez markdown, bez ```json). Nie wybieraj meczow ktore sa tylko na jednym screenie.\n'+jsonFmt
       :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live. Wybierz TOP 3 mecze wedlug kryteriow:\n- Minuta MAX 72 (ODRZUC 73+)\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n'+jsonFmt;
     content.push({type:'text',text:prompt});
 
@@ -1683,9 +1682,15 @@ async function runScan(){
     const result=JSON.parse(jsonMatch[0]);
     if(!result.matches) throw new Error('Brak JSON matches w odpowiedzi');
 
-    renderScanCards(result.matches.slice(0,3),imgs.length>1);
-    status.textContent=result.matches.length?'Znaleziono '+result.matches.length+' meczow':'Brak wspolnych meczow';
-    status.style.color=result.matches.length?'var(--green)':'var(--yellow)';
+    if(result.error||!result.matches.length){
+      renderScanCards([],imgs.length>1);
+      status.textContent=result.error||'Brak wspolnych meczow';
+      status.style.color='var(--yellow)';
+    } else {
+      renderScanCards(result.matches.slice(0,3),imgs.length>1);
+      status.textContent='Znaleziono '+result.matches.length+' wspolnych meczow';
+      status.style.color='var(--green)';
+    }
 
   }catch(e){
     console.error('[SCANNER]',e);
