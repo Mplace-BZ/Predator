@@ -194,7 +194,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <div class="hdr-badge">Live</div>
   <h1>Match <span>Predictor</span></h1>
   <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.1</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.2</div>
 </div>
 
 <!-- TRAFFIC LIGHT -->
@@ -1504,5 +1504,39 @@ $('rcMinute').addEventListener('input',calc);
 
 calc();
 </script>
+
+<!-- STRATEGY CHEATSHEET -->
+<div id="stratTab" onclick="document.getElementById('stratPanel').classList.toggle('open')" style="position:fixed;right:0;top:50%;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--green-bd);border-right:none;border-radius:8px 0 0 8px;padding:8px 6px;cursor:pointer;z-index:200;font-family:var(--mono);font-size:10px;color:var(--green);writing-mode:vertical-rl;letter-spacing:.1em;">STRATEGY</div>
+<div id="stratPanel" style="position:fixed;right:-220px;top:50%;transform:translateY(-50%);width:210px;max-height:80vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--green-bd);border-right:none;border-radius:10px 0 0 10px;padding:1rem .85rem;z-index:199;transition:right .3s ease;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8;">
+  <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:.6rem;letter-spacing:.1em;">STRATEGY CHEATSHEET</div>
+
+  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">TRAFFIC LIGHT</div>
+  <div><span style="color:var(--red);">NO BET</span> → skip</div>
+  <div><span style="color:var(--yellow);">WATCH</span> → obserwuj</div>
+  <div style="margin-bottom:.5rem;"><span style="color:var(--green);">BET</span> → sprawdz Edge%</div>
+
+  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">CORNERS</div>
+  <div>Hist% > 75% = <span style="color:var(--green);">HOT</span></div>
+  <div>Corners/match > 9</div>
+  <div style="margin-bottom:.5rem;">Minuta 45-70</div>
+
+  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">EDGE%</div>
+  <div><span style="color:var(--green);">STRONG</span> 15%+ → typuj</div>
+  <div><span style="color:var(--yellow);">VALUE</span> 5-14% → typuj</div>
+  <div><span style="color:#ff9f43;">SLIM</span> 2-4% → skip</div>
+  <div style="margin-bottom:.5rem;"><span style="color:var(--red);">NO EDGE</span> → skip</div>
+
+  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">LAST 15 MIN</div>
+  <div>ANY GOAL > 65% + VALUE</div>
+  <div>Away xG > 0.5 → value</div>
+  <div>Red card → lambda x1.25</div>
+</div>
+<style>
+#stratPanel.open{right:0!important;}
+#stratPanel.open~#stratTab{right:210px;}
+#stratPanel::-webkit-scrollbar{width:4px;}
+#stratPanel::-webkit-scrollbar-thumb{background:var(--green-bd);border-radius:2px;}
+@media(max-width:768px){#stratTab,#stratPanel{display:none;}}
+</style>
 </body>
 </html>
