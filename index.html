@@ -191,6 +191,21 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 .scan-thumb img{width:100%;height:100%;object-fit:cover;}
 .scan-thumb .scan-rm{position:absolute;top:1px;right:1px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.7);color:var(--red);font-size:11px;line-height:16px;text-align:center;cursor:pointer;border:none;padding:0;}
 
+/* PREDATOR MODE */
+@keyframes predator-pulse{
+  0%  {border-color:rgba(26,255,140,0.3);box-shadow:0 0 8px rgba(26,255,140,0.1),inset 0 0 8px rgba(26,255,140,0.03);}
+  50% {border-color:rgba(26,255,140,0.8);box-shadow:0 0 24px rgba(26,255,140,0.3),inset 0 0 16px rgba(26,255,140,0.06);}
+  100%{border-color:rgba(26,255,140,0.3);box-shadow:0 0 8px rgba(26,255,140,0.1),inset 0 0 8px rgba(26,255,140,0.03);}
+}
+.predator-panel{display:none;background:var(--bg2);border:2px solid var(--green);border-radius:12px;padding:1.2rem;margin-bottom:1rem;}
+.predator-panel.active{display:block;animation:predator-pulse 2s ease-in-out infinite;}
+.predator-inner{display:flex;align-items:flex-start;gap:1rem;}
+.predator-icon{font-size:36px;color:var(--green);flex-shrink:0;line-height:1;}
+.predator-content{flex:1;min-width:0;}
+.predator-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem;}
+.predator-reason{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:.4rem;}
+.predator-market{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.6;}
+
 /* SCANNER CARDS */
 .scan-card{background:var(--bg3);border:1px solid var(--purple-bd);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.5rem;}
 .scan-card .sc-header{display:flex;align-items:center;justify-content:space-between;}
@@ -218,7 +233,19 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.3</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.4</div>
+  </div>
+</div>
+
+<!-- PREDATOR MODE -->
+<div id="predatorPanel" class="predator-panel">
+  <div class="predator-inner">
+    <div class="predator-icon">&#8982;</div>
+    <div class="predator-content">
+      <div class="predator-title">ANOMALIA WYKRYTA</div>
+      <div id="predatorReason" class="predator-reason"></div>
+      <div id="predatorMarket" class="predator-market"></div>
+    </div>
   </div>
 </div>
 
@@ -988,6 +1015,73 @@ function calc(){
     pHWin, pDraw, pAWin,
     homeScore, awayScore
   });
+
+  // ── PREDATOR MODE — anomaly detection ──
+  const predatorReasons=[];
+
+  // Trigger 1: High xG but 0:0 after 25'
+  if(homeScore===0&&awayScore===0&&minute>25){
+    if(liveXGH>0.6) predatorReasons.push({
+      team:'home',teamName:homeTeam,
+      reason:homeTeam+': xG live '+liveXGH.toFixed(2)+' — gol powinien juz pasc!',
+      market:'Next Goal / '+homeTeam+' strzeli',oddsHint:'1.50 – 1.90'
+    });
+    else if(hXG>0.6) predatorReasons.push({
+      team:'home',teamName:homeTeam,
+      reason:homeTeam+': xG sezon '+hXG.toFixed(2)+' — nienaturalne 0:0!',
+      market:'Over 0.5 Goals',oddsHint:'1.30 – 1.60'
+    });
+    if(liveXGA>0.6) predatorReasons.push({
+      team:'away',teamName:awayTeam,
+      reason:awayTeam+': xG live '+liveXGA.toFixed(2)+' — gol powinien juz pasc!',
+      market:'Next Goal / '+awayTeam+' strzeli',oddsHint:'1.50 – 1.90'
+    });
+    else if(aXG>0.6) predatorReasons.push({
+      team:'away',teamName:awayTeam,
+      reason:awayTeam+': xG sezon '+aXG.toFixed(2)+' — nienaturalne 0:0!',
+      market:'Over 0.5 Goals',oddsHint:'1.30 – 1.60'
+    });
+  }
+
+  // Trigger 2: DA disproportion > 20 not reflected in score
+  const daDiff=Math.abs(lHDA-lADA);
+  if(daDiff>20){
+    const domTeam=lHDA>lADA?'home':'away';
+    const domName=domTeam==='home'?homeTeam:awayTeam;
+    const domScore=domTeam==='home'?homeScore:awayScore;
+    const oppScore=domTeam==='home'?awayScore:homeScore;
+    if(domScore<=oppScore){
+      predatorReasons.push({
+        team:domTeam,teamName:domName,
+        reason:domName+' dominuje: DA '+lHDA+'-'+lADA+' ale wynik '+homeScore+':'+awayScore+'!',
+        market:domName+' Next Goal / '+domName+' wygra',oddsHint:'1.60 – 2.20'
+      });
+    }
+  }
+
+  // Trigger 3: SOT > 4 but no goal
+  if(lHSOT>4&&homeScore===0) predatorReasons.push({
+    team:'home',teamName:homeTeam,
+    reason:homeTeam+': '+lHSOT+' strzalow celnych, 0 goli — musi w koncu wpasc!',
+    market:homeTeam+' strzeli gola',oddsHint:'1.40 – 1.80'
+  });
+  if(lASOT>4&&awayScore===0) predatorReasons.push({
+    team:'away',teamName:awayTeam,
+    reason:awayTeam+': '+lASOT+' strzalow celnych, 0 goli — musi w koncu wpasc!',
+    market:awayTeam+' strzeli gola',oddsHint:'1.40 – 1.80'
+  });
+
+  // Render Predator panel
+  const pp=$('predatorPanel');
+  if(predatorReasons.length>0){
+    const best=predatorReasons[0];
+    const teamColor=best.team==='home'?'var(--blue)':'#ff9f43';
+    $('predatorReason').innerHTML='<span style="color:'+teamColor+';font-weight:700;">'+best.teamName+'</span> — '+best.reason;
+    $('predatorMarket').innerHTML='&#127919; Rynek: <strong>'+best.market+'</strong> | Szacowane kursy: <span style="font-family:var(--mono);color:var(--green);">'+best.oddsHint+'</span>';
+    pp.classList.add('active');
+  } else {
+    pp.classList.remove('active');
+  }
 
   // Edge% — model vs bookmaker
   // Yellow cards
