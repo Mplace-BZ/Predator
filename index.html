@@ -218,7 +218,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.9</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.0</div>
   </div>
 </div>
 
@@ -943,26 +943,36 @@ function calc(){
   const cornLambdaRem=(hCornS+aCornS)*remFrac;
   const projectedTotal=currentCorners+cornLambdaRem;
 
-  const cornerLines=[7.5,8.5,9.5,10.5];
+  // Corners — LIVE logic: only show lines that are still open
+  const allCornerLines=[7.5,8.5,9.5,10.5,11.5,12.5];
   const cornersGrid=$('cornersGrid');
   if(hCornS+aCornS>0){
     const cornLambdaEff=(hCornS+aCornS)*remFrac*(rcActive?1.3:1);
-    cornersGrid.innerHTML=cornerLines.map(line=>{
-      const need=Math.max(0,line-currentCorners);
-      const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
-      const histKey=line-0.5;
-      const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
-      const badge=histPct!==null?(histPct>75?'<span style="color:var(--green);font-family:var(--mono);font-size:10px;font-weight:700;"> HOT</span>':histPct>=60?'<span style="color:var(--yellow);font-family:var(--mono);font-size:10px;"> OK</span>':''):'';
-      const sub=currentCorners+' now, ~'+cornLambdaEff.toFixed(1)+' more'
-        +(histPct!==null?' | Hist: '+histPct+'%':'');
-      const cls=pOver>0.65?'green':pOver>0.45?'yellow':'red';
-      const colors={green:{bg:'var(--green3)',bd:'var(--green-bd)',fg:'var(--green)'},yellow:{bg:'var(--yel-bg)',bd:'var(--yel-bd)',fg:'var(--yellow)'},red:{bg:'var(--red-bg)',bd:'var(--red-bd)',fg:'var(--red)'}}[cls];
-      return '<div style="background:'+colors.bg+';border:1px solid '+colors.bd+';border-radius:10px;padding:1rem;text-align:center;">'
-        +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colors.fg+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners'+badge+'</div>'
-        +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colors.fg+';line-height:1;">'+fmt(pOver)+'</div>'
-        +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+sub+'</div>'
-      +'</div>';
-    }).join('');
+    // Filter: skip lines already won (cornersNow > line) — those are settled
+    const liveLines=allCornerLines.filter(line=>currentCorners<=line);
+    // Take up to 4 nearest lines
+    const showLines=liveLines.slice(0,4);
+    if(!showLines.length){
+      cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--green);padding:.5rem;font-family:var(--mono);">'+currentCorners+' corners — all main lines already hit.</div>';
+    } else {
+      cornersGrid.innerHTML=showLines.map(line=>{
+        const need=line-currentCorners; // how many more needed (always >0 after filter)
+        const pOver=1-poissonCum(cornLambdaEff,Math.floor(need));
+        const histKey=line-0.5;
+        const histPct=cornHist[histKey]||cornHist[Math.ceil(line)]||null;
+        const badge=histPct!==null?(histPct>75?'<span style="color:var(--green);font-family:var(--mono);font-size:10px;font-weight:700;"> HOT</span>':histPct>=60?'<span style="color:var(--yellow);font-family:var(--mono);font-size:10px;"> OK</span>':''):'';
+        const needInt=Math.ceil(need);
+        const sub=currentCorners+' now, need '+needInt+' more (~'+cornLambdaEff.toFixed(1)+' exp.)'
+          +(histPct!==null?' | Hist: '+histPct+'%':'');
+        const cls=pOver>0.65?'green':pOver>0.45?'yellow':'red';
+        const colors={green:{bg:'var(--green3)',bd:'var(--green-bd)',fg:'var(--green)'},yellow:{bg:'var(--yel-bg)',bd:'var(--yel-bd)',fg:'var(--yellow)'},red:{bg:'var(--red-bg)',bd:'var(--red-bd)',fg:'var(--red)'}}[cls];
+        return '<div style="background:'+colors.bg+';border:1px solid '+colors.bd+';border-radius:10px;padding:1rem;text-align:center;">'
+          +'<div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:'+colors.fg+';margin-bottom:.4rem;">Over '+line.toFixed(1)+' corners'+badge+'</div>'
+          +'<div style="font-family:var(--mono);font-size:32px;font-weight:700;color:'+colors.fg+';line-height:1;">'+fmt(pOver)+'</div>'
+          +'<div style="font-size:11px;color:var(--text2);margin-top:.4rem;">'+sub+'</div>'
+        +'</div>';
+      }).join('');
+    }
   } else {
     cornersGrid.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:var(--text3);padding:.5rem">Enter season corner averages to see predictions.</div>';
   }
