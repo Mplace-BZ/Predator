@@ -9,7 +9,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - GitHub Pages: https://mplace-bz.github.io/Predator/
 - Jeden plik: index.html
 
-## Aktualna wersja: v5.5
+## Aktualna wersja: v6.1
 
 ## Red Card Model Logic
 When red card checkbox is active (rcActive) with team selection (home/away) and minute:
@@ -44,6 +44,34 @@ Wejścia do strefy ataku z Sofascore (lHDA/lADA) powinny mocniej wpływać na pr
 2. Yellow cards parser + betting market
 3. Matchday form (last 5 games) parser
 4. Momentum blend dynamiczny (30% → 40% przy dużej dysproporcji DA)
+
+## Filozofia typowania
+- TYLKO Live betting - nigdy przed meczem
+- Cel: małe stawki (np. 20 USD) na wysokie kursy (2.1+)
+- Szybka decyzja - max 2-3 minuty na analizę meczu
+- Preferowane rynki wg skuteczności:
+  1. Corners Over (najstabilniejszy, przewidywalny)
+  2. Next Goal (gdy jedna drużyna dominuje DA)
+  3. Away Win (gdy model widzi duży edge na niedowartościowanej drużynie)
+  4. BTTS (gdy obie drużyny aktywne, H2H > 60%)
+
+## Profil idealnego meczu do typowania
+- Minuta: 55-70 (zostało czasu)
+- Corners łącznie > 7 już w meczu
+- Wynik: remis lub 1 gol różnicy
+- DA dysproporcja > 15 (jedna drużyna dominuje)
+- Edge% > 10% (VALUE lub STRONG)
+- Kurs > 1.80 (warto ryzykować)
+
+## Czego NIE typować
+- Kursy < 1.50 (za mało zysku)
+- Minuta > 75 (za mało czasu)
+- Brak edge% (NO EDGE = skip)
+- Pre-match (zbyt wiele niewiadomych)
+
+## Cashout
+Nie dotyczy - zawsze dochodzimy do końca.
+Małe stawki = nie potrzeba cashout.
 
 ## Styl kodu
 - Komentarze po polsku lub angielsku
