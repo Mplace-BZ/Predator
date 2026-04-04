@@ -187,21 +187,19 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- STICKY TOP BAR -->
 <div style="position:sticky;top:0;z-index:100;background:var(--bg);padding-bottom:.5rem;border-bottom:1px solid var(--border);">
-  <!-- ROW 1: Header + Banner + Version -->
-  <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
+  <div style="display:flex;align-items:center;gap:.6rem;">
     <div class="live-dot"></div>
     <div class="hdr-badge">Live</div>
     <h1 style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;">Match <span style="color:var(--green);">Predictor</span></h1>
-    <div style="flex:1;max-width:400px;border-radius:6px;overflow:hidden;border:1px solid rgba(26,255,140,0.15);margin:0 .5rem;">
-      <img src="predator-banner.png" alt="Predator" style="width:100%;display:block;height:36px;object-fit:cover;">
+    <div style="flex:1;max-width:320px;border-radius:6px;overflow:hidden;border:1px solid rgba(26,255,140,0.15);margin:0 .3rem;">
+      <img src="predator-banner.png" alt="Predator" style="width:100%;display:block;height:32px;object-fit:cover;">
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;margin-left:auto;flex-shrink:0;">v5.3</div>
-  </div>
-  <!-- ROW 2: Traffic Light -->
-  <div id="trafficLight" style="display:flex;align-items:center;gap:.7rem;padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);">
-    <div id="tlDot" style="width:12px;height:12px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
-    <div id="tlLabel" style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text3);">WAITING</div>
-    <div id="tlSub" style="font-size:10px;color:var(--text3);margin-left:auto;">Enter odds to activate</div>
+    <div id="trafficLight" style="display:flex;align-items:center;gap:.5rem;padding:4px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--bg2);margin-left:auto;flex-shrink:0;">
+      <div id="tlDot" style="width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
+      <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
+      <div id="tlSub" style="font-size:9px;color:var(--text3);">odds?</div>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.4</div>
   </div>
 </div>
 
@@ -1034,23 +1032,23 @@ function calc(){
       dot.style.background='var(--green)';dot.style.boxShadow='0 0 8px var(--green)';
       lbl.style.color='var(--green)';lbl.textContent='BET';
       tl.style.borderColor='var(--green-bd)';tl.style.background='var(--green3)';
-      sub.textContent='Best edge: +'+bestEdge.toFixed(1)+'%';sub.style.color='var(--green)';
+      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--green)';
     } else if(bestEdge>=2){
       dot.style.background='var(--yellow)';dot.style.boxShadow='0 0 8px var(--yellow)';
       lbl.style.color='var(--yellow)';lbl.textContent='WATCH';
       tl.style.borderColor='var(--yel-bd)';tl.style.background='var(--yel-bg)';
-      sub.textContent='Best edge: +'+bestEdge.toFixed(1)+'% (SLIM)';sub.style.color='var(--yellow)';
+      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--yellow)';
     } else {
       dot.style.background='var(--red)';dot.style.boxShadow='0 0 8px var(--red)';
       lbl.style.color='var(--red)';lbl.textContent='NO BET';
       tl.style.borderColor='var(--red-bd)';tl.style.background='var(--red-bg)';
-      sub.textContent=bestEdge>0?'Best edge: +'+bestEdge.toFixed(1)+'% (too low)':'No edge found';sub.style.color='var(--red)';
+      sub.textContent=bestEdge>0?'+'+bestEdge.toFixed(1)+'%':'0%';sub.style.color='var(--red)';
     }
   } else {
     $('tlDot').style.background='var(--text3)';$('tlDot').style.boxShadow='none';
     $('tlLabel').style.color='var(--text3)';$('tlLabel').textContent='WAITING';
     $('trafficLight').style.borderColor='var(--border2)';$('trafficLight').style.background='var(--bg2)';
-    $('tlSub').textContent='Enter odds to activate';$('tlSub').style.color='var(--text3)';
+    $('tlSub').textContent='odds?';$('tlSub').style.color='var(--text3)';
   }
 }
 
