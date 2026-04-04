@@ -218,7 +218,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.6</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v5.7</div>
   </div>
 </div>
 
@@ -1653,7 +1653,10 @@ async function runScan(){
 
     // Build content: all images + one text prompt
     const content=imgs.map(img=>({type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}}));
-    content.push({type:'text',text:'Jestes ekspertem od typowania. Przeanalizuj WSZYSTKIE screenshoty meczow live. Wybierz TOP 3 mecze z calej puli wedlug kryteriow:\n- Minuta 60-85\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Jest kurs Over/Under\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}'});
+    const prompt=imgs.length>1
+      ?'Masz '+imgs.length+' screenshotow. Jeden lub wiecej to lista meczow live (Aiscore/Sofascore), pozostale to bukmacher (BC.game/Betway).\n\nZnajdz mecze ktore sa JEDNOCZESNIE:\n1. Widoczne na liscie live (maja statystyki)\n2. Dostepne u bukmachera (maja kursy)\n\nNastepnie z tej wspolnej listy wybierz TOP 3 wedlug:\n- Minuta 60-85\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Ma kurs Over/Under\n\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku dlaczego ten mecz + ze jest dostepny u bukmachera...","market":"Corners/Goals/1X2"}]}'
+      :'Jestes ekspertem od typowania. Przeanalizuj liste meczow live na tym urzadzeniu. Wybierz TOP 3 mecze wedlug kryteriow:\n- Minuta 60-85\n- Corners lacznie > 8\n- Wynik wyrownany lub 1 gol roznicy\n- Jest kurs Over/Under\nOdpowiedz TYLKO w JSON (bez markdown, bez ```json):\n{"matches":[{"home":"...","away":"...","score":"...","minute":72,"corners":9,"reason":"...po polsku...","market":"Corners/Goals/1X2"}]}';
+    content.push({type:'text',text:prompt});
 
     const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
       method:'POST',
