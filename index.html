@@ -1530,6 +1530,39 @@ $('rcMinute').addEventListener('input',calc);
 calc();
 
 // ── MATCH SCANNER ────────────────────────────────────────────────
+async function readScanSSE(response){
+  const reader=response.body.getReader();
+  const decoder=new TextDecoder();
+  let buffer='',assembled='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buffer+=decoder.decode(value,{stream:true});
+    const lines=buffer.split('\n');
+    buffer=lines.pop();
+    for(const line of lines){
+      if(!line.startsWith('data: ')) continue;
+      const payload=line.slice(6).trim();
+      if(payload==='[DONE]') continue;
+      try{
+        const ev=JSON.parse(payload);
+        if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.text) assembled+=ev.delta.text;
+      }catch(_){}
+    }
+  }
+  if(buffer.startsWith('data: ')){
+    const payload=buffer.slice(6).trim();
+    if(payload!=='[DONE]'){
+      try{
+        const ev=JSON.parse(payload);
+        if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.text) assembled+=ev.delta.text;
+      }catch(_){}
+    }
+  }
+  if(!assembled) throw new Error('Brak treści w odpowiedzi API');
+  return assembled;
+}
+
 async function scanMatches(input){
   const file=input.files[0];
   if(!file) return;
@@ -1550,6 +1583,7 @@ async function scanMatches(input){
         body:JSON.stringify({
           model:'claude-sonnet-4-20250514',
           max_tokens:2048,
+          stream:true,
           messages:[{
             role:'user',
             content:[
@@ -1565,8 +1599,7 @@ async function scanMatches(input){
         throw new Error('API '+resp.status+': '+err);
       }
 
-      const data=await resp.json();
-      const text=(data.content&&data.content[0]&&data.content[0].text)||'';
+      const text=await readScanSSE(resp);
 
       // Parse JSON from response
       const jsonMatch=text.match(/\{[\s\S]*"matches"[\s\S]*\}/);
