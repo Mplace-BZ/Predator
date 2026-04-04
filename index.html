@@ -185,23 +185,24 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 <body>
 <div class="wrap">
 
-<div style="position:sticky;top:0;z-index:100;width:100%;margin-bottom:1rem;border-radius:10px;overflow:hidden;border:1px solid rgba(26,255,140,0.15);background:var(--bg);">
-  <img src="predator-banner.png" alt="Predator Banner" style="width:100%;display:block;height:auto;max-height:90px;object-fit:cover;">
-</div>
-
-<div class="hdr">
-  <div class="live-dot"></div>
-  <div class="hdr-badge">Live</div>
-  <h1>Match <span>Predictor</span></h1>
-  <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">Poisson xG Model</div>
-  <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;">v5.2</div>
-</div>
-
-<!-- TRAFFIC LIGHT -->
-<div id="trafficLight" style="display:flex;align-items:center;gap:.7rem;padding:.6rem 1rem;margin-bottom:1rem;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);">
-  <div id="tlDot" style="width:14px;height:14px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
-  <div id="tlLabel" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text3);">WAITING</div>
-  <div id="tlSub" style="font-size:11px;color:var(--text3);margin-left:auto;">Enter odds to activate</div>
+<!-- STICKY TOP BAR -->
+<div style="position:sticky;top:0;z-index:100;background:var(--bg);padding-bottom:.5rem;border-bottom:1px solid var(--border);">
+  <!-- ROW 1: Header + Banner + Version -->
+  <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
+    <div class="live-dot"></div>
+    <div class="hdr-badge">Live</div>
+    <h1 style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;">Match <span style="color:var(--green);">Predictor</span></h1>
+    <div style="flex:1;max-width:400px;border-radius:6px;overflow:hidden;border:1px solid rgba(26,255,140,0.15);margin:0 .5rem;">
+      <img src="predator-banner.png" alt="Predator" style="width:100%;display:block;height:36px;object-fit:cover;">
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;margin-left:auto;flex-shrink:0;">v5.3</div>
+  </div>
+  <!-- ROW 2: Traffic Light -->
+  <div id="trafficLight" style="display:flex;align-items:center;gap:.7rem;padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);">
+    <div id="tlDot" style="width:12px;height:12px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
+    <div id="tlLabel" style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text3);">WAITING</div>
+    <div id="tlSub" style="font-size:10px;color:var(--text3);margin-left:auto;">Enter odds to activate</div>
+  </div>
 </div>
 
 <!-- PASTE -->
