@@ -176,6 +176,39 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .vb-red.active .vb-label{color:var(--negative);}
 .vb-red.active .vb-stake{color:var(--negative);}
 
+/* ───────────────────────── Specific picks section ───────────────────────── */
+.picks-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;}
+.picks-meta{font-size:13px;color:var(--text-dim);margin-top:4px;}
+.picks-count{font-size:11px;font-weight:600;color:var(--text-dim);font-variant-numeric:tabular-nums;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 10px;flex-shrink:0;}
+.picks-list{display:flex;flex-direction:column;gap:10px;}
+.pick-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;align-items:center;transition:border-color .15s,background .15s;}
+.pick-card:hover{border-color:var(--border-strong);background:var(--surface-2);}
+.pick-card.high-edge{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-tint) 0%,var(--surface) 60%);}
+.pick-card.warn{border-color:var(--warning-bd);}
+.pick-card.risk{border-color:var(--negative-bd);}
+.pick-card .pick-icon{width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.pick-card.high-edge .pick-icon{background:var(--accent-tint-2);color:var(--accent);}
+.pick-card.warn .pick-icon{background:var(--warning-tint);color:var(--warning);}
+.pick-card.risk .pick-icon{background:var(--negative-tint);color:var(--negative);}
+.pick-card .pick-body{min-width:0;}
+.pick-card .pick-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.01em;margin-bottom:4px;}
+.pick-card .pick-reason{font-size:12px;color:var(--text-dim);line-height:1.4;}
+.pick-card .pick-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-variant-numeric:tabular-nums;}
+.pick-card .pick-edge{font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
+.pick-card.high-edge .pick-edge{color:var(--accent);}
+.pick-card .pick-detail{font-size:11px;color:var(--text-dim);font-weight:500;}
+.pick-card .pick-cta{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);transition:background .15s,border-color .15s;font-family:var(--sans);}
+.pick-card .pick-cta:hover{background:var(--surface-3);border-color:var(--border-strong);}
+.pick-card.high-edge .pick-cta{background:var(--accent);color:#0E0E10;border-color:var(--accent);}
+.pick-card.high-edge .pick-cta:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+.pick-card.placed{opacity:.65;}
+.pick-card.placed .pick-cta{background:var(--positive-tint);color:var(--positive);border-color:var(--positive-bd);pointer-events:none;}
+@media(max-width:640px){
+  .pick-card{grid-template-columns:auto 1fr;grid-template-rows:auto auto;}
+  .pick-card .pick-meta{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;width:100%;border-top:1px dashed var(--border);padding-top:10px;}
+  .pick-card .pick-cta{grid-column:1/-1;justify-content:center;}
+}
+
 /* ───────────────────────── Match context tags ───────────────────────── */
 .tag-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
 .tag-bar-label{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);align-self:center;margin-right:4px;}
@@ -604,7 +637,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.3</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -699,6 +732,18 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="context-tile-meta" id="ctxAnomalyMeta">Wykrywanie anomalii</div>
     </div>
   </div>
+</section>
+
+<!-- ───── KONKRETNE TYPY ───── -->
+<section class="section" id="picksSection">
+  <div class="picks-header">
+    <div>
+      <div class="eyebrow" id="picksEyebrow">Konkretne typy do obstawienia</div>
+      <div class="picks-meta" id="picksMeta">Wpisz kursy poniżej, aby zobaczyć picki z edge'em</div>
+    </div>
+    <span class="picks-count" id="picksCount"></span>
+  </div>
+  <div class="picks-list" id="picksList"></div>
 </section>
 
 <!-- PREDATOR MODE (deprecated — superseded by hero recommendation v7.0) -->
@@ -999,8 +1044,20 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <input type="number" id="oddBTTS" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
     <div style="display:flex;align-items:center;gap:4px;">
-      <span style="font-size:10px;color:var(--blue);font-family:var(--mono);">Goal</span>
-      <input type="number" id="oddNextGoal" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+      <span style="font-size:10px;color:var(--accent);font-family:var(--mono);">Goal</span>
+      <input type="number" id="oddNextGoal" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--accent-soft);font-family:var(--mono);">Corners</span>
+      <input type="number" id="oddCorners" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--negative);font-family:var(--mono);">Red</span>
+      <input type="number" id="oddRedCard" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--warning);font-family:var(--mono);">Pen</span>
+      <input type="number" id="oddPenalty" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
     </div>
     <div style="width:1px;height:20px;background:var(--border);"></div>
     <div style="display:flex;align-items:center;gap:4px;">
@@ -1190,7 +1247,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.2
+    Powered by MPlace · Match Predictor v7.3
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -1209,6 +1266,11 @@ let goalTiming={h:[],a:[]};
 let halfStats={
   // home/away: {bttsFH, over15FH, over05_2H, over15_2H, btts2H, bttsBoth}
   home:{}, away:{}, league:{}
+};
+// FootyStats Prediction Stats — historical match probabilities (per fixture)
+// Used for pre-match edge calculations when Poisson xG model is too conservative
+let footyPredictions={
+  // {over05, over15, over25, over35, over45, btts, goalsPerMatch, cornersPerMatch}
 };
 
 // ── POISSON ──────────────────────────────────────────────────────
@@ -2128,6 +2190,32 @@ function parseFooty(){
     if(v>0) $('leagueAvg').value=v;
   }
 
+  // ── FootyStats Prediction Stats (pre-match historical %) ──
+  // Pattern: "69%Over 2.5\nLeague Average : 57%" — header section before season tables
+  // Used as ALTERNATIVE probabilities when Poisson xG model is too conservative (U20 etc.)
+  footyPredictions={};
+  const predOver05=txt.match(/(\d{1,3})%\s*Over\s*0\.5(?!\s*FH|\s*2H|\s*1H)/i);
+  const predOver15=txt.match(/(\d{1,3})%\s*Over\s*1\.5(?!\s*FH|\s*2H|\s*1H)/i);
+  const predOver25=txt.match(/(\d{1,3})%\s*Over\s*2\.5(?!\s*FH|\s*2H|\s*1H)/i);
+  const predOver35=txt.match(/(\d{1,3})%\s*Over\s*3\.5(?!\s*FH|\s*2H|\s*1H)/i);
+  const predOver45=txt.match(/(\d{1,3})%\s*Over\s*4\.5(?!\s*FH|\s*2H|\s*1H)/i);
+  const predBTTS=txt.match(/(\d{1,3})%\s*BTTS(?!\s*&|\s*First|\s*2nd|\s*Both)/i);
+  if(predOver05) footyPredictions.over05=parseInt(predOver05[1])/100;
+  if(predOver15) footyPredictions.over15=parseInt(predOver15[1])/100;
+  if(predOver25) footyPredictions.over25=parseInt(predOver25[1])/100;
+  if(predOver35) footyPredictions.over35=parseInt(predOver35[1])/100;
+  if(predOver45) footyPredictions.over45=parseInt(predOver45[1])/100;
+  if(predBTTS)   footyPredictions.btts=parseInt(predBTTS[1])/100;
+  // Goals per match (header)
+  const predGoalsM=txt.match(/([\d.]+)\s*Goals\s*\/\s*Match\s*\n\s*League/i);
+  if(predGoalsM) footyPredictions.goalsPerMatch=parseFloat(predGoalsM[1]);
+  // Corners per match (header)
+  const predCornersM=txt.match(/([\d.]+)\s*Corners(?:\s*\n)?\s*\n?League/i);
+  if(predCornersM) footyPredictions.cornersPerMatch=parseFloat(predCornersM[1]);
+  if(Object.keys(footyPredictions).length>0){
+    console.log('[FOOTY PREDICTIONS]',footyPredictions);
+  }
+
   // Corners live from FootyStats: "Corners\n6\n3"
   const cornM=txt.match(/Corners\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
   if(cornM){$('lHCorn').value=cornM[1];$('lACorn').value=cornM[2];}
@@ -2373,7 +2461,7 @@ function clearAll(){
    'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn',
    'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS','oddNextGoal',
    'hYCSeason','aYCSeason','lHYC','lAYC',
-   'lHBC','lABC','hPPG','aPPG'].forEach(id=>$(id).value=0);
+   'lHBC','lABC','hPPG','aPPG','oddCorners','oddRedCard','oddPenalty'].forEach(id=>$(id).value=0);
   $('bankroll').value=1000;
   $('lHPoss').value=50; $('h2hHome').value=50; $('leagueAvg').value=1.5;
   liveXGH=0; liveXGA=0; cornHist={};
@@ -2646,6 +2734,234 @@ function bestOddFor(p){
   return null;
 }
 
+// ── Pre-match detection ──
+function isPreMatch(p){
+  if(!p) return false;
+  const noLive=(n('lHDA')+n('lADA')+n('lHSOT')+n('lASOT'))===0;
+  const possNeutral=n('lHPoss')===50;
+  return p.minute<=5&&noLive&&possNeutral;
+}
+
+// ── Red card probability model ──
+// Combines: fouls intensity, derby/decider tags, DA pressure, current cards on pitch
+function computePRedCard(p){
+  const tags=window._matchTags||new Set();
+  const minute=p.minute||1;
+  const remFrac=Math.max(0,(90-minute)/90);
+  // Base: ~10% any red card per match in average leagues
+  let pRed=0.10;
+  // Tag boosts
+  if(tags.has('derby')) pRed+=0.08;
+  if(tags.has('decider')) pRed+=0.05;
+  if(tags.has('final')) pRed+=0.04;
+  if(tags.has('youth')) pRed+=0.03;  // U19/U20 chaotic
+  // DA pressure both sides high → physical game
+  const totalDA=n('lHDA')+n('lADA');
+  if(totalDA>50) pRed+=0.06;
+  else if(totalDA>30) pRed+=0.03;
+  // Cards already shown — high friction game
+  const totalCards=n('lHYC')+n('lAYC');
+  if(totalCards>=4) pRed+=0.05;
+  else if(totalCards>=2) pRed+=0.02;
+  // Existing red card → second-red boost
+  if($('rcActive').checked) pRed+=0.10;
+  // Time decay — most reds happen late, but if minute already late, less remaining time
+  pRed*=Math.max(0.4,remFrac+0.4);  // Always at least 40% of base
+  return Math.min(0.45,pRed);
+}
+
+// ── rankPicks: build, score, sort all market opportunities ──
+function rankPicks(p){
+  if(!p||!p.minute) return [];
+  const picks=[];
+  const preMatch=isPreMatch(p);
+  const minEdge=preMatch?4:5;
+  const stakeCap=preMatch?0.03:0.05;
+  const bankroll=p.bankroll||1000;
+  const minute=p.minute,remFrac=Math.max(0,(90-minute)/90);
+  const currentGoals=p.homeScore+p.awayScore;
+
+  // Helper: compute edge%, kelly stake, payout, then push if filters pass
+  function tryPush(label,side,modelP,odd,reason,group){
+    if(!odd||odd<1.30||odd>50) return;  // No odd entered
+    if(modelP<0.20||modelP>0.97) return;  // Sanity cap
+    const implied=1/odd;
+    const edgeRaw=modelP-implied;
+    const edgePct=edgeRaw*100;
+    if(edgePct<minEdge) return;
+    const kellyFull=(modelP*odd-1)/(odd-1);
+    const kellyFrac=Math.max(0,Math.min(kellyFull*0.25,stakeCap));
+    const stake=Math.round(bankroll*kellyFrac);
+    if(stake<5) return;  // Too small, noise
+    const payout=Math.round(stake*(odd-1));
+    const score=edgePct*Math.sqrt(modelP);
+    picks.push({label,side,modelP,odd,edge:edgePct,kelly:kellyFrac,stake,payout,reason,group,score});
+  }
+
+  // 1. TOTAL GOALS — Over X.5 (uses oddOver as the available odd)
+  if(p.oddOver>=1.30&&p.totalLambda>0){
+    // Default: use oddOver for the "next sensible line" (currentGoals + 1 or 2)
+    const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
+    const need=Math.max(0,nextLine-currentGoals);
+    const pOverPoisson=1-poissonCum(p.totalLambda,Math.floor(need));
+    // Use FootyStats prediction% when available (more reliable for pre-match U20 etc.)
+    const fpKey='over'+(nextLine===0.5?'05':nextLine===1.5?'15':nextLine===2.5?'25':nextLine===3.5?'35':'45');
+    let pOverNext=pOverPoisson;
+    let modelSource='Poisson xG '+p.totalLambda.toFixed(2);
+    if(preMatch&&footyPredictions[fpKey]!=null){
+      // Pre-match: use FootyStats historical % directly (Poisson xG too conservative for U20/chaos)
+      pOverNext=footyPredictions[fpKey];
+      modelSource='FootyStats '+(footyPredictions[fpKey]*100).toFixed(0)+'% (Poisson '+(pOverPoisson*100).toFixed(0)+'% jako kontekst)';
+    } else if(footyPredictions[fpKey]!=null&&Math.abs(footyPredictions[fpKey]-pOverPoisson)>0.20){
+      // Live but big disagreement: prefer FootyStats hist 70/30
+      pOverNext=footyPredictions[fpKey]*0.7+pOverPoisson*0.3;
+      modelSource='FootyStats '+(footyPredictions[fpKey]*100).toFixed(0)+'% + Poisson '+(pOverPoisson*100).toFixed(0)+'%';
+    }
+    tryPush(
+      'Over '+nextLine.toFixed(1)+' goli',
+      'over',
+      pOverNext,
+      p.oddOver,
+      modelSource+(currentGoals>0?' · wynik '+p.homeScore+':'+p.awayScore:''),
+      'goals'
+    );
+  }
+
+  // Under X.5 (oddUnder)
+  const oddUnder=n('oddUnder');
+  if(oddUnder>=1.30&&p.totalLambda>0){
+    const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
+    const need=Math.max(0,nextLine-currentGoals);
+    const pUnder=poissonCum(p.totalLambda,Math.floor(need));
+    tryPush(
+      'Under '+nextLine.toFixed(1)+' goli',
+      'under',
+      pUnder,
+      oddUnder,
+      'xG rem '+p.totalLambda.toFixed(2)+' · niska oczekiwana liczba goli',
+      'goals'
+    );
+  }
+
+  // 2. BTTS
+  if(p.oddBTTS>=1.30){
+    let pBTTSPoisson;
+    if(p.homeScore>0&&p.awayScore>0){
+      pBTTSPoisson=1;  // Already done
+    } else if(p.homeScore>0){
+      pBTTSPoisson=p.pAwayScores;
+    } else if(p.awayScore>0){
+      pBTTSPoisson=p.pHomeScores;
+    } else {
+      pBTTSPoisson=p.pHomeScores*p.pAwayScores;
+    }
+    if(p.homeScore===0||p.awayScore===0){
+      // Use FootyStats BTTS% when available (pre-match esp.)
+      let pBTTS=pBTTSPoisson;
+      let bttsSource='Model: '+(pBTTSPoisson*100).toFixed(0)+'%';
+      if(preMatch&&footyPredictions.btts!=null){
+        pBTTS=footyPredictions.btts;
+        bttsSource='FootyStats '+(footyPredictions.btts*100).toFixed(0)+'% (model '+(pBTTSPoisson*100).toFixed(0)+'% jako kontekst)';
+      } else if(footyPredictions.btts!=null&&Math.abs(footyPredictions.btts-pBTTSPoisson)>0.20){
+        pBTTS=footyPredictions.btts*0.7+pBTTSPoisson*0.3;
+        bttsSource='FootyStats '+(footyPredictions.btts*100).toFixed(0)+'% + model '+(pBTTSPoisson*100).toFixed(0)+'%';
+      }
+      tryPush(
+        'Obie strzelą (BTTS)',
+        'btts',
+        pBTTS,
+        p.oddBTTS,
+        bttsSource+(p.homeScore>0?' · gospodarze już strzelili':p.awayScore>0?' · goście już strzelili':''),
+        'btts'
+      );
+    }
+  }
+
+  // 3. 1X2
+  if(n('oddHome')>=1.30){
+    tryPush('Gospodarze wygrają (1)','home',p.pHWin,n('oddHome'),'Forma + xG vs goście','1x2');
+  }
+  if(n('oddDraw')>=1.30){
+    tryPush('Remis (X)','draw',p.pDraw,n('oddDraw'),'Wyrównany xG, ostrożny mecz','1x2');
+  }
+  if(n('oddAway')>=1.30){
+    tryPush('Goście wygrają (2)','away',p.pAWin,n('oddAway'),'Forma + xG vs gospodarze','1x2');
+  }
+
+  // 4. Next Goal Any
+  if(n('oddNextGoal')>=1.30){
+    tryPush('Padnie kolejny gol','any',p.pAnyGoal,n('oddNextGoal'),'Dowolna drużyna strzeli','next-goal');
+  }
+
+  // 5. Corners — Over X.5
+  const oddCorners=n('oddCorners');
+  if(oddCorners>=1.30){
+    const hCornS=n('hCornSeason'),aCornS=n('aCornSeason');
+    const lHC=n('lHCorn'),lAC=n('lACorn');
+    const curCorners=lHC+lAC;
+    if(hCornS+aCornS>0){
+      const cornLam=(hCornS+aCornS)*remFrac*($('rcActive').checked?1.3:1);
+      // Try standard lines, pick the one closest to expected total
+      const projTotal=curCorners+cornLam;
+      const candidates=[8.5,9.5,10.5,11.5,12.5];
+      // Pick line ~1 below projected (typical "Over" line)
+      const targetLine=candidates.find(l=>l>=projTotal-1.5)||9.5;
+      const need=Math.max(0,targetLine-curCorners);
+      const pOverCorn=1-poissonCum(cornLam,Math.floor(need));
+      tryPush(
+        'Over '+targetLine.toFixed(1)+' rożnych',
+        'corners',
+        pOverCorn,
+        oddCorners,
+        'Łącznie '+curCorners+' teraz · oczek. ~'+cornLam.toFixed(1)+' więcej · sezonowa '+(hCornS+aCornS).toFixed(1)+'/match',
+        'corners'
+      );
+    }
+  }
+
+  // 6. Penalty
+  const oddPen=n('oddPenalty');
+  if(oddPen>=1.30){
+    // p.pPen comes from calc() but may not be on _lastPredictions; recompute light
+    const totalDA=n('lHDA')+n('lADA');
+    const totalSOT=n('lHSOT')+n('lASOT');
+    const rcActive=$('rcActive').checked;
+    const basePen=totalDA>0||totalSOT>0?0.08:0;
+    const pPen=Math.min(basePen+(rcActive?0.08:0)+(totalDA>30?0.06:totalDA>20?0.03:0)+(totalSOT>8?0.04:totalSOT>5?0.02:0)+(window._matchTags?.has('derby')?0.04:0),0.40);
+    tryPush(
+      'Karny w meczu',
+      'penalty',
+      pPen,
+      oddPen,
+      'DA: '+totalDA+' · SOT: '+totalSOT+(rcActive?' · czerwona aktywna':''),
+      'risk'
+    );
+  }
+
+  // 7. Red card
+  const oddRed=n('oddRedCard');
+  if(oddRed>=1.30){
+    const pRed=computePRedCard(p);
+    const tags=window._matchTags||new Set();
+    const tagInfo=[...tags].filter(t=>['derby','decider','final','youth'].includes(t)).join(',');
+    tryPush(
+      'Czerwona kartka w meczu',
+      'redcard',
+      pRed,
+      oddRed,
+      'Faulowanie + DA + tagi'+(tagInfo?' ('+tagInfo+')':''),
+      'risk'
+    );
+  }
+
+  // 8. Team scoring (info-only if no dedicated odd, but useful)
+  // Skip — needs a dedicated input which we don't add to keep UI clean.
+
+  // Sort by score desc, take top 5
+  picks.sort((a,b)=>b.score-a.score);
+  return {picks:picks.slice(0,5),preMatch};
+}
+
 // ── Match context tags (multi-select) ──
 const TAGS_KEY='predator_match_tags';
 function loadTags(){
@@ -2733,10 +3049,11 @@ function renderQuickDecision(){
   }
   // Stash decision for placeBet
   window._lastDecision=decision;
-  // Update hero recommendation + live context tiles + verdict bar
+  // Update hero recommendation + live context tiles + verdict bar + picks list
   renderHeroRecommendation(p,decision);
   renderLiveContext(p);
   renderVerdictBar(p,decision);
+  renderSpecificPicks();
   // Update stats bar
   renderSessionStats();
 }
@@ -2852,9 +3169,102 @@ function renderLiveContext(p){
   }
 }
 
-function placeBet(verdict){
+// ── Render specific picks list ──
+const PICK_ICONS={
+  goals:'🎯',btts:'⚽',
+  '1x2':'🏟️','next-goal':'✨',
+  corners:'🚩',risk:'🟥'
+};
+function renderSpecificPicks(){
+  const p=window._lastPredictions;
+  if(!p){
+    $('picksList').innerHTML='';
+    $('picksMeta').textContent='Wpisz kursy poniżej, aby zobaczyć picki z edge\'em';
+    $('picksCount').textContent='';
+    return;
+  }
+  const result=rankPicks(p);
+  const picks=result.picks||[];
+  const preMatch=result.preMatch;
+  const list=$('picksList');
+  $('picksEyebrow').textContent=preMatch?'Pre-match analiza · konkretne typy':'Konkretne typy do obstawienia';
+  if(!picks.length){
+    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Brak picków z edge\'em ≥ '+(preMatch?'4':'5')+'%. Wpisz więcej kursów lub poczekaj na rozwój meczu.</div>';
+    $('picksMeta').textContent=preMatch?'Pre-match · czekam na kursy':'Brak konkretnych typów';
+    $('picksCount').textContent='';
+    return;
+  }
+  $('picksMeta').textContent=preMatch
+    ?'Pre-match (stake cap 3% · edge ≥ 4%)'
+    :'Live (stake cap 5% · edge ≥ 5%)';
+  $('picksCount').textContent=picks.length+' '+(picks.length===1?'typ':'typy')+' z edge\'em';
+
+  list.innerHTML=picks.map((pick,i)=>{
+    const cls=['pick-card'];
+    if(pick.edge>=15) cls.push('high-edge');
+    else if(pick.group==='risk') cls.push('risk');
+    else if(pick.edge>=10) cls.push('warn');
+    const icon=PICK_ICONS[pick.group]||'📊';
+    const edgeStr=(pick.edge>=0?'+':'')+pick.edge.toFixed(0)+'%';
+    const pickJson=JSON.stringify(pick).replace(/"/g,'&quot;');
+    return '<div class="'+cls.join(' ')+'" data-pick-idx="'+i+'">'
+      +'<div class="pick-icon">'+icon+'</div>'
+      +'<div class="pick-body">'
+        +'<div class="pick-title">'+pick.label+' @ '+pick.odd.toFixed(2)+'</div>'
+        +'<div class="pick-reason">Model '+(pick.modelP*100).toFixed(0)+'% · '+pick.reason+'</div>'
+      +'</div>'
+      +'<div class="pick-meta">'
+        +'<span class="pick-edge">'+edgeStr+'</span>'
+        +'<span class="pick-detail">stawka '+pick.stake+' zł · +'+pick.payout+' zł</span>'
+      +'</div>'
+      +'<button class="pick-cta" onclick=\'placeBet("green",'+pickJson+')\'>Zapisz</button>'
+    +'</div>';
+  }).join('');
+}
+
+function placeBet(verdict,pick){
   const p=window._lastPredictions,d=window._lastDecision;
   if(!p||!d){ qdToast('Brak danych meczu','red'); return; }
+  // pick mode: granular market bet (from picks list)
+  if(pick&&pick.label){
+    const list=loadCalibration();
+    const entry={
+      id:Date.now(),
+      date:new Date().toISOString().slice(0,16).replace('T',' '),
+      homeTeam:p.homeTeam,awayTeam:p.awayTeam,
+      minuteAtSnap:p.minute,
+      scoreAtSnap:p.homeScore+':'+p.awayScore,
+      predicted:{
+        pAnyGoal:p.pAnyGoal,pHomeScores:p.pHomeScores,pAwayScores:p.pAwayScores,
+        pHWin:p.pHWin,pDraw:p.pDraw,pAWin:p.pAWin,
+        topScore:p.topScoreH!=null?(p.topScoreH+':'+p.topScoreA):null,
+        topScoreP:p.topScoreP
+      },
+      actual:null,
+      predatorActive:p.predatorActive,
+      predatorReason:p.predatorBest?p.predatorBest.reason:null,
+      bet:{
+        verdict:'green',
+        market:pick.label,
+        marketSide:pick.side,
+        marketGroup:pick.group,
+        modelProb:pick.modelP,
+        edge:pick.edge,
+        stake:pick.stake,
+        odd:pick.odd,
+        oddLabel:pick.label,
+        potentialPayout:pick.payout
+      }
+    };
+    list.push(entry);
+    saveCalibration(list);
+    qdToast('Pick zapisany: '+pick.label+' @ '+pick.odd.toFixed(2),'green',3000);
+    if(typeof renderCalibration==='function') renderCalibration();
+    if(typeof renderSpecificPicks==='function') renderSpecificPicks();
+    if(typeof renderSessionStats==='function') renderSessionStats();
+    return;
+  }
+  // verdict mode: legacy 3-button verdict bar
   if(d.verdict!==verdict){
     if(verdict==='red'){ qdToast('Skip ✓','yellow',1500); return; }
     if(!confirm('Model rekomenduje '+d.verdict.toUpperCase()+', a klikasz '+verdict.toUpperCase()+'.\nKontynuować?')) return;
@@ -3155,7 +3565,7 @@ const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hCornSeason','aCornSeason','lHCorn','lACorn',
  'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
  'bankroll','oddNextGoal','hYCSeason','aYCSeason','lHYC','lAYC','leagueAvg',
- 'lHBC','lABC','hPPG','aPPG'];
+ 'lHBC','lABC','hPPG','aPPG','oddCorners','oddRedCard','oddPenalty'];
 
 function saveFields(){
   const data={};
