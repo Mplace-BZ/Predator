@@ -14,14 +14,16 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v6.4
+## Aktualna wersja: v6.5
 
-## Red Card Model Logic
-When red card checkbox is active (rcActive) with team selection (home/away) and minute:
+## Red Card Model Logic (v6.5 — time-decayed, balanced)
+Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
 
-1. **Lambda modifiers (xG) in calc():**
-   - Team with red card: lambda *= 0.55 (survival mode)
-   - Team with advantage: lambda *= 1.25 (more space)
+1. **Lambda modifiers (xG) — time-decayed:**
+   - `rcRemFrac = (90 - rcMinute) / 90`
+   - `disMod = 1 - 0.45 * rcRemFrac` → 0.55 (early red) … 1.00 (red at 90')
+   - `advMod = 1 + 0.55 * rcRemFrac` → 1.55 (early red) … 1.00 (red at 90')
+   - **Balance:** 0.55 ↔ 1.55 preserves total xG (vs old 0.55/1.25 which shrank totala)
 
 2. **Corners modifiers:**
    - Total corners lambda *= 1.3 (advantage team pushes more)
@@ -33,6 +35,47 @@ When red card checkbox is active (rcActive) with team selection (home/away) and 
 4. **Status card:** Purple with "RED CARD ACTIVE" label
 
 5. **Value bets:** Should auto-suggest advantage team to win/score, over corners
+
+## Momentum blend (v6.5 — fixed averaging)
+Linia ~691: `if(signals>1) hMom=0.5+(hMom-0.5)/signals;` — uśrednia odchylenie od neutralnego 0.5 przez liczbę aktywnych sygnałów (DA + SOT + liveXG). Stary kod miał `/signals*signals` (no-op) przez co momentum sumował sygnały bez normalizacji.
+
+## Anomaly Score 2.0 (v6.5)
+Każdy trigger ma `strength` (0–10), Predator Mode pokazuje najmocniejszy:
+- **xG live > thresh + 0:0 + min >25:** strength = 5 + (xG − thresh) × 10
+- **xG sezon > thresh + 0:0 + min >25:** strength = 3 + (xG − thresh) × 8
+- **DA diff > thresh + dominator nie prowadzi:** strength = 4 + (diff − thresh) / 5
+- **SOT > thresh + brak gola:** strength = 2 + (SOT − thresh) × 0.5
+
+**League factor:** thresh skaluje się przez `leagueAvg / 1.5`. Przykład: U19 (leagueAvg=0.8) → xgThresh=0.32, DA thresh=10.7. Premier League (leagueAvg=2.7) → xgThresh=1.08, DA thresh=36.
+
+Panel pokazuje: pasek siły 0/10, multi-signal badge ("3 sygnały aktywne"), powód, sugerowany rynek + szacowane kursy.
+
+## Confidence intervals (v6.5)
+Każda headline probability (Any goal, Home scores, Away scores) ma sub-line `CI: P10–P90`. Bootstrap: 80 iteracji z lambda perturbacją ±15%. Wąski CI = mocny signal, szeroki = model zgaduje.
+
+## Calibration log (v6.5)
+- localStorage `predator_history` (max 200 entries)
+- Po analizie: "Zapisz mecz" zachowuje predykcje + kontekst (minuta, wynik, predator active)
+- Po końcu meczu: "Wpisz wynik" → outcome computowany od momentu snapshotu
+- **Calibration buckets:** 0–20%, 20–40%, …, 80–100% — predicted vs actual hit rate
+- **Predator hit rate:** osobna metryka dla meczów gdzie Predator Mode był aktywny
+- Po 3+ zamkniętych meczach pokazuje accuracy bars
+
+## Źródła danych
+- **FootyStats** — cała strona meczu (sezon, H2H, xG, corners, cards) → parseFooty()
+- **Sofascore** — live stats po polsku (Posiadanie, xG, Strzały celne, Wejścia do strefy ataku) → parseLive()
+- Sofascore xG live trafia do globalnych liveXGH/liveXGA (momentum), NIE nadpisuje sezonowego hXG/aXG
+- parseLive() używa Math.max() — nie nadpisuje wyższych wartości niższymi (np. 2. połowa)
+- Dropdown okresu: Cały mecz / 1. połowa / 2. połowa
+- **Parsing indicator (v6.5):** po Parse Data widoczny licznik "X/12 pól sezonowych wypełnionych" + lista brakujących (kolor: zielony / żółty / czerwony)
+- **League avg goals/match** parsed z FootyStats lub manualnie (default 1.5) → wpływa na progi anomalii
+
+## Tuning parametrów modelu
+- **Momentum blend:** 30% base, 40% gdy DA diff >15, 45% gdy >25
+- **Red card decay:** liniowy `(90-rcMinute)/90`, max impact 0.55/1.55
+- **Anomaly thresholds:** skalowane przez `leagueFactor = leagueAvg / 1.5`
+- **CI bootstrap:** ±15% perturbation, 80 iteracji, p10/p90 percentiles
+- **Calibration buckets:** 5 bucketów po 20%, kolor: |diff|<10% zielony, <20% żółty, ≥20% czerwony
 
 ## Źródła danych
 - **FootyStats** — cała strona meczu (sezon, H2H, xG, corners, cards) → parseFooty()
