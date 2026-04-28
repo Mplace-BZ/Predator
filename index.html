@@ -206,6 +206,48 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 .predator-reason{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:.4rem;}
 .predator-market{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.6;}
 
+/* QUICK DECISION PANEL */
+.quick-decision{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;position:relative;}
+.qd-stats{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:.85rem;padding-bottom:.7rem;border-bottom:1px dashed var(--border);}
+.qd-stat{display:flex;align-items:center;gap:5px;}
+.qd-stat-val{color:var(--text);font-weight:700;}
+.qd-streak-fire{font-size:14px;animation:qd-fire-flicker 1.4s ease-in-out infinite;}
+@keyframes qd-fire-flicker{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.85;transform:scale(1.1);}}
+.qd-buttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;}
+@media(max-width:640px){.qd-buttons{grid-template-columns:1fr;}}
+.qd-btn{cursor:pointer;background:var(--bg3);border:2px solid var(--border2);border-radius:12px;padding:1rem .85rem;text-align:center;transition:all .25s ease;font-family:var(--sans);color:var(--text);min-height:140px;display:flex;flex-direction:column;justify-content:center;gap:.4rem;opacity:.35;filter:saturate(0.4);position:relative;overflow:hidden;}
+.qd-btn:hover{opacity:.65;filter:saturate(0.7);}
+.qd-btn.active{opacity:1;filter:saturate(1.1);transform:translateY(-2px);}
+.qd-btn.placed{opacity:.85;filter:saturate(1);}
+.qd-btn.placed::after{content:'\2713 ZAPISANO';position:absolute;top:6px;right:8px;font-family:var(--mono);font-size:9px;color:var(--text);background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;letter-spacing:.05em;}
+.qd-icon{font-size:28px;line-height:1;}
+.qd-label{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.qd-sub{font-size:11px;line-height:1.4;color:var(--text2);}
+.qd-btn.active .qd-sub{color:var(--text);}
+.qd-stake{font-family:var(--mono);font-size:12px;font-weight:600;margin-top:auto;}
+
+.qd-green{border-color:var(--green-bd);background:linear-gradient(135deg,var(--green3),rgba(26,255,140,0.02));}
+.qd-green .qd-label{color:var(--green);}
+.qd-green .qd-stake{color:var(--green);}
+.qd-green.active{border-color:var(--green);box-shadow:0 0 28px rgba(26,255,140,0.35),inset 0 0 18px rgba(26,255,140,0.06);animation:qd-pulse-green 2s ease-in-out infinite;}
+@keyframes qd-pulse-green{0%,100%{box-shadow:0 0 18px rgba(26,255,140,0.25),inset 0 0 12px rgba(26,255,140,0.04);}50%{box-shadow:0 0 38px rgba(26,255,140,0.55),inset 0 0 22px rgba(26,255,140,0.1);}}
+
+.qd-yellow{border-color:var(--yel-bd);background:linear-gradient(135deg,var(--yel-bg),rgba(255,209,102,0.02));}
+.qd-yellow .qd-label{color:var(--yellow);}
+.qd-yellow .qd-stake{color:var(--yellow);}
+.qd-yellow.active{border-color:var(--yellow);box-shadow:0 0 22px rgba(255,209,102,0.35),inset 0 0 14px rgba(255,209,102,0.06);animation:qd-pulse-yellow 2.2s ease-in-out infinite;}
+@keyframes qd-pulse-yellow{0%,100%{box-shadow:0 0 14px rgba(255,209,102,0.25);}50%{box-shadow:0 0 30px rgba(255,209,102,0.55);}}
+
+.qd-red{border-color:var(--red-bd);background:linear-gradient(135deg,var(--red-bg),rgba(255,77,106,0.02));}
+.qd-red .qd-label{color:var(--red);}
+.qd-red .qd-stake{color:var(--red);}
+.qd-red.active{border-color:var(--red);box-shadow:0 0 18px rgba(255,77,106,0.30),inset 0 0 12px rgba(255,77,106,0.05);}
+
+.qd-toast{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg);border:1px solid var(--green-bd);border-radius:8px;padding:8px 18px;font-family:var(--mono);font-size:12px;color:var(--green);opacity:0;transition:all .35s ease;pointer-events:none;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,0.5);z-index:50;}
+.qd-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.qd-toast.celebrate{animation:qd-celebrate 0.8s ease-out;}
+@keyframes qd-celebrate{0%{transform:translateX(-50%) scale(0.5) translateY(0);}50%{transform:translateX(-50%) scale(1.15) translateY(-6px);}100%{transform:translateX(-50%) scale(1) translateY(0);}}
+
 /* GOAL TIMING HEAT MAP */
 .goal-timing-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;}
 .gt-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap;}
@@ -253,7 +295,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.6</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.7</div>
   </div>
 </div>
 
@@ -305,6 +347,32 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <span class="parse-msg" id="parseMsg">&#10003; Parsed</span>
   </div>
   <div id="parseStatus" style="margin-top:.5rem;font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5;display:none;"></div>
+</div>
+
+<!-- QUICK DECISION — 3 big buttons -->
+<div id="quickDecision" class="quick-decision">
+  <div class="qd-stats" id="qdStats"></div>
+  <div class="qd-buttons">
+    <button class="qd-btn qd-green" id="qdGreen" data-verdict="green" onclick="placeBet('green')">
+      <div class="qd-icon">&#127919;</div>
+      <div class="qd-label">OBSTAW 1-2 GOLE</div>
+      <div class="qd-sub" id="qdGreenSub">—</div>
+      <div class="qd-stake" id="qdGreenStake">—</div>
+    </button>
+    <button class="qd-btn qd-yellow" id="qdYellow" data-verdict="yellow" onclick="placeBet('yellow')">
+      <div class="qd-icon">&#9889;</div>
+      <div class="qd-label">RYZYKUJ 1 GOL</div>
+      <div class="qd-sub" id="qdYellowSub">—</div>
+      <div class="qd-stake" id="qdYellowStake">—</div>
+    </button>
+    <button class="qd-btn qd-red" id="qdRed" data-verdict="red" onclick="placeBet('red')">
+      <div class="qd-icon">&#128683;</div>
+      <div class="qd-label">WSTRZYMAJ</div>
+      <div class="qd-sub" id="qdRedSub">—</div>
+      <div class="qd-stake">Skip ten mecz</div>
+    </button>
+  </div>
+  <div id="qdToast" class="qd-toast"></div>
 </div>
 
 <!-- SCORE BAR -->
@@ -1412,15 +1480,20 @@ function calc(){
     $('tlSub').textContent='odds?';$('tlSub').style.color='var(--text3)';
   }
 
-  // Stash latest predictions for calibration snapshot
+  // Stash latest predictions for calibration snapshot + quick decision
   window._lastPredictions={
-    pAnyGoal,pHomeScores,pAwayScores,
+    pAnyGoal,pHomeScores,pAwayScores,pOver15,pNoGoal,
     pHWin,pDraw,pAWin,
     topScoreH:topScore?topScore.h:null,topScoreA:topScore?topScore.a:null,topScoreP:topScore?topScore.p:null,
-    hLambdaRem,aLambdaRem,minute,homeScore,awayScore,homeTeam,awayTeam,
+    hLambdaRem,aLambdaRem,totalLambda,minute,homeScore,awayScore,homeTeam,awayTeam,
     predatorActive:predatorReasons.length>0,
-    predatorBest:predatorReasons[0]||null
+    predatorBest:predatorReasons[0]||null,
+    predatorStrength:predatorReasons[0]?predatorReasons[0].strength:0,
+    bigChancesTotal:n('lHBC')+n('lABC'),
+    oddOver:n('oddOver'),oddNextGoal:n('oddNextGoal'),oddBTTS:n('oddBTTS'),
+    bankroll:n('bankroll')||1000
   };
+  renderQuickDecision();
 }
 
 // ── PARSER ────────────────────────────────────────────────────────
@@ -1960,6 +2033,241 @@ function renderValueBets(params){
       +'<div class="vbet-odds" style="color:'+t.titleColor+'">'+t.odds+'x</div>'
     +'</div>';
   }).join('');
+}
+
+// ── QUICK DECISION ────────────────────────────────────────────────
+// Match field-status to decide data quality
+function countFilledRequiredFields(){
+  if(typeof FIELD_LABELS==='undefined') return 0;
+  return Object.keys(FIELD_LABELS).filter(id=>n(id)>0).length;
+}
+
+function decideQuickBet(p){
+  if(!p) return {verdict:'red',reason:'Brak danych — wpisz/wklej dane meczu'};
+  const fieldsFilled=countFilledRequiredFields();
+  const totalReq=Object.keys(FIELD_LABELS).length;
+  const hasOddsForOver=p.oddOver>=1.30||p.oddNextGoal>=1.30||p.oddBTTS>=1.30;
+
+  // Hard skips
+  if(!p.minute||p.minute<1) return {verdict:'red',reason:'Wpisz minutę meczu'};
+  if(p.minute>75) return {verdict:'red',reason:'Za późno ('+p.minute+"' >75) — brak czasu na gol"};
+  if(fieldsFilled<8) return {verdict:'red',reason:'Brak danych ('+fieldsFilled+'/'+totalReq+' pól) — popraw paste'};
+  if(!hasOddsForOver) return {verdict:'red',reason:'Wpisz kursy (Over/Next Goal/BTTS) — bez tego brak edge'};
+
+  const goalPct=Math.round(p.pAnyGoal*100);
+
+  // GREEN — strong, multi-condition signal (anomaly window starts at 30')
+  if(
+    p.minute>=30&&p.minute<=72&&
+    p.pAnyGoal>=0.70&&
+    (p.pOver15>=0.35||p.predatorStrength>=6||p.bigChancesTotal>=2)&&
+    p.totalLambda>=0.8
+  ){
+    return {
+      verdict:'green',
+      reason:'Model '+goalPct+'% any goal · xG rem '+p.totalLambda.toFixed(2)
+        +(p.predatorStrength>=6?' · Predator '+p.predatorStrength.toFixed(1)+'/10':'')
+        +(p.bigChancesTotal>=2?' · BC '+p.bigChancesTotal:''),
+      market:p.pOver15>=0.35?'Over 1.5 (rem) lub Next Goal':'Next Goal Any',
+      stakePct:0.05
+    };
+  }
+
+  // YELLOW — moderate
+  if(
+    p.minute>=25&&p.minute<=75&&
+    p.pAnyGoal>=0.50&&
+    (p.predatorStrength>=3||p.bigChancesTotal>=1||p.totalLambda>=0.6)
+  ){
+    return {
+      verdict:'yellow',
+      reason:'Model '+goalPct+'% · xG rem '+p.totalLambda.toFixed(2)
+        +(p.predatorStrength>=3?' · Predator '+p.predatorStrength.toFixed(1)+'/10':'')
+        +(p.bigChancesTotal>=1?' · BC '+p.bigChancesTotal:''),
+      market:'Next Goal Any',
+      stakePct:0.02
+    };
+  }
+
+  // Default RED
+  return {verdict:'red',reason:'Słaby sygnał — model '+goalPct+'%, brak anomalii'};
+}
+
+function bestOddFor(p){
+  // Pick the best odds for "next goal/over" markets
+  if(p.oddOver>=1.30) return {label:'Over',odd:p.oddOver};
+  if(p.oddNextGoal>=1.30) return {label:'Next Goal',odd:p.oddNextGoal};
+  if(p.oddBTTS>=1.30) return {label:'BTTS',odd:p.oddBTTS};
+  return null;
+}
+
+function renderQuickDecision(){
+  const p=window._lastPredictions;
+  const decision=decideQuickBet(p);
+  ['qdGreen','qdYellow','qdRed'].forEach(id=>{
+    $(id).classList.remove('active');
+  });
+  $(decision.verdict==='green'?'qdGreen':decision.verdict==='yellow'?'qdYellow':'qdRed').classList.add('active');
+
+  // Sub texts
+  if(decision.verdict==='green'){
+    $('qdGreenSub').textContent=decision.reason;
+    const odd=bestOddFor(p);
+    const stake=Math.round((p.bankroll||1000)*decision.stakePct);
+    const payout=odd?Math.round(stake*(odd.odd-1)):null;
+    $('qdGreenStake').innerHTML=odd
+      ? 'Stawka: '+stake+' zł · '+odd.label+' @ '+odd.odd.toFixed(2)+' → +'+payout+' zł'
+      : 'Stawka: '+stake+' zł';
+    $('qdYellowSub').textContent='Słabszy sygnał niż GREEN';
+    $('qdYellowStake').textContent='—';
+    $('qdRedSub').textContent='—';
+  } else if(decision.verdict==='yellow'){
+    $('qdYellowSub').textContent=decision.reason;
+    const odd=bestOddFor(p);
+    const stake=Math.round((p.bankroll||1000)*decision.stakePct);
+    const payout=odd?Math.round(stake*(odd.odd-1)):null;
+    $('qdYellowStake').innerHTML=odd
+      ? 'Stawka: '+stake+' zł · '+odd.label+' @ '+odd.odd.toFixed(2)+' → +'+payout+' zł'
+      : 'Stawka: '+stake+' zł';
+    $('qdGreenSub').textContent='Brak warunków na GREEN';
+    $('qdGreenStake').textContent='—';
+    $('qdRedSub').textContent='—';
+  } else {
+    $('qdRedSub').textContent=decision.reason;
+    $('qdGreenSub').textContent='Czekaj na sygnał';
+    $('qdGreenStake').textContent='—';
+    $('qdYellowSub').textContent='Czekaj na sygnał';
+    $('qdYellowStake').textContent='—';
+  }
+  // Stash decision for placeBet
+  window._lastDecision=decision;
+  // Update stats bar
+  renderSessionStats();
+}
+
+function placeBet(verdict){
+  const p=window._lastPredictions,d=window._lastDecision;
+  if(!p||!d){ qdToast('Brak danych meczu','red'); return; }
+  if(d.verdict!==verdict){
+    if(verdict==='red'){ qdToast('Skip ✓','yellow',1500); return; }
+    if(!confirm('Model rekomenduje '+d.verdict.toUpperCase()+', a klikasz '+verdict.toUpperCase()+'.\nKontynuować?')) return;
+  }
+  if(verdict==='red'){ qdToast('Skip — dobra decyzja 🛡','yellow',2000); return; }
+  // Save snapshot to calibration log with verdict + stake metadata
+  const list=loadCalibration();
+  const odd=bestOddFor(p);
+  const stake=Math.round((p.bankroll||1000)*(d.stakePct||0.02));
+  const entry={
+    id:Date.now(),
+    date:new Date().toISOString().slice(0,16).replace('T',' '),
+    homeTeam:p.homeTeam,awayTeam:p.awayTeam,
+    minuteAtSnap:p.minute,
+    scoreAtSnap:p.homeScore+':'+p.awayScore,
+    predicted:{
+      pAnyGoal:p.pAnyGoal,pHomeScores:p.pHomeScores,pAwayScores:p.pAwayScores,
+      pHWin:p.pHWin,pDraw:p.pDraw,pAWin:p.pAWin,
+      topScore:p.topScoreH!=null?(p.topScoreH+':'+p.topScoreA):null,
+      topScoreP:p.topScoreP
+    },
+    actual:null,
+    predatorActive:p.predatorActive,
+    predatorReason:p.predatorBest?p.predatorBest.reason:null,
+    bet:{
+      verdict,
+      market:d.market||'Next Goal Any',
+      stake,
+      odd:odd?odd.odd:null,
+      oddLabel:odd?odd.label:null,
+      potentialPayout:odd?Math.round(stake*(odd.odd-1)):null
+    }
+  };
+  list.push(entry);
+  saveCalibration(list);
+  // Mark button as placed visually
+  document.querySelectorAll('.qd-btn').forEach(b=>b.classList.remove('placed'));
+  $(verdict==='green'?'qdGreen':'qdYellow').classList.add('placed');
+  qdToast(verdict==='green'?'BET GREEN — '+stake+' zł zapisane! 🎯':'YELLOW BET — '+stake+' zł zapisane! ⚡','green',2800);
+  renderSessionStats();
+  if(typeof renderCalibration==='function') renderCalibration();
+}
+
+let _toastTimer=null;
+function qdToast(msg,color,dur=2400){
+  const t=$('qdToast');
+  t.textContent=msg;
+  const c=color==='red'?'var(--red)':color==='yellow'?'var(--yellow)':'var(--green)';
+  t.style.borderColor=c;
+  t.style.color=c;
+  t.classList.add('show','celebrate');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{t.classList.remove('show','celebrate');},dur);
+}
+
+// Compute current win streak from calibration (only entries with bet+actual)
+function computeStreak(list){
+  let streak=0;
+  for(let i=list.length-1;i>=0;i--){
+    const e=list[i];
+    if(!e.actual||!e.bet) continue;
+    const won=e.bet.verdict==='green'||e.bet.verdict==='yellow'
+      ? (e.bet.market.includes('Over 1.5')
+          ? ((e.actual.homeScore+e.actual.awayScore)-(parseInt(e.scoreAtSnap.split(':')[0])+parseInt(e.scoreAtSnap.split(':')[1])))>=2
+          : e.actual.anyGoalAfterSnap)
+      : null;
+    if(won===null) continue;
+    if(won) streak++; else break;
+  }
+  return streak;
+}
+
+function renderSessionStats(){
+  const list=loadCalibration();
+  const today=new Date().toISOString().slice(0,10);
+  const todays=list.filter(e=>e.date&&e.date.startsWith(today)&&e.actual&&e.bet);
+  const wins=todays.filter(e=>{
+    const startGoals=e.scoreAtSnap.split(':').map(Number).reduce((a,b)=>a+b,0);
+    const endGoals=e.actual.homeScore+e.actual.awayScore;
+    if(e.bet.market&&e.bet.market.includes('Over 1.5')) return (endGoals-startGoals)>=2;
+    return e.actual.anyGoalAfterSnap;
+  }).length;
+  const losses=todays.length-wins;
+  // ROI computation: P&L = sum(payout if win, -stake if loss) / sum(stakes)
+  let stakeSum=0,plSum=0;
+  todays.forEach(e=>{
+    if(!e.bet||!e.bet.stake) return;
+    const startGoals=e.scoreAtSnap.split(':').map(Number).reduce((a,b)=>a+b,0);
+    const endGoals=e.actual.homeScore+e.actual.awayScore;
+    const won=e.bet.market&&e.bet.market.includes('Over 1.5')
+      ? (endGoals-startGoals)>=2
+      : e.actual.anyGoalAfterSnap;
+    stakeSum+=e.bet.stake;
+    plSum+=won?(e.bet.potentialPayout||0):(-e.bet.stake);
+  });
+  const roi=stakeSum>0?(plSum/stakeSum)*100:0;
+
+  const streak=computeStreak(list);
+  const fire=streak>=5?'🔥🔥🔥':streak>=3?'🔥🔥':streak>=1?'🔥':'';
+
+  const stats=$('qdStats');
+  if(!todays.length&&streak===0){
+    stats.innerHTML='<span class="qd-stat" style="color:var(--text3);">Sesja: brak dziś betów. Kliknij GREEN/YELLOW po wpisaniu danych.</span>';
+    return;
+  }
+  let parts=[];
+  if(streak>0) parts.push('<span class="qd-stat"><span class="qd-streak-fire">'+fire+'</span> STREAK: <span class="qd-stat-val" style="color:var(--green);">'+streak+'</span></span>');
+  if(todays.length){
+    const wlColor=wins>losses?'var(--green)':wins<losses?'var(--red)':'var(--yellow)';
+    parts.push('<span class="qd-stat">DZIŚ: <span class="qd-stat-val" style="color:'+wlColor+';">'+wins+'W / '+losses+'L</span></span>');
+    if(stakeSum>0){
+      const roiColor=roi>0?'var(--green)':'var(--red)';
+      parts.push('<span class="qd-stat">ROI: <span class="qd-stat-val" style="color:'+roiColor+';">'+(roi>=0?'+':'')+roi.toFixed(0)+'%</span></span>');
+      parts.push('<span class="qd-stat" style="color:var(--text3);">P&amp;L: '+(plSum>=0?'+':'')+plSum+' zł</span>');
+    }
+  }
+  // Open positions (placed but no outcome yet)
+  const open=list.filter(e=>e.bet&&!e.actual);
+  if(open.length) parts.push('<span class="qd-stat" style="color:var(--yellow);">⏳ Otwarte: '+open.length+'</span>');
+  stats.innerHTML=parts.join('');
 }
 
 // ── CALIBRATION LOG ──────────────────────────────────────────────

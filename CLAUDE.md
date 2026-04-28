@@ -14,7 +14,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v6.6 (GOAL PREDATOR Pack)
+## Aktualna wersja: v6.7 (Quick Bet Gamification)
 
 ## Red Card Model Logic (v6.5 — time-decayed, balanced)
 Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
@@ -58,6 +58,45 @@ Każdy trigger ma `strength` (0–10), Predator Mode pokazuje najmocniejszy:
 - **Form (PPG) nudge:** gdy diff > 0.5 PPG, lambda swing do ±10%. Capped, nie kumuluje się z H2H.
 - **Odds Market auto-parse:** z tabeli FootyStats wyciąga 1X2, Over 2.5, Under 2.5, BTTS.
 - **1H/2H stats parser:** halfStats.{home,away,league} z BTTS/Over X.Y per polowa.
+
+## Quick Decision Panel (v6.7)
+**Sedno apki — pod paste area, 3 wielkie przyciski.** Tylko jeden aktywny (pulsuje). Reszta dimmed.
+
+### Decision logic (`decideQuickBet`)
+**Hard skips (RED):**
+- minuta brak / minuta > 75 (za późno)
+- mniej niż 8/12 pól sezonowych wypełnionych
+- brak kursów Over/Next Goal/BTTS (bez kursów = brak edge)
+
+**GREEN — OBSTAW 1-2 GOLE** (stake = 5% bankrolla):
+- minuta 30–72
+- pAnyGoal ≥ 70%
+- ANY: pOver15 ≥ 35% / Predator strength ≥ 6 / Big Chances ≥ 2
+- totalLambda ≥ 0.8
+- Pulsuje zielonym box-shadow 2s loop
+
+**YELLOW — RYZYKUJ 1 GOL** (stake = 2% bankrolla):
+- minuta 25–75
+- pAnyGoal ≥ 50%
+- ANY: Predator ≥ 3 / Big Chances ≥ 1 / xG rem ≥ 0.6
+
+**RED — WSTRZYMAJ:** wszystko inne
+
+### Stake + payout
+`stake = round(bankroll × stakePct)` — 5% (GREEN) lub 2% (YELLOW). Najlepszy kurs (Over → Next Goal → BTTS) używany do wyliczenia `payout = stake × (odd − 1)`.
+
+### Click handler — `placeBet(verdict)`
+- Zapisuje do calibration log entry z `bet:{verdict, market, stake, odd, oddLabel, potentialPayout}` + standardowe predykcje
+- Pokazuje toast "BET GREEN — X zł zapisane! 🎯"
+- Marks button as `.placed` (✓ ZAPISANO badge)
+- Po końcu meczu → user wpisuje wynik → calibration computuje hit/miss
+
+### Gamification
+- **Streak counter:** fire emoji się skaluje (1🔥, 3🔥🔥, 5🔥🔥🔥). Liczone z calibration history (consecutive wins from latest).
+- **Today's W/L:** filtrowane po dzisiejszej dacie z calibration log
+- **ROI:** P&L / total stake × 100% (kolorowane: zielony/czerwony)
+- **Open positions:** ⏳ liczba zapisanych betów bez wpisanego outcome'u
+- Toast celebrate animation (scale 0.5 → 1.15 → 1) przy save
 
 ## Field labels (PL — pomocne dla parser indicator)
 - xG, goli/mecz, stracone, CS%, corners, kartki — sezonowe per team
