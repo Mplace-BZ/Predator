@@ -14,7 +14,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v6.5
+## Aktualna wersja: v6.6 (GOAL PREDATOR Pack)
 
 ## Red Card Model Logic (v6.5 — time-decayed, balanced)
 Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
@@ -39,12 +39,31 @@ Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
 ## Momentum blend (v6.5 — fixed averaging)
 Linia ~691: `if(signals>1) hMom=0.5+(hMom-0.5)/signals;` — uśrednia odchylenie od neutralnego 0.5 przez liczbę aktywnych sygnałów (DA + SOT + liveXG). Stary kod miał `/signals*signals` (no-op) przez co momentum sumował sygnały bez normalizacji.
 
-## Anomaly Score 2.0 (v6.5)
+## Anomaly Score 2.0 (v6.5+v6.6)
 Każdy trigger ma `strength` (0–10), Predator Mode pokazuje najmocniejszy:
 - **xG live > thresh + 0:0 + min >25:** strength = 5 + (xG − thresh) × 10
 - **xG sezon > thresh + 0:0 + min >25:** strength = 3 + (xG − thresh) × 8
 - **DA diff > thresh + dominator nie prowadzi:** strength = 4 + (diff − thresh) / 5
 - **SOT > thresh + brak gola:** strength = 2 + (SOT − thresh) × 0.5
+- **Big Chances ≥ 2 + brak gola (v6.6):** strength = 6 + BC × 1.0 — JAKOŚĆ dominacji
+- **Goal Timing hot zone + 0:0 (v6.6):** strength = 4 + (combined−11)/2 — historyczny peak
+
+## GOAL PREDATOR features (v6.6)
+- **Goal Timing Heat Map** — 9 buckets 10-min, kombinowane home+away % chance gola.
+  Aktualne okno highlightowane (yellow), hot zones zielone (>=14%), cold czerwone (<9%).
+  Peak windows pokazane w footerze.
+- **Goal Timing boost in calc():** `boost = ((bucketPct/avgPct)−1) × 0.4` → 16% bucket = +18% lambda.
+  Cap: −20%/+25%. Działa per-team (osobno H i A).
+- **Big Chances (BC):** Sofascore "Okazje". Trigger Predator gdy BC≥2 bez gola — silniejszy sygnał niż SOT bo to JAKOŚĆ.
+- **Form (PPG) nudge:** gdy diff > 0.5 PPG, lambda swing do ±10%. Capped, nie kumuluje się z H2H.
+- **Odds Market auto-parse:** z tabeli FootyStats wyciąga 1X2, Over 2.5, Under 2.5, BTTS.
+- **1H/2H stats parser:** halfStats.{home,away,league} z BTTS/Over X.Y per polowa.
+
+## Field labels (PL — pomocne dla parser indicator)
+- xG, goli/mecz, stracone, CS%, corners, kartki — sezonowe per team
+- PPG — Points Per Game (form rating)
+- Big Chances — Sofascore "Okazje" (jakościowa metryka)
+- League avg — średnia goli w lidze (skala progów anomalii)
 
 **League factor:** thresh skaluje się przez `leagueAvg / 1.5`. Przykład: U19 (leagueAvg=0.8) → xgThresh=0.32, DA thresh=10.7. Premier League (leagueAvg=2.7) → xgThresh=1.08, DA thresh=36.
 

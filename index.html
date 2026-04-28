@@ -206,6 +206,26 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 .predator-reason{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:.4rem;}
 .predator-market{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.6;}
 
+/* GOAL TIMING HEAT MAP */
+.goal-timing-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;}
+.gt-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap;}
+.gt-title{font-family:var(--mono);font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
+.gt-now{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--yellow);background:var(--yel-bg);border:1px solid var(--yel-bd);border-radius:5px;padding:2px 8px;}
+.gt-bars{display:grid;grid-template-columns:repeat(9,1fr);gap:.3rem;margin-bottom:.5rem;}
+@media(max-width:640px){.gt-bars{grid-template-columns:repeat(3,1fr);}}
+.gt-bar{display:flex;flex-direction:column;align-items:center;gap:3px;padding:.4rem .2rem;border-radius:6px;background:var(--bg3);border:1px solid var(--border);min-height:64px;justify-content:flex-end;position:relative;transition:transform .15s;}
+.gt-bar.current{border-color:var(--yellow);background:var(--yel-bg);transform:translateY(-2px);box-shadow:0 4px 12px rgba(255,209,102,0.15);}
+.gt-bar.hot{border-color:var(--green-bd);background:var(--green3);}
+.gt-bar.cold{border-color:var(--red-bd);background:var(--red-bg);}
+.gt-bar-label{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.gt-bar-pct{font-family:var(--mono);font-size:13px;font-weight:700;}
+.gt-bar.hot .gt-bar-pct{color:var(--green);}
+.gt-bar.warm .gt-bar-pct{color:var(--yellow);}
+.gt-bar.cold .gt-bar-pct{color:var(--red);}
+.gt-bar.current .gt-bar-pct{color:var(--yellow);}
+.gt-bar-fill{width:100%;height:3px;border-radius:2px;}
+.gt-footer{font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.6;}
+
 /* SCANNER CARDS */
 .scan-card{background:var(--bg3);border:1px solid var(--purple-bd);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.5rem;}
 .scan-card .sc-header{display:flex;align-items:center;justify-content:space-between;}
@@ -233,7 +253,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
       <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.5</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.6</div>
   </div>
 </div>
 
@@ -322,6 +342,16 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- HERO TILES -->
 <div class="g3" id="heroTiles" style="margin-bottom:1rem"></div>
+
+<!-- GOAL TIMING HEAT MAP -->
+<div id="goalTimingPanel" class="goal-timing-panel" style="display:none;">
+  <div class="gt-header">
+    <span class="gt-title">&#128293; GOAL TIMING — kiedy spodziewać się gola</span>
+    <span class="gt-now" id="gtNowLabel"></span>
+  </div>
+  <div class="gt-bars" id="gtBars"></div>
+  <div class="gt-footer" id="gtFooter"></div>
+</div>
 
 <hr>
 
@@ -568,11 +598,15 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <div class="iw"><input type="number" id="lASOT" value="0" min="0"><span class="u">shots</span></div></div>
     </div>
     <div class="card">
-      <div class="card-t live">Attacks</div>
+      <div class="card-t live">Attacks &amp; Big Chances</div>
       <div class="field"><label>Home dangerous attacks</label>
         <div class="iw"><input type="number" id="lHDA" value="0" min="0"><span class="u"></span></div></div>
       <div class="field"><label>Away dangerous attacks</label>
         <div class="iw"><input type="number" id="lADA" value="0" min="0"><span class="u"></span></div></div>
+      <div class="field"><label>Home big chances <span class="tip" data-tip="Sofascore &quot;Okazje&quot;. JAKOŚĆ dominacji — 2+ big chances bez gola = anomalia.">?</span></label>
+        <div class="iw"><input type="number" id="lHBC" value="0" min="0"><span class="u">BC</span></div></div>
+      <div class="field"><label>Away big chances</label>
+        <div class="iw"><input type="number" id="lABC" value="0" min="0"><span class="u">BC</span></div></div>
     </div>
     <div class="card">
       <div class="card-t live">Possession & H2H</div>
@@ -582,6 +616,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <div class="iw"><input type="number" id="h2hHome" value="50" min="0" max="100"><span class="u">%</span></div></div>
       <div class="field"><label>League avg goals/match <span class="tip" data-tip="Liga avg np. Premier League ~2.7, U19 ~0.8. Skaluje progi anomalii Predator Mode (default 1.5).">?</span></label>
         <div class="iw"><input type="number" id="leagueAvg" value="1.5" min="0.3" max="5" step="0.1"><span class="u">avg</span></div></div>
+      <div class="field"><label>Home PPG (form) <span class="tip" data-tip="Points Per Game w domu (Form home). 1.95 = excellent, 1.0 = średnio, 0.5 = bardzo słabo.">?</span></label>
+        <div class="iw"><input type="number" id="hPPG" value="0" min="0" max="3" step="0.01"><span class="u">PPG</span></div></div>
+      <div class="field"><label>Away PPG (form)</label>
+        <div class="iw"><input type="number" id="aPPG" value="0" min="0" max="3" step="0.01"><span class="u">PPG</span></div></div>
     </div>
   </div>
 </section>
@@ -647,6 +685,14 @@ const n=id=>parseFloat($(id).value)||0;
 const s=id=>$(id).value.trim();
 let liveXGH=0, liveXGA=0;
 let cornHist={}; // e.g. {8:60, 9:45, 10:30} from FootyStats historical Over% for corners
+// Goal timing distribution from FootyStats — % chance of goal in each 10-min window
+// goalTiming.h = [{from:0,to:10,pct:8},{from:11,to:20,pct:10},...]
+let goalTiming={h:[],a:[]};
+// Half-time stats parsed from FootyStats per-team
+let halfStats={
+  // home/away: {bttsFH, over15FH, over05_2H, over15_2H, btts2H, bttsBoth}
+  home:{}, away:{}, league:{}
+};
 
 // ── POISSON ──────────────────────────────────────────────────────
 function poisson(lambda,k){
@@ -681,6 +727,47 @@ function bootstrapCI(hLam,aLam,metricFn,perturbPct=0.15,iters=80){
 
 function setMV(id,val,cls){$(id).className='mv '+(cls||'');$(id).textContent=val;}
 function setMetric(id,cls){$(id).className='metric '+(cls?'c-'+cls:'');}
+
+// Render goal timing heat map: 9 buckets of 10-min showing combined home+away % chance of goal
+function renderGoalTiming(minute,homeTeam,awayTeam,boostInfo){
+  const panel=$('goalTimingPanel');
+  if(!panel) return;
+  if(!goalTiming.h.length||!goalTiming.a.length){
+    panel.style.display='none';
+    return;
+  }
+  panel.style.display='block';
+  const currentIdx=Math.min(Math.floor(Math.max(0,minute-1)/10),8);
+  const bars=goalTiming.h.map((h,i)=>{
+    const a=goalTiming.a[i]||{pct:0};
+    const combined=(h.pct+a.pct)/2;
+    const isCurrent=i===currentIdx;
+    let cls='gt-bar';
+    if(combined>=14) cls+=' hot';
+    else if(combined>=9) cls+=' warm';
+    else cls+=' cold';
+    if(isCurrent) cls+=' current';
+    const fillH=Math.min(100,combined*4);  // 25% = 100 height
+    const color=combined>=14?'var(--green)':combined>=9?'var(--yellow)':'var(--red)';
+    return '<div class="'+cls+'" title="'+homeTeam+' '+h.pct+'% / '+awayTeam+' '+a.pct+'%">'
+      +'<span class="gt-bar-pct">'+combined.toFixed(0)+'%</span>'
+      +'<div class="gt-bar-fill" style="background:'+color+';height:3px;width:'+fillH+'%;"></div>'
+      +'<span class="gt-bar-label">'+h.from+"-"+h.to+'</span>'
+    +'</div>';
+  }).join('');
+  $('gtBars').innerHTML=bars;
+  $('gtNowLabel').textContent=minute>0&&minute<=90?('teraz: '+minute+"' (okno "+goalTiming.h[currentIdx].from+'-'+goalTiming.h[currentIdx].to+"')") : '';
+
+  // Footer: peak windows + boost summary
+  const sorted=goalTiming.h.map((h,i)=>({i,from:h.from,to:h.to,combined:(h.pct+(goalTiming.a[i]?.pct||0))/2})).sort((a,b)=>b.combined-a.combined);
+  const peaks=sorted.slice(0,2);
+  let footerLines=['Peak windows: '+peaks.map(p=>p.from+'-'+p.to+"' ("+p.combined.toFixed(0)+'%)').join(' · ')];
+  if(boostInfo){
+    const sign=v=>(v>=0?'+':'')+(v*100).toFixed(0)+'%';
+    footerLines.push('Aktualne okno boost: '+homeTeam+' '+sign(boostInfo.hBoost)+' / '+awayTeam+' '+sign(boostInfo.aBoost)+' xG');
+  }
+  $('gtFooter').innerHTML=footerLines.join(' · ');
+}
 
 // ── CALC ──────────────────────────────────────────────────────────
 function calc(){
@@ -764,6 +851,36 @@ function calc(){
     const nudge=(h2hHome-0.5)*0.1;
     hLambdaRem*=(1+nudge);
     aLambdaRem*=(1-nudge*0.5);
+  }
+
+  // ── Form (PPG) gap nudge ──
+  // Strong form gap (>0.5 PPG diff) gets a subtle 10% lambda swing.
+  // Capped to avoid double-counting with H2H/season stats.
+  const hPPG=n('hPPG'),aPPG=n('aPPG');
+  if(hPPG>0&&aPPG>0){
+    const ppgDiff=hPPG-aPPG;
+    if(Math.abs(ppgDiff)>0.5){
+      const ppgNudge=Math.max(-0.10,Math.min(0.10,ppgDiff*0.06)); // ±10% cap
+      hLambdaRem*=(1+ppgNudge);
+      aLambdaRem*=(1-ppgNudge*0.5);
+    }
+  }
+
+  // ── Goal Timing window boost ──
+  // If current minute falls in a hot scoring window for either team,
+  // apply small lambda boost proportional to how "hot" the window is vs avg 11%.
+  let timingBoostInfo=null;
+  if(goalTiming.h.length>0&&minute>0&&minute<90){
+    const idx=Math.min(Math.floor(minute/10),8);  // 0-9, 10-19,...,81-90
+    const hPct=goalTiming.h[idx]?goalTiming.h[idx].pct:11;
+    const aPct=goalTiming.a[idx]?goalTiming.a[idx].pct:11;
+    const avgPct=11;  // ~9 buckets × 11% = 100% of season
+    // Boost factor: ((bucketPct/avg)-1) * 0.4 → 16% bucket = +18% boost on lambda
+    const hBoost=Math.max(-0.20,Math.min(0.25,(hPct/avgPct-1)*0.4));
+    const aBoost=Math.max(-0.20,Math.min(0.25,(aPct/avgPct-1)*0.4));
+    hLambdaRem*=(1+hBoost);
+    aLambdaRem*=(1+aBoost);
+    timingBoostInfo={idx,hPct,aPct,hBoost,aBoost,from:goalTiming.h[idx]?.from,to:goalTiming.h[idx]?.to};
   }
 
   const totalLambda=hLambdaRem+aLambdaRem;
@@ -894,6 +1011,9 @@ function calc(){
     +(rcActive
       ?heroCardFixed('Red card active','ACTIVE',disTeam+' 10 men ('+rcMinute+'\')','rgba(255,77,106,0.15)','var(--red)','var(--red)')
       :heroCard('Penalty chance',fmt(pPen),'DA: '+totalDA_h+', SOT: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3));
+
+  // Goal Timing heat map
+  renderGoalTiming(minute,homeTeam,awayTeam,timingBoostInfo);
 
   // Red card banner
   if(rcActive){
@@ -1133,6 +1253,35 @@ function calc(){
     market:awayTeam+' strzeli gola',oddsHint:'1.40 – 1.80',
     strength:2+(lASOT-sotThresh)*0.5
   });
+
+  // Trigger 4: Big Chances ≥ 2 bez gola (Sofascore "Okazje") — JAKOŚĆ sygnał
+  const lHBC=n('lHBC'),lABC=n('lABC');
+  if(lHBC>=2&&homeScore===0) predatorReasons.push({
+    team:'home',teamName:homeTeam,
+    reason:homeTeam+': '+lHBC+' big chances bez gola — JAKOŚCIOWA dominacja, gol musi wpaść!',
+    market:homeTeam+' Next Goal / strzeli gola',oddsHint:'1.40 – 1.80',
+    strength:6+lHBC*1.0
+  });
+  if(lABC>=2&&awayScore===0) predatorReasons.push({
+    team:'away',teamName:awayTeam,
+    reason:awayTeam+': '+lABC+' big chances bez gola — JAKOŚCIOWA dominacja, gol musi wpaść!',
+    market:awayTeam+' Next Goal / strzeli gola',oddsHint:'1.40 – 1.80',
+    strength:6+lABC*1.0
+  });
+
+  // Trigger 5: Goal Timing — aktualna minuta to hot zone (>14%) i wynik 0:0
+  if(timingBoostInfo&&homeScore===0&&awayScore===0&&minute>15){
+    const combined=(timingBoostInfo.hPct+timingBoostInfo.aPct)/2;
+    if(combined>=14){
+      predatorReasons.push({
+        team:timingBoostInfo.hPct>=timingBoostInfo.aPct?'home':'away',
+        teamName:timingBoostInfo.hPct>=timingBoostInfo.aPct?homeTeam:awayTeam,
+        reason:'Hot zone '+timingBoostInfo.from+'-'+timingBoostInfo.to+"' — historycznie "+combined.toFixed(0)+'% szans na gola w tym oknie!',
+        market:'Next Goal (Any)',oddsHint:'1.50 – 2.10',
+        strength:4+(combined-11)/2
+      });
+    }
+  }
 
   // Sort by strength desc — strongest signal wins display slot
   predatorReasons.sort((a,b)=>b.strength-a.strength);
@@ -1471,6 +1620,88 @@ function parseFooty(){
     else { $('rcAway').checked=true; }
     console.log('[PARSER] Red card detected (FootyStats):',parseInt(rcM[1])>0?'Home':'Away');
   }
+
+  // ── PPG (Form ratings) — "1.95\nW\nW\nW\nW\nD\nSouthampton FC" or "Home\nWWWWD\n1.95"
+  // FootyStats puts PPG above the W/D/L badges. We grab two decimals 0.0–3.0 near "Home"/"Away" labels.
+  const ppgPattern=/Home[\s\S]{0,80}?([0-3]\.\d{1,2})[\s\S]{0,80}?Away[\s\S]{0,80}?([0-3]\.\d{1,2})/i;
+  const ppgM=txt.match(ppgPattern);
+  if(ppgM){
+    const hp=parseFloat(ppgM[1]),ap=parseFloat(ppgM[2]);
+    if(hp>=0&&hp<=3) $('hPPG').value=hp;
+    if(ap>=0&&ap<=3) $('aPPG').value=ap;
+  }
+
+  // ── Goal timing distribution (10-min buckets) ──
+  // Pattern: "0 - 10 Mins\n8%\n9%\n11 - 20 Mins\n10%\n7%..."
+  // Two values per row (home, away). FootyStats shows it twice (Total Goals, Scored, Conceded) — we take FIRST.
+  goalTiming={h:[],a:[]};
+  const buckets10=[[0,10],[11,20],[21,30],[31,40],[41,50],[51,60],[61,70],[71,80],[81,90]];
+  for(const [from,to] of buckets10){
+    const re=new RegExp(from+'\\s*[-–]\\s*'+to+'\\s*Mins\\s*\\n\\s*(\\d{1,2})%\\s*\\n\\s*(\\d{1,2})%','i');
+    const m=txt.match(re);
+    if(m){
+      goalTiming.h.push({from,to,pct:parseInt(m[1])});
+      goalTiming.a.push({from,to,pct:parseInt(m[2])});
+    }
+  }
+  if(goalTiming.h.length>0) console.log('[PARSER] Goal timing parsed:',goalTiming.h.length,'buckets');
+
+  // ── 1H/2H stats per team ──
+  // "BTTS First Half\n9%\n14%\n12%" → home 9%, away 14%, league 12%
+  // "Over 1.5 FH\n41%\n36%\n39%"
+  // "Over 1.5 2H\n41%\n64%\n53%"
+  // "BTTS 2nd Half\n23%\n45%\n34%"
+  function parseHalfTriple(label){
+    const re=new RegExp(label+'\\s*\\n\\s*(\\d{1,3})%\\s*\\n\\s*(\\d{1,3})%(?:\\s*\\n\\s*(\\d{1,3})%)?','i');
+    const m=txt.match(re);
+    if(!m) return null;
+    return {h:parseInt(m[1]),a:parseInt(m[2]),league:m[3]?parseInt(m[3]):null};
+  }
+  halfStats={home:{},away:{},league:{}};
+  const halfMetrics=[
+    ['bttsFH','BTTS First Half'],
+    ['over15_FH','Over 1\\.5 FH'],
+    ['over25_FH','Over 2\\.5 FH'],
+    ['btts_2H','BTTS 2nd Half'],
+    ['btts_both','BTTS Both Halves'],
+    ['over05_2H','Over 0\\.5 2H'],
+    ['over15_2H','Over 1\\.5 2H'],
+    ['over25_2H','Over 2\\.5 2H']
+  ];
+  halfMetrics.forEach(([key,label])=>{
+    const v=parseHalfTriple(label);
+    if(v){
+      halfStats.home[key]=v.h;
+      halfStats.away[key]=v.a;
+      if(v.league!=null) halfStats.league[key]=v.league;
+    }
+  });
+  if(Object.keys(halfStats.home).length>0) console.log('[PARSER] Half stats:',halfStats.home);
+
+  // ── Big Chances from FootyStats (rare — usually has only "Used" count). Try extract.
+  // "Used: X\nMissed: Y" or aggregate. Skip if not present — Sofascore parseLive() will fill.
+
+  // ── Odds Market table — auto-fill bookmaker odds from FootyStats
+  // Pattern: "Southampton Win\t2.30" or "Over 2.5\t1.67" with various separators (tabs/newlines)
+  function findOdd(label){
+    const re=new RegExp(label+'\\s*[\\t\\n\\s]+([\\d]{1,2}\\.\\d{1,2})','i');
+    const m=txt.match(re);
+    return m?parseFloat(m[1]):null;
+  }
+  // Use team names if known
+  const ht=$('homeTeam').value.trim(),at=$('awayTeam').value.trim();
+  const oHome=ht?findOdd(ht.split(/\s+/)[0]+'.{0,40}?Win'):null;
+  const oAway=at?findOdd(at.split(/\s+/)[0]+'.{0,40}?Win'):null;
+  const oDraw=findOdd('Draw');
+  const oOver25=findOdd('Over 2\\.5');
+  const oUnder25=findOdd('Under 2\\.5');
+  const oBTTS=findOdd('BTTS');
+  if(oHome&&oHome>1.01&&oHome<50) $('oddHome').value=oHome;
+  if(oDraw&&oDraw>1.01&&oDraw<50) $('oddDraw').value=oDraw;
+  if(oAway&&oAway>1.01&&oAway<50) $('oddAway').value=oAway;
+  if(oOver25&&oOver25>1.01&&oOver25<50) $('oddOver').value=oOver25;
+  if(oUnder25&&oUnder25>1.01&&oUnder25<50) $('oddUnder').value=oUnder25;
+  if(oBTTS&&oBTTS>1.01&&oBTTS<50) $('oddBTTS').value=oBTTS;
 }
 
 function parseLive(){
@@ -1552,6 +1783,14 @@ function parseLive(){
     else { $('rcAway').checked=true; }
     console.log('[PARSER] Red card detected:',rc[0]>0?'Home':'Away');
   }
+
+  // Big Chances ("Okazje" PL / "Big chances" EN) — Sofascore quality metric
+  // Note: "Wykorzystane duże okazje" = utilized; we want total "Okazje" which is total big chances created.
+  const bc=findTriple('^Okazje$|^Big chances$|Big chances created');
+  if(bc&&!isNaN(bc[0])){
+    $('lHBC').value=Math.max(n('lHBC'),Math.round(bc[0]));
+    $('lABC').value=Math.max(n('lABC'),Math.round(bc[1]));
+  }
 }
 
 
@@ -1564,7 +1803,8 @@ function clearAll(){
   ['hXG','aXG','hScored','aScored','hConc','aConc','hCS','aCS',
    'lHSOT','lASOT','lHDA','lADA','hCornSeason','aCornSeason','lHCorn','lACorn',
    'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS','oddNextGoal',
-   'hYCSeason','aYCSeason','lHYC','lAYC'].forEach(id=>$(id).value=0);
+   'hYCSeason','aYCSeason','lHYC','lAYC',
+   'lHBC','lABC','hPPG','aPPG'].forEach(id=>$(id).value=0);
   $('bankroll').value=1000;
   $('lHPoss').value=50; $('h2hHome').value=50; $('leagueAvg').value=1.5;
   liveXGH=0; liveXGA=0; cornHist={};
@@ -1890,7 +2130,8 @@ const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'lHSOT','lASOT','lHDA','lADA','lHPoss','h2hHome',
  'hCornSeason','aCornSeason','lHCorn','lACorn',
  'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
- 'bankroll','oddNextGoal','hYCSeason','aYCSeason','lHYC','lAYC','leagueAvg'];
+ 'bankroll','oddNextGoal','hYCSeason','aYCSeason','lHYC','lAYC','leagueAvg',
+ 'lHBC','lABC','hPPG','aPPG'];
 
 function saveFields(){
   const data={};
