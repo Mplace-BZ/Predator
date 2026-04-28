@@ -5,48 +5,331 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
 <title>Live Match Predictor</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
+/* ───────────────────────── MPlace Design Tokens ─────────────────────────
+   Single accent palette. Colors carry semantic meaning, never decoration.
+   Dark mode only. WCAG AA contrast on body, AA Large on labels.
+*/
 :root {
-  --bg:     #0d1117;
-  --bg2:    #161b22;
-  --bg3:    #1c2333;
-  --bg4:    #21262d;
-  --border: rgba(255,255,255,0.06);
-  --border2:rgba(255,255,255,0.12);
-  --text:   #e6edf3;
-  --text2:  #7d8590;
-  --text3:  #484f58;
-  --green:  #1aff8c;
-  --green2: #14c46a;
-  --green3: rgba(26,255,140,0.08);
-  --green4: rgba(26,255,140,0.15);
-  --green-bd:rgba(26,255,140,0.25);
-  --red:    #ff4d6a;
-  --red-bg: rgba(255,77,106,0.08);
-  --red-bd: rgba(255,77,106,0.25);
-  --yellow: #ffd166;
-  --yel-bg: rgba(255,209,102,0.08);
-  --yel-bd: rgba(255,209,102,0.25);
-  --blue:   #58a6ff;
-  --blue-bg:rgba(88,166,255,0.08);
-  --blue-bd:rgba(88,166,255,0.22);
-  --purple: #c084fc;
-  --purple-bg:rgba(192,132,252,0.08);
-  --purple-bd:rgba(192,132,252,0.25);
-  --mono:   'JetBrains Mono', monospace;
-  --sans:   'Inter', sans-serif;
+  /* Surfaces */
+  --bg:           #0E0E10;
+  --surface:      #18181B;
+  --surface-2:    #232327;
+  --surface-3:    #2A2A2E;
+  --border:       #2A2A2E;
+  --border-strong:#3A3A3F;
+
+  /* Text — bumped contrast */
+  --text:         #FAFAF7;
+  --text-dim:     #A8A8AE;     /* was 8A8A90, now AA-compliant on bg */
+  --text-faint:   #6B6B70;
+
+  /* Accents — orange MPlace + secondary */
+  --accent:       #FF5A1F;
+  --accent-hover: #FF6B33;
+  --accent-soft:  #FFB347;
+  --accent-tint:  rgba(255,90,31,0.10);
+  --accent-tint-2:rgba(255,90,31,0.18);
+  --accent-bd:    rgba(255,90,31,0.30);
+
+  /* Status — used ONLY for verdicts/states */
+  --positive:     #4ADE80;
+  --positive-tint:rgba(74,222,128,0.10);
+  --positive-bd:  rgba(74,222,128,0.28);
+  --negative:     #EF4444;
+  --negative-tint:rgba(239,68,68,0.10);
+  --negative-bd:  rgba(239,68,68,0.28);
+  --warning:      #FFB347;
+  --warning-tint: rgba(255,179,71,0.10);
+  --warning-bd:   rgba(255,179,71,0.28);
+
+  /* Type */
+  --sans:   'Manrope', system-ui, -apple-system, sans-serif;
+  --mono:   'JetBrains Mono', ui-monospace, monospace;
+
+  /* Spacing — 8px scale */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s7: 32px; --s8: 40px; --s9: 56px; --s10: 80px;
+  --r-card: 12px; --r-input: 8px; --r-badge: 999px;
+
+  /* Legacy aliases (existing components keep working with new palette) */
+  --bg2:      var(--surface);
+  --bg3:      var(--surface-2);
+  --bg4:      var(--surface-3);
+  --border2:  var(--border-strong);
+  --text2:    var(--text-dim);
+  --text3:    var(--text-faint);
+  --green:    var(--positive);
+  --green2:   var(--positive);
+  --green3:   var(--positive-tint);
+  --green4:   var(--positive-tint);
+  --green-bd: var(--positive-bd);
+  --red:      var(--negative);
+  --red-bg:   var(--negative-tint);
+  --red-bd:   var(--negative-bd);
+  --yellow:   var(--warning);
+  --yel-bg:   var(--warning-tint);
+  --yel-bd:   var(--warning-bd);
+  --blue:     var(--accent);
+  --blue-bg:  var(--accent-tint);
+  --blue-bd:  var(--accent-bd);
+  --purple:   var(--accent-soft);
+  --purple-bg:var(--warning-tint);
+  --purple-bd:var(--warning-bd);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;}
+html{font-feature-settings:'cv11','ss01','ss03';-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;min-height:100vh;letter-spacing:-0.005em;}
+/* All numeric metrics use tabular figures by default */
+.tab-num,.mv,.gp-pct,.gt-bar-pct,.qd-stake,.score-inp,.min-inp,
+input[type=number],.metric .mv,.score-tbl td,.qd-stat-val{font-variant-numeric:tabular-nums;font-feature-settings:'tnum';}
+/* No grid background — Linear/Vercel keep it flat */
 
-/* subtle grid */
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(26,255,140,0.02) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(26,255,140,0.02) 1px,transparent 1px);
-  background-size:32px 32px;}
+/* ───────────────────────── Typography scale ───────────────────────── */
+h1.h1,.h1{font-size:32px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;color:var(--text);}
+.h-hero{font-size:56px;font-weight:800;letter-spacing:-0.03em;line-height:1;color:var(--text);}
+.h-hero-sm{font-size:44px;font-weight:800;letter-spacing:-0.025em;line-height:1.05;color:var(--text);}
+h2.h2,.h2{font-size:24px;font-weight:700;letter-spacing:-0.015em;line-height:1.2;color:var(--text);}
+h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25;color:var(--text);}
+.body{font-size:15px;font-weight:400;color:var(--text);}
+.body-dim{font-size:14px;font-weight:400;color:var(--text-dim);}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);}
+.eyebrow-accent{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);}
+.num-sm{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;}
+.num-md{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;}
+.num-lg{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
 
-.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+/* ───────────────────────── Layout primitives ───────────────────────── */
+.wrap{position:relative;z-index:1;max-width:1024px;margin:0 auto;padding:24px 16px 80px;}
+.section{margin-bottom:32px;}
+.stack{display:flex;flex-direction:column;}
+.stack-2>*+*{margin-top:8px;} .stack-3>*+*{margin-top:12px;} .stack-4>*+*{margin-top:16px;}
+.stack-6>*+*{margin-top:24px;} .stack-8>*+*{margin-top:32px;}
+.row{display:flex;align-items:center;gap:12px;}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.spacer{flex:1;}
+
+/* ───────────────────────── Brand mark ───────────────────────── */
+.brand-flame{width:24px;height:24px;flex-shrink:0;}
+.brand-flame path{fill:var(--accent);}
+.brand-mark{display:flex;align-items:center;gap:10px;}
+.brand-mark .brand-name{font-size:16px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
+.brand-mark .brand-suffix{font-size:14px;font-weight:500;color:var(--text-dim);}
+
+/* ───────────────────────── Hero recommendation ───────────────────────── */
+.hero-rec{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;transition:border-color .2s;}
+.hero-rec.is-positive{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-tint) 0%,var(--surface) 60%);}
+.hero-rec.is-negative{border-color:var(--negative-bd);}
+.hero-rec.is-warning{border-color:var(--warning-bd);}
+.hero-rec-left{display:flex;align-items:center;gap:20px;min-width:0;}
+.hero-rec-icon{width:48px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--surface-2);font-size:26px;}
+.hero-rec.is-positive .hero-rec-icon{background:var(--accent-tint-2);}
+.hero-rec.is-negative .hero-rec-icon{background:var(--negative-tint);}
+.hero-rec.is-warning .hero-rec-icon{background:var(--warning-tint);}
+.hero-rec-text{min-width:0;flex:1;}
+.hero-rec-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.hero-rec.is-positive .hero-rec-eyebrow{color:var(--accent);}
+.hero-rec.is-negative .hero-rec-eyebrow{color:var(--negative);}
+.hero-rec.is-warning .hero-rec-eyebrow{color:var(--warning);}
+.hero-rec-title{font-size:28px;font-weight:700;letter-spacing:-0.015em;line-height:1.15;color:var(--text);margin-bottom:6px;}
+.hero-rec-sub{font-size:14px;color:var(--text-dim);line-height:1.5;}
+.hero-rec-right{text-align:right;flex-shrink:0;}
+.hero-rec-conf{font-size:64px;font-weight:800;letter-spacing:-0.03em;line-height:1;color:var(--text);font-variant-numeric:tabular-nums;}
+.hero-rec-conf-label{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
+.hero-rec-stake{margin-top:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hero-rec-stake-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+.hero-rec-stake-pill .label{color:var(--text-dim);font-weight:500;}
+.hero-rec-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:-0.005em;cursor:pointer;border:none;transition:background .15s;font-family:var(--sans);}
+.hero-rec-cta.primary{background:var(--accent);color:#0E0E10;}
+.hero-rec-cta.primary:hover{background:var(--accent-hover);}
+.hero-rec-cta.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border-strong);}
+.hero-rec-cta.secondary:hover{background:var(--surface-3);}
+.hero-rec-cta.ghost{background:transparent;color:var(--text-dim);}
+.hero-rec-cta.ghost:hover{color:var(--text);}
+.hero-rec-cta:disabled{opacity:.4;cursor:not-allowed;}
+@media(max-width:640px){
+  .hero-rec{grid-template-columns:1fr;padding:24px 20px;text-align:left;}
+  .hero-rec-right{text-align:left;}
+  .hero-rec-conf{font-size:48px;}
+  .hero-rec-title{font-size:22px;}
+}
+
+/* ───────────────────────── Live context grid ───────────────────────── */
+.context-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:768px){.context-grid{grid-template-columns:repeat(2,1fr);}}
+.context-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s;}
+.context-tile:hover{border-color:var(--border-strong);}
+.context-tile-label{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:flex;align-items:center;gap:6px;}
+.context-tile-icon{color:var(--accent);font-size:13px;}
+.context-tile-value{font-size:36px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums;}
+.context-tile-meta{font-size:12px;color:var(--text-dim);}
+
+/* ───────────────────────── Accordion ───────────────────────── */
+.acc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.acc+.acc{margin-top:12px;}
+.acc-head{display:flex;align-items:center;gap:12px;padding:18px 20px;cursor:pointer;user-select:none;background:transparent;border:none;width:100%;text-align:left;color:var(--text);font-family:var(--sans);transition:background .15s;}
+.acc-head:hover{background:var(--surface-2);}
+.acc-head:focus{outline:none;background:var(--surface-2);}
+.acc-head-title{font-size:15px;font-weight:600;color:var(--text);flex:1;}
+.acc-head-meta{font-size:13px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+.acc-chev{width:18px;height:18px;color:var(--text-dim);transition:transform .2s;flex-shrink:0;}
+.acc.open .acc-chev{transform:rotate(90deg);color:var(--text);}
+.acc-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border);padding-top:20px;}
+.acc.open .acc-body{display:block;}
+
+/* ───────────────────────── Buttons (clean) ───────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:-0.005em;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);font-family:var(--sans);transition:background .15s,border-color .15s;}
+.btn:hover{background:var(--surface-3);border-color:var(--border-strong);}
+.btn-accent{background:var(--accent);color:#0E0E10;border-color:var(--accent);}
+.btn-accent:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-dim);}
+.btn-ghost:hover{color:var(--text);background:var(--surface-2);}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+
+/* ───────────────────────── Skeleton loader ───────────────────────── */
+.skeleton{background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:skeleton-shimmer 1.6s ease-in-out infinite;border-radius:6px;}
+@keyframes skeleton-shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ───────────────────────── Override existing components ───────────────────────── */
+/* Strip remaining glow/pulse from old components */
+.live-dot{display:none;}
+.hdr-badge{background:var(--accent-tint);border:1px solid var(--accent-bd);color:var(--accent);font-family:var(--sans);font-weight:600;letter-spacing:0.1em;border-radius:999px;}
+.paste-label{color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:0.12em;}
+.paste-label::after{display:none;}
+textarea{font-family:var(--mono);font-size:12px;background:var(--surface-2);border-color:var(--border);color:var(--text);}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint);}
+.parse-btn{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:-0.005em;text-transform:none;padding:8px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#0E0E10;}
+.parse-btn:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+.team-name-inp,.score-inp,.min-inp,.iw input,input[type=number]{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-family:var(--sans);font-weight:600;}
+.team-name-inp:focus,.score-inp:focus,.min-inp:focus,.iw input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint);}
+.score-sep{color:var(--text-dim);font-family:var(--sans);font-weight:300;}
+.score-inp{color:var(--text);font-family:var(--mono);}
+.min-inp{color:var(--accent);}
+.score-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.card-t{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:0.12em;color:var(--text-dim);}
+.card-t::after{display:none;}
+.card-t.home,.card-t.away,.card-t.live,.card-t.green{color:var(--text-dim);}
+/* Result panel */
+.result-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
+.sl{color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:0.12em;}
+.metric{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;}
+.metric.c-green,.metric.c-red,.metric.c-yellow,.metric.c-blue{border-color:var(--border);}
+.ml{color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:0.1em;}
+.mv{color:var(--text);font-family:var(--sans);font-weight:700;}
+.mv.green{color:var(--positive);}
+.mv.red{color:var(--negative);}
+.mv.yellow{color:var(--text);}
+.mv.blue{color:var(--text);}
+.ms{color:var(--text-faint);}
+/* Goal probability cards */
+.goal-prob-card{background:var(--surface-2)!important;border:1px solid var(--border)!important;}
+.goal-prob-card.home-card{background:var(--surface-2)!important;}
+.goal-prob-card.away-card{background:var(--surface-2)!important;}
+.gp-label{color:var(--text-dim)!important;font-family:var(--sans);font-weight:600;}
+.gp-pct{color:var(--text)!important;font-family:var(--sans)!important;font-weight:800!important;letter-spacing:-0.02em!important;}
+.gp-team{color:var(--text);}
+.gp-sub{color:var(--text-dim);}
+/* Status card cleanup — no more loud backgrounds */
+.status-card{background:var(--surface-2);border:1px solid var(--border);}
+.status-card.likely-goal{background:var(--accent-tint);border-color:var(--accent-bd);}
+.status-card.unlikely{background:var(--surface-2);border-color:var(--border);}
+.status-card.neutral{background:var(--surface-2);border-color:var(--border);}
+.status-card.red-card-active{background:var(--negative-tint);border-color:var(--negative-bd);}
+.likely-goal .st-title{color:var(--accent);}
+.unlikely .st-title{color:var(--text-dim);}
+.neutral .st-title{color:var(--text);}
+.red-card-active .st-title{color:var(--negative);}
+.st-title{font-family:var(--sans);font-weight:700;font-size:16px;letter-spacing:-0.01em;}
+.st-body{color:var(--text-dim);font-size:13px;}
+/* Compare bar */
+.cb-home,.cb-away{color:var(--text-dim);font-family:var(--sans);font-weight:600;}
+.cb-home-fill{background:var(--accent);}
+.cb-away-fill{background:var(--accent-soft);}
+/* Score table */
+.score-tbl th{color:var(--text-dim);font-family:var(--sans);font-weight:600;letter-spacing:0.06em;}
+.score-tbl td{color:var(--text-dim);font-family:var(--sans);font-weight:500;}
+.score-tbl .top-result td{color:var(--accent);font-weight:700;}
+.pbar{background:var(--surface-3);}
+.pbar-fill{background:var(--accent);}
+/* Tip dot */
+.tip{background:var(--surface-2);border-color:var(--border-strong);color:var(--text-faint);}
+.tip:hover::after{background:var(--surface);border-color:var(--border-strong);color:var(--text);}
+/* Footer */
+footer{color:var(--text-dim);font-family:var(--sans);font-weight:500;}
+
+/* ───────────────────────── Strip noisy animations ───────────────────────── */
+.predator-panel.active{animation:none!important;border-color:var(--accent)!important;box-shadow:none!important;}
+.predator-panel{background:var(--surface)!important;border-color:var(--accent)!important;}
+.predator-icon{color:var(--accent)!important;}
+.predator-title{color:var(--accent)!important;font-family:var(--sans);font-weight:700;letter-spacing:0.05em;}
+.predator-reason{font-family:var(--sans);}
+.predator-market{font-family:var(--sans);color:var(--text-dim);}
+@keyframes predator-pulse{from{}to{}}
+@keyframes pulse{from{}to{}}
+@keyframes qd-pulse-green{from{}to{}}
+@keyframes qd-pulse-yellow{from{}to{}}
+@keyframes qd-fire-flicker{from{opacity:1;}to{opacity:1;}}
+
+/* ───────────────────────── Quick Decision panel — quieter ───────────────────────── */
+.quick-decision{background:var(--surface);border:1px solid var(--border);border-radius:14px;}
+.qd-stats{color:var(--text-dim);border-bottom-color:var(--border);font-family:var(--sans);font-weight:500;}
+.qd-stat-val{font-variant-numeric:tabular-nums;}
+.qd-btn{background:var(--surface-2)!important;border:1px solid var(--border)!important;opacity:.55;filter:none;font-family:var(--sans);transition:border-color .2s,background .2s,opacity .2s;}
+.qd-btn:hover{opacity:.85;background:var(--surface-3)!important;}
+.qd-btn.active{opacity:1;}
+.qd-btn .qd-label{font-family:var(--sans);font-weight:700;letter-spacing:-0.005em;}
+.qd-green{}
+.qd-green.active{border-color:var(--accent)!important;background:var(--accent-tint)!important;animation:none!important;box-shadow:none!important;}
+.qd-green .qd-label{color:var(--accent);}
+.qd-green .qd-stake{color:var(--accent);}
+.qd-yellow.active{border-color:var(--warning-bd)!important;background:var(--warning-tint)!important;animation:none!important;box-shadow:none!important;}
+.qd-yellow .qd-label{color:var(--warning);}
+.qd-yellow .qd-stake{color:var(--warning);}
+.qd-red.active{border-color:var(--negative-bd)!important;background:var(--negative-tint)!important;box-shadow:none!important;}
+.qd-red .qd-label{color:var(--negative);}
+.qd-red .qd-stake{color:var(--negative);}
+
+/* ───────────────────────── Goal Timing — uniform bars ───────────────────────── */
+.goal-timing-panel{background:var(--surface);border:1px solid var(--border);}
+.gt-title{color:var(--text);font-family:var(--sans);font-weight:700;letter-spacing:-0.01em;text-transform:none;font-size:14px;}
+.gt-now{background:var(--accent-tint);border-color:var(--accent-bd);color:var(--accent);font-family:var(--sans);font-weight:600;}
+.gt-bar{background:var(--surface-2)!important;border:1px solid var(--border)!important;font-family:var(--sans);transition:transform .15s;}
+.gt-bar.hot,.gt-bar.warm,.gt-bar.cold{background:var(--surface-2)!important;border-color:var(--border)!important;}
+.gt-bar.peak{box-shadow:0 0 0 1px var(--accent-soft) inset;}
+.gt-bar.current{background:var(--accent-tint)!important;border:1px solid var(--accent)!important;transform:none;box-shadow:none;}
+.gt-bar-pct{color:var(--text)!important;font-family:var(--sans);font-weight:700;}
+.gt-bar.current .gt-bar-pct{color:var(--accent)!important;}
+.gt-bar-label{color:var(--text-dim);font-family:var(--sans);font-weight:500;}
+.gt-bar-fill{display:none;}
+.gt-bar{position:relative;}
+.gt-bar.current::before{content:'TERAZ';position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0E0E10;font-size:8px;font-weight:700;letter-spacing:0.1em;padding:2px 6px;border-radius:999px;}
+.gt-footer{color:var(--text-dim);font-family:var(--sans);}
+
+/* ───────────────────────── Edge / corners / cards grids ───────────────────────── */
+#edgeGrid>div>div,#cornersGrid>div,#cardsGrid>div{background:var(--surface-2)!important;border:1px solid var(--border)!important;}
+/* Heroic tile cards (existing #heroTiles render) — neutralize colors */
+#heroTiles>div{background:var(--surface-2)!important;border:1px solid var(--border)!important;}
+#heroTiles>div div:first-child{color:var(--text-dim)!important;font-family:var(--sans);}
+#heroTiles>div div:nth-child(2){color:var(--text)!important;font-family:var(--sans);font-weight:800!important;letter-spacing:-0.02em!important;}
+#heroTiles>div div:nth-child(3){color:var(--text-dim)!important;}
+
+/* ───────────────────────── Strategy panel (right tab) ───────────────────────── */
+#stratTab{background:var(--surface);border-color:var(--border-strong);color:var(--text-dim);}
+#stratPanel{background:var(--surface);border-color:var(--border-strong);}
+
+/* ───────────────────────── Calibration / scanner ───────────────────────── */
+.scan-card{background:var(--surface-2);border-color:var(--border);}
+.scan-card .sc-teams{color:var(--text);}
+.scan-card .sc-score{color:var(--accent);}
+.scan-card .sc-minute{background:var(--accent-tint);border:1px solid var(--accent-bd);color:var(--accent);}
+.scan-card .sc-market{background:var(--surface-3);border-color:var(--border-strong);color:var(--text);}
+.scan-drop{background:var(--surface-2);border-color:var(--border-strong);}
+.scan-drop:focus,.scan-drop.drag-over{border-color:var(--accent);background:var(--accent-tint);}
+.scan-thumb{border-color:var(--border-strong);}
+
+.wrap{position:relative;z-index:1;max-width:1024px;margin:0 auto;padding:24px 16px 80px;}
 
 /* HEADER */
 .hdr{display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;}
@@ -281,26 +564,76 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 <body>
 <div class="wrap">
 
-<!-- STICKY TOP BAR -->
-<div style="position:sticky;top:0;z-index:100;background:var(--bg);padding-bottom:.5rem;border-bottom:1px solid var(--border);">
-  <div style="display:flex;align-items:center;gap:.6rem;">
-    <div class="live-dot"></div>
-    <div class="hdr-badge">Live</div>
-    <h1 style="font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;">Match <span style="color:var(--green);">Predictor</span></h1>
-    <div style="border-radius:6px;overflow:hidden;border:1px solid rgba(26,255,140,0.15);flex-shrink:0;">
-      <img src="predator-banner.png" alt="Predator" style="display:block;height:32px;width:auto;">
+<!-- HEADER — minimal MPlace identity -->
+<header style="position:sticky;top:0;z-index:100;background:rgba(14,14,16,0.85);backdrop-filter:saturate(180%) blur(8px);-webkit-backdrop-filter:saturate(180%) blur(8px);padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:24px;">
+  <div style="max-width:1024px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:16px;">
+    <div class="brand-mark">
+      <svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
+      </svg>
+      <span class="brand-name">Match Predictor</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.0</span>
     </div>
-    <div id="trafficLight" style="display:flex;align-items:center;gap:.5rem;padding:4px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--bg2);flex:1;">
-      <div id="tlDot" style="width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
-      <div id="tlLabel" style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);">WAITING</div>
-      <div id="tlSub" style="font-size:9px;color:var(--text3);margin-left:auto;">odds?</div>
+    <div class="spacer"></div>
+    <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
+      <div id="tlDot" style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0;"></div>
+      <div id="tlLabel" style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:var(--text-dim);text-transform:uppercase;">Czekam</div>
+      <div id="tlSub" style="font-size:11px;color:var(--text-faint);font-variant-numeric:tabular-nums;">brak kursów</div>
     </div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;flex-shrink:0;">v6.7</div>
   </div>
-</div>
+</header>
 
-<!-- PREDATOR MODE -->
-<div id="predatorPanel" class="predator-panel">
+<!-- ───── HERO RECOMMENDATION ───── -->
+<section class="section">
+  <div id="heroRec" class="hero-rec">
+    <div class="hero-rec-left">
+      <div id="heroRecIcon" class="hero-rec-icon">&#9203;</div>
+      <div class="hero-rec-text">
+        <div id="heroRecEyebrow" class="hero-rec-eyebrow">Czekam na dane</div>
+        <div id="heroRecTitle" class="hero-rec-title">Wklej dane meczu poniżej</div>
+        <div id="heroRecSub" class="hero-rec-sub">Predictor potrzebuje danych z FootyStats lub statów live, by dać rekomendację.</div>
+        <div id="heroRecStake" class="hero-rec-stake" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="hero-rec-right">
+      <div id="heroRecConf" class="hero-rec-conf">—</div>
+      <div class="hero-rec-conf-label">Pewność modelu</div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+        <button id="heroRecPrimary" class="hero-rec-cta primary" onclick="placeBet(window._lastDecision&&window._lastDecision.verdict||'red')" disabled>Zapisz bet</button>
+        <button id="heroRecSecondary" class="hero-rec-cta ghost" onclick="placeBet('red')">Pomiń</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── LIVE CONTEXT — 4 tiles ───── -->
+<section class="section">
+  <div class="context-grid">
+    <div class="context-tile">
+      <div class="context-tile-label"><span class="context-tile-icon">&#9201;</span> Minuta</div>
+      <div class="context-tile-value" id="ctxMinute">—</div>
+      <div class="context-tile-meta" id="ctxMinuteMeta">Wpisz minutę meczu</div>
+    </div>
+    <div class="context-tile">
+      <div class="context-tile-label"><span class="context-tile-icon">&#9917;</span> Wynik</div>
+      <div class="context-tile-value" id="ctxScore">—</div>
+      <div class="context-tile-meta" id="ctxScoreMeta">Aktualny wynik live</div>
+    </div>
+    <div class="context-tile">
+      <div class="context-tile-label"><span class="context-tile-icon">&#127919;</span> Najlepszy edge</div>
+      <div class="context-tile-value" id="ctxEdge">—</div>
+      <div class="context-tile-meta" id="ctxEdgeMeta">Wpisz kursy bukmachera</div>
+    </div>
+    <div class="context-tile">
+      <div class="context-tile-label"><span class="context-tile-icon">&#128293;</span> Siła sygnału</div>
+      <div class="context-tile-value" id="ctxAnomaly">—</div>
+      <div class="context-tile-meta" id="ctxAnomalyMeta">Wykrywanie anomalii</div>
+    </div>
+  </div>
+</section>
+
+<!-- PREDATOR MODE (deprecated — superseded by hero recommendation v7.0) -->
+<div id="predatorPanel" class="predator-panel" style="display:none!important;">
   <div class="predator-inner">
     <div class="predator-icon">&#8982;</div>
     <div class="predator-content">
@@ -311,15 +644,24 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </div>
 
+<!-- ───── ACCORDION: Wklej dane meczu (open by default) ───── -->
+<section class="acc open" id="accInput">
+  <button class="acc-head" type="button" onclick="toggleAcc(this)">
+    <svg class="acc-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 4 13 10 7 16"/></svg>
+    <span class="acc-head-title">Wklej dane meczu</span>
+    <span class="acc-head-meta">FootyStats · Sofascore · Screenshot</span>
+  </button>
+  <div class="acc-body" style="padding-top:8px;">
+
 <!-- MATCH SCANNER -->
-<div class="paste-card" style="border-color:var(--purple-bd);margin-bottom:1rem;">
-  <div class="paste-label" style="color:var(--purple);">Match Scanner</div>
+<div class="paste-card" style="border-color:var(--accent-bd);margin-bottom:12px;">
+  <div class="paste-label" style="color:var(--accent);">Skaner meczów (screenshot)</div>
   <div id="scanDrop" class="scan-drop" tabindex="0">
-    <div id="scanPlaceholder" class="scan-placeholder">Cmd+V lub przeciagnij screenshoty meczow</div>
+    <div id="scanPlaceholder" class="scan-placeholder">Cmd+V lub przeciągnij screenshoty meczów</div>
     <div id="scanThumbs" class="scan-thumbs"></div>
   </div>
   <div style="display:flex;align-items:center;gap:.6rem;margin-top:.6rem;flex-wrap:wrap;">
-    <button id="scanBtn" class="parse-btn" style="border-color:var(--purple-bd);background:var(--purple-bg);color:var(--purple);display:none;" onclick="runScan()">&#9654; Scan All</button>
+    <button id="scanBtn" class="parse-btn" style="border-color:var(--accent);background:var(--accent);color:#0E0E10;display:none;" onclick="runScan()">Skanuj mecze</button>
     <button id="scanClear" class="parse-btn" style="background:transparent;border-color:var(--border2);color:var(--text3);display:none;" onclick="clearScan()">&#10005; Clear</button>
     <span id="scanStatus" style="font-family:var(--mono);font-size:10px;color:var(--text3);"></span>
   </div>
@@ -330,10 +672,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- PASTE -->
 <div class="paste-card">
-  <div class="paste-label">FootyStats — Season &amp; H2H data</div>
-  <textarea id="rawPaste" style="min-height:80px" placeholder="Paste full FootyStats block (score, minute, xG, H2H, season stats...)"></textarea>
+  <div class="paste-label">FootyStats — sezon, H2H, statystyki</div>
+  <textarea id="rawPaste" style="min-height:80px" placeholder="Wklej pełny blok FootyStats (wynik, minuta, xG, H2H, sezon, kursy)..."></textarea>
   <div style="display:flex;align-items:center;gap:.6rem;margin-top:.85rem">
-    <div class="paste-label" style="color:#ff9f43;margin-bottom:0">FlashScore / Sofascore — Live in-match stats</div>
+    <div class="paste-label" style="color:var(--accent-soft);margin-bottom:0">Sofascore / FlashScore — statystyki live</div>
     <select id="statsPeriod" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:var(--mono);font-size:10px;padding:4px 8px;cursor:pointer;">
       <option value="full">Caly mecz</option>
       <option value="1h">1. polowa</option>
@@ -342,15 +684,15 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
   <textarea id="rawPaste2" style="min-height:80px" placeholder="Wklej dane live: Posiadanie piłki, xG, Strzały celne, Rzuty rożne... (format PL lub EN)"></textarea>
   <div style="display:flex;align-items:center;gap:.6rem;margin-top:.6rem;flex-wrap:wrap">
-    <button class="parse-btn" onclick="parseAll()">&#9654; Parse Data</button>
-    <button class="parse-btn" style="background:transparent;border-color:var(--border2);color:var(--text3)" onclick="clearAll()">&#10005; Clear</button>
+    <button class="parse-btn" onclick="parseAll()">Wczytaj dane</button>
+    <button class="parse-btn" style="background:transparent;border-color:var(--border-strong);color:var(--text-dim)" onclick="clearAll()">Wyczyść</button>
     <span class="parse-msg" id="parseMsg">&#10003; Parsed</span>
   </div>
   <div id="parseStatus" style="margin-top:.5rem;font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5;display:none;"></div>
 </div>
 
-<!-- QUICK DECISION — 3 big buttons -->
-<div id="quickDecision" class="quick-decision">
+<!-- QUICK DECISION (deprecated — hero rec card replaces this in v7.0) -->
+<div id="quickDecision" class="quick-decision" style="display:none!important;">
   <div class="qd-stats" id="qdStats"></div>
   <div class="qd-buttons">
     <button class="qd-btn qd-green" id="qdGreen" data-verdict="green" onclick="placeBet('green')">
@@ -402,11 +744,24 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <input type="radio" name="rcWho" value="away" id="rcAway" style="accent-color:#ff9f43;cursor:pointer;"> Away
     </label>
     <div style="display:flex;align-items:center;gap:4px;">
-      <input type="number" id="rcMinute" value="45" min="1" max="120" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--red);font-family:var(--mono);font-size:12px;padding:4px 6px;width:50px;text-align:center;">
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">' red card</span>
+      <input type="number" id="rcMinute" value="45" min="1" max="120" style="background:var(--surface-2);border:1px solid var(--border-strong);border-radius:6px;color:var(--negative);font-family:var(--sans);font-weight:600;font-size:12px;padding:4px 6px;width:50px;text-align:center;">
+      <span style="font-size:10px;color:var(--text-dim);">' czerwona kartka</span>
     </div>
   </div>
 </div>
+
+  </div>
+</section>
+<!-- ───── /ACCORDION: Wklej dane meczu ───── -->
+
+<!-- ───── ACCORDION: Pełne predykcje (open by default) ───── -->
+<section class="acc open" id="accPredictions">
+  <button class="acc-head" type="button" onclick="toggleAcc(this)">
+    <svg class="acc-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 4 13 10 7 16"/></svg>
+    <span class="acc-head-title">Pełne predykcje modelu</span>
+    <span class="acc-head-meta">Probabilities · Edge% · Corners · Cards</span>
+  </button>
+  <div class="acc-body" style="padding-top:8px;">
 
 <!-- HERO TILES -->
 <div class="g3" id="heroTiles" style="margin-bottom:1rem"></div>
@@ -414,7 +769,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 <!-- GOAL TIMING HEAT MAP -->
 <div id="goalTimingPanel" class="goal-timing-panel" style="display:none;">
   <div class="gt-header">
-    <span class="gt-title">&#128293; GOAL TIMING — kiedy spodziewać się gola</span>
+    <span class="gt-title">Kiedy może paść gol</span>
     <span class="gt-now" id="gtNowLabel"></span>
   </div>
   <div class="gt-bars" id="gtBars"></div>
@@ -425,9 +780,9 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- RESULTS -->
 <div id="resultsPanel" class="result-panel">
-  <div style="font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem">
-    <span>&#9654;</span> Prediction Output
-    <span style="margin-left:auto;color:var(--text3)" id="calcTime"></span>
+  <div class="eyebrow" style="margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--text-dim);">
+    Wyniki modelu
+    <span style="margin-left:auto;color:var(--text-faint);font-weight:500;font-size:11px;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums;" id="calcTime"></span>
   </div>
 
   <!-- RED CARD BANNER -->
@@ -445,13 +800,13 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <!-- GOAL PROB PER TEAM -->
   <div class="goal-prob-wrap">
     <div class="goal-prob-card home-card">
-      <div class="gp-label">Home scores next</div>
+      <div class="gp-label">Gospodarze strzelą</div>
       <div class="gp-team" id="gpHomeTeam">—</div>
       <div class="gp-pct" id="gpHomePct">—</div>
       <div class="gp-sub" id="gpHomeSub">—</div>
     </div>
     <div class="goal-prob-card away-card">
-      <div class="gp-label">Away scores next</div>
+      <div class="gp-label">Goście strzelą</div>
       <div class="gp-team" id="gpAwayTeam">—</div>
       <div class="gp-pct" id="gpAwayPct">—</div>
       <div class="gp-sub" id="gpAwaySub">—</div>
@@ -474,68 +829,68 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <!-- KEY METRICS -->
   <div class="g4" style="margin-bottom:.85rem">
     <div class="metric" id="m1">
-      <div class="ml">Any goal remaining <span class="tip" data-tip="Probability that at least 1 more goal will be scored before full time, based on Poisson model using xG + live adjustments.">?</span></div>
+      <div class="ml">Padnie jeszcze gol <span class="tip" data-tip="Szansa, że padnie co najmniej 1 gol do końca meczu (Poisson + xG + live).">?</span></div>
       <div class="mv" id="v1">—</div>
-      <div class="ms">P(≥1 goal in rem. time)</div>
+      <div class="ms">≥1 gol do końca</div>
     </div>
     <div class="metric" id="m3">
-      <div class="ml">Over 1.5 remaining goals <span class="tip" data-tip="Probability of 2+ more goals before full time.">?</span></div>
+      <div class="ml">Padną jeszcze 2+ gole <span class="tip" data-tip="Szansa, że padną 2 lub więcej goli do końca meczu.">?</span></div>
       <div class="mv" id="v3">—</div>
-      <div class="ms">P(≥2 goals)</div>
+      <div class="ms">≥2 gole do końca</div>
     </div>
     <div class="metric" id="m4">
-      <div class="ml">No more goals (0-0 rem.)</div>
+      <div class="ml">Wynik się nie zmieni</div>
       <div class="mv" id="v4">—</div>
-      <div class="ms">Game ends as-is</div>
+      <div class="ms">Bez kolejnego gola</div>
     </div>
     <div class="metric" id="m5">
-      <div class="ml">BTTS remaining <span class="tip" data-tip="Both Teams To Score at least 1 more goal each in remaining time.">?</span></div>
+      <div class="ml">Obie strzelą <span class="tip" data-tip="Obie drużyny dorzucą jeszcze co najmniej po 1 golu.">?</span></div>
       <div class="mv" id="v5">—</div>
-      <div class="ms">Both teams score</div>
+      <div class="ms">BTTS do końca</div>
     </div>
   </div>
 
   <!-- MOST LIKELY FINAL SCORES -->
-  <div class="sl" style="margin-bottom:.5rem">Goal Count Probability (remaining time)</div>
+  <div class="sl" style="margin-bottom:.5rem">Ile goli padnie (do końca meczu)</div>
   <div class="card">
     <table class="score-tbl" id="scoreTable">
       <thead><tr>
-        <th>Total goals</th>
-        <th>Prob %</th>
-        <th>Distribution</th>
+        <th>Łącznie goli</th>
+        <th>Szansa</th>
+        <th>Rozkład</th>
       </tr></thead>
       <tbody id="scoreTbody"></tbody>
     </table>
   </div>
 
   <!-- TOP 5 FINAL SCORES -->
-  <div class="sl" style="margin:.85rem 0 .5rem">Top 5 Most Likely Final Scores</div>
+  <div class="sl" style="margin:.85rem 0 .5rem">Najbardziej prawdopodobne wyniki</div>
   <div class="card" style="margin-bottom:.85rem">
     <table class="score-tbl" id="top5Table">
       <thead><tr>
-        <th>Final Score</th>
-        <th>Prob %</th>
-        <th>Distribution</th>
+        <th>Wynik końcowy</th>
+        <th>Szansa</th>
+        <th>Rozkład</th>
       </tr></thead>
       <tbody id="top5Tbody"></tbody>
     </table>
   </div>
 
   <!-- BETTING SIGNALS -->
-  <div class="sl" style="margin:.85rem 0 .5rem">Signal Summary</div>
+  <div class="sl" style="margin:.85rem 0 .5rem">Wynik końcowy — rozkład</div>
   <div class="g3">
     <div class="metric" id="ms1">
-      <div class="ml">Home Win probability</div>
+      <div class="ml">Szansa: gospodarze wygrają</div>
       <div class="mv" id="vs1">—</div>
       <div class="ms" id="vss1">—</div>
     </div>
     <div class="metric" id="ms2">
-      <div class="ml">Draw probability</div>
+      <div class="ml">Szansa: remis</div>
       <div class="mv" id="vs2">—</div>
       <div class="ms" id="vss2">—</div>
     </div>
     <div class="metric" id="ms3">
-      <div class="ml">Away Win probability</div>
+      <div class="ml">Szansa: goście wygrają</div>
       <div class="mv" id="vs3">—</div>
       <div class="ms" id="vss3">—</div>
     </div>
@@ -547,7 +902,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 
   <!-- BOOKMAKER ODDS -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">Bookmaker Odds</div>
+  <div class="sl" style="margin:1.1rem 0 .6rem">Kursy bukmachera</div>
   <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.85rem;padding:.7rem 1rem;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;">
     <div style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:10px;color:var(--blue);font-family:var(--mono);">1</span>
@@ -587,25 +942,25 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 
   <!-- EDGE% TABLE -->
-  <div class="sl" style="margin:0 0 .6rem">Edge% — Model vs Bookmaker</div>
+  <div class="sl" style="margin:0 0 .6rem">Edge% — model vs bukmacher</div>
   <div id="edgeGrid" style="margin-bottom:.85rem"></div>
 
   <!-- CORNERS BETTING -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">Corners Betting</div>
+  <div class="sl" style="margin:1.1rem 0 .6rem">Rzuty rożne (corners)</div>
   <div class="g4" id="cornersGrid" style="margin-bottom:.85rem"></div>
 
   <!-- YELLOW CARDS BETTING -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">Yellow Cards Betting</div>
+  <div class="sl" style="margin:1.1rem 0 .6rem">Żółte kartki</div>
   <div class="g2" id="cardsGrid" style="margin-bottom:.85rem"></div>
 
   <!-- VALUE BETS -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">&#9889; Value Bet Tips — High Odds Picks</div>
+  <div class="sl" style="margin:1.1rem 0 .6rem">Dodatkowe sygnały (typy z wyższym kursem)</div>
   <div id="valueBets" style="display:flex;flex-direction:column;gap:.55rem;"></div>
 
   <!-- CALIBRATION LOG -->
   <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
     <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem;">
-      <div class="sl" style="margin:0;">&#128202; Match Outcome &amp; Calibration</div>
+      <div class="sl" style="margin:0;">Historia meczów i kalibracja modelu</div>
       <button id="calToggle" onclick="toggleCalibration()" style="margin-left:auto;font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;">Pokaż</button>
     </div>
     <div id="calBody" style="display:none;">
@@ -622,9 +977,22 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </div>
 
+  </div>
+</section>
+<!-- ───── /ACCORDION: Pełne predykcje ───── -->
+
+<!-- ───── ACCORDION: Dane sezonu i live (collapsed by default) ───── -->
+<section class="acc" id="accInputs">
+  <button class="acc-head" type="button" onclick="toggleAcc(this)">
+    <svg class="acc-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 4 13 10 7 16"/></svg>
+    <span class="acc-head-title">Edytuj dane meczu (sezon · live · corners · kartki)</span>
+    <span class="acc-head-meta">Auto-fill po Parse Data</span>
+  </button>
+  <div class="acc-body" style="padding-top:8px;">
+
 <!-- INPUTS (bottom) -->
 <section>
-  <div class="sl">Season Stats</div>
+  <div class="sl">Statystyki sezonu</div>
   <div class="g2">
     <div class="card">
       <div class="card-t home">Home Team — Season (Home)</div>
@@ -656,7 +1024,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </section>
 
 <section>
-  <div class="sl">Live Match Stats (current)</div>
+  <div class="sl">Statystyki na żywo</div>
   <div class="g3">
     <div class="card">
       <div class="card-t live">Shots</div>
@@ -744,7 +1112,19 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </section>
 
-<footer>Live Match Predictor &mdash; Poisson xG Model &mdash; Not financial advice</footer>
+  </div>
+</section>
+<!-- ───── /ACCORDION: Dane sezonu i live ───── -->
+
+<footer style="margin-top:48px;text-align:center;font-size:12px;color:var(--text-dim);font-family:var(--sans);">
+  <div style="display:inline-flex;align-items:center;gap:8px;padding:12px 0;">
+    <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
+      <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
+    </svg>
+    Powered by MPlace · Match Predictor v7.0
+  </div>
+  <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
+</footer>
 </div>
 
 <script>
@@ -806,30 +1186,27 @@ function renderGoalTiming(minute,homeTeam,awayTeam,boostInfo){
   }
   panel.style.display='block';
   const currentIdx=Math.min(Math.floor(Math.max(0,minute-1)/10),8);
+  // Find peak (highest-combined) index
+  const combinedArr=goalTiming.h.map((h,i)=>(h.pct+(goalTiming.a[i]?.pct||0))/2);
+  const peakIdx=combinedArr.indexOf(Math.max(...combinedArr));
   const bars=goalTiming.h.map((h,i)=>{
     const a=goalTiming.a[i]||{pct:0};
-    const combined=(h.pct+a.pct)/2;
-    const isCurrent=i===currentIdx;
+    const combined=combinedArr[i];
     let cls='gt-bar';
-    if(combined>=14) cls+=' hot';
-    else if(combined>=9) cls+=' warm';
-    else cls+=' cold';
-    if(isCurrent) cls+=' current';
-    const fillH=Math.min(100,combined*4);  // 25% = 100 height
-    const color=combined>=14?'var(--green)':combined>=9?'var(--yellow)':'var(--red)';
+    if(i===peakIdx&&i!==currentIdx) cls+=' peak';
+    if(i===currentIdx) cls+=' current';
     return '<div class="'+cls+'" title="'+homeTeam+' '+h.pct+'% / '+awayTeam+' '+a.pct+'%">'
       +'<span class="gt-bar-pct">'+combined.toFixed(0)+'%</span>'
-      +'<div class="gt-bar-fill" style="background:'+color+';height:3px;width:'+fillH+'%;"></div>'
-      +'<span class="gt-bar-label">'+h.from+"-"+h.to+'</span>'
+      +'<span class="gt-bar-label">'+h.from+"-"+h.to+"'</span>"
     +'</div>';
   }).join('');
   $('gtBars').innerHTML=bars;
   $('gtNowLabel').textContent=minute>0&&minute<=90?('teraz: '+minute+"' (okno "+goalTiming.h[currentIdx].from+'-'+goalTiming.h[currentIdx].to+"')") : '';
 
   // Footer: peak windows + boost summary
-  const sorted=goalTiming.h.map((h,i)=>({i,from:h.from,to:h.to,combined:(h.pct+(goalTiming.a[i]?.pct||0))/2})).sort((a,b)=>b.combined-a.combined);
+  const sorted=goalTiming.h.map((h,i)=>({i,from:h.from,to:h.to,combined:combinedArr[i]})).sort((a,b)=>b.combined-a.combined);
   const peaks=sorted.slice(0,2);
-  let footerLines=['Peak windows: '+peaks.map(p=>p.from+'-'+p.to+"' ("+p.combined.toFixed(0)+'%)').join(' · ')];
+  let footerLines=['Najgroźniejsze minuty: '+peaks.map(p=>p.from+"-"+p.to+"' ("+p.combined.toFixed(0)+'%)').join(' · ')];
   if(boostInfo){
     const sign=v=>(v>=0?'+':'')+(v*100).toFixed(0)+'%';
     footerLines.push('Aktualne okno boost: '+homeTeam+' '+sign(boostInfo.hBoost)+' / '+awayTeam+' '+sign(boostInfo.aBoost)+' xG');
@@ -1071,14 +1448,14 @@ function calc(){
   const ciSub=ci=>'CI: '+fmt(ci.p10)+'–'+fmt(ci.p90);
 
   $('heroTiles').innerHTML=
-    heroCard('Any goal remaining',fmt(pAnyGoal),remMin+' min left · '+ciSub(ciAnyGoal),pAnyGoal)
-    +heroCardFixed('Home scores',fmt(pHomeScores),(homeTeam||'Home')+' · '+ciSub(ciHomeScores),'var(--blue-bg)','var(--blue-bd)','var(--blue)')
-    +heroCardFixed('Away scores',fmt(pAwayScores),(awayTeam||'Away')+' · '+ciSub(ciAwayScores),'rgba(255,159,67,0.08)','rgba(255,159,67,0.25)','#ff9f43')
-    +(topScore?heroCard('Most likely final score',topScore.h+' - '+topScore.a,fmt(topScore.p)+' probability',topScore.p*3):heroCard('Most likely final score','—','—',0))
-    +(bestCornLine?heroCard('Corners over','Over '+bestCornLine.toFixed(1),fmt(bestCornP)+' — '+curCorn_h+' now',bestCornP):heroCard('Corners over','—',cornHasData?'No line >60%':'No data',0))
+    heroCard('Padnie jeszcze gol',fmt(pAnyGoal),'Pozostało '+remMin+' min · '+ciSub(ciAnyGoal),pAnyGoal)
+    +heroCardFixed('Gospodarze strzelą',fmt(pHomeScores),(homeTeam||'Home')+' · '+ciSub(ciHomeScores),'var(--surface-2)','var(--border)','var(--text)')
+    +heroCardFixed('Goście strzelą',fmt(pAwayScores),(awayTeam||'Away')+' · '+ciSub(ciAwayScores),'var(--surface-2)','var(--border)','var(--text)')
+    +(topScore?heroCard('Najbardziej prawdopodobny wynik',topScore.h+' - '+topScore.a,fmt(topScore.p)+' szansy',topScore.p*3):heroCard('Najbardziej prawdopodobny wynik','—','—',0))
+    +(bestCornLine?heroCard('Powyżej rożnych',bestCornLine.toFixed(1)+'+',fmt(bestCornP)+' · teraz '+curCorn_h,bestCornP):heroCard('Powyżej rożnych','—',cornHasData?'Brak linii > 60%':'Brak danych',0))
     +(rcActive
-      ?heroCardFixed('Red card active','ACTIVE',disTeam+' 10 men ('+rcMinute+'\')','rgba(255,77,106,0.15)','var(--red)','var(--red)')
-      :heroCard('Penalty chance',fmt(pPen),'DA: '+totalDA_h+', SOT: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3));
+      ?heroCardFixed('Czerwona kartka','aktywna',disTeam+' gra w 10 ('+rcMinute+'\')','var(--negative-tint)','var(--negative-bd)','var(--negative)')
+      :heroCard('Szansa na rzut karny',fmt(pPen),'DA: '+totalDA_h+' · strzały celne: '+totalSOT_h,pPen>0.15?0.7:pPen>0.10?0.5:0.3));
 
   // Goal Timing heat map
   renderGoalTiming(minute,homeTeam,awayTeam,timingBoostInfo);
@@ -1160,7 +1537,7 @@ function calc(){
   $('scoreTbody').innerHTML=goalCountsShow.map((r,i)=>{
     const cls=i===0?'top-result':'';
     const barW=(r.p/maxGP*100).toFixed(1);
-    const label=r.g===0?'No more goals (0)':r.g===1?'1 goal':r.g+' goals';
+    const label=r.g===0?'Bez gola':r.g===1?'1 gol':r.g+' gole';
     // also show who is more likely to score them
     let detail='';
     if(r.g===1){
@@ -1458,26 +1835,26 @@ function calc(){
     const bestEdge=Math.max(...markets.filter(m=>m.odds>=1.01).map(m=>m.model-1/m.odds))*100;
     const tl=$('trafficLight'),dot=$('tlDot'),lbl=$('tlLabel'),sub=$('tlSub');
     if(bestEdge>=5){
-      dot.style.background='var(--green)';dot.style.boxShadow='0 0 8px var(--green)';
-      lbl.style.color='var(--green)';lbl.textContent='BET';
-      tl.style.borderColor='var(--green-bd)';tl.style.background='var(--green3)';
-      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--green)';
+      dot.style.background='var(--positive)';dot.style.boxShadow='none';
+      lbl.style.color='var(--positive)';lbl.textContent='Graj';
+      tl.style.borderColor='var(--positive-bd)';tl.style.background='var(--positive-tint)';
+      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--positive)';
     } else if(bestEdge>=2){
-      dot.style.background='var(--yellow)';dot.style.boxShadow='0 0 8px var(--yellow)';
-      lbl.style.color='var(--yellow)';lbl.textContent='WATCH';
-      tl.style.borderColor='var(--yel-bd)';tl.style.background='var(--yel-bg)';
-      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--yellow)';
+      dot.style.background='var(--warning)';dot.style.boxShadow='none';
+      lbl.style.color='var(--warning)';lbl.textContent='Obserwuj';
+      tl.style.borderColor='var(--warning-bd)';tl.style.background='var(--warning-tint)';
+      sub.textContent='+'+bestEdge.toFixed(1)+'%';sub.style.color='var(--warning)';
     } else {
-      dot.style.background='var(--red)';dot.style.boxShadow='0 0 8px var(--red)';
-      lbl.style.color='var(--red)';lbl.textContent='NO BET';
-      tl.style.borderColor='var(--red-bd)';tl.style.background='var(--red-bg)';
-      sub.textContent=bestEdge>0?'+'+bestEdge.toFixed(1)+'%':'0%';sub.style.color='var(--red)';
+      dot.style.background='var(--negative)';dot.style.boxShadow='none';
+      lbl.style.color='var(--negative)';lbl.textContent='Nie graj';
+      tl.style.borderColor='var(--negative-bd)';tl.style.background='var(--negative-tint)';
+      sub.textContent=bestEdge>0?'+'+bestEdge.toFixed(1)+'%':'0%';sub.style.color='var(--negative)';
     }
   } else {
-    $('tlDot').style.background='var(--text3)';$('tlDot').style.boxShadow='none';
-    $('tlLabel').style.color='var(--text3)';$('tlLabel').textContent='WAITING';
-    $('trafficLight').style.borderColor='var(--border2)';$('trafficLight').style.background='var(--bg2)';
-    $('tlSub').textContent='odds?';$('tlSub').style.color='var(--text3)';
+    $('tlDot').style.background='var(--text-faint)';$('tlDot').style.boxShadow='none';
+    $('tlLabel').style.color='var(--text-dim)';$('tlLabel').textContent='Czekam';
+    $('trafficLight').style.borderColor='var(--border-strong)';$('trafficLight').style.background='var(--surface)';
+    $('tlSub').textContent='brak kursów';$('tlSub').style.color='var(--text-faint)';
   }
 
   // Stash latest predictions for calibration snapshot + quick decision
@@ -1505,7 +1882,7 @@ function parseAll(){
   if(hasLive){  parseLive(); msgs.push('Live stats'); }
   if(msgs.length){
     const pm=$('parseMsg');
-    pm.textContent='✓ Parsed: '+msgs.join(' + ');
+    pm.textContent='✓ Wczytano: '+msgs.join(' + ');
     pm.classList.add('show');
     setTimeout(()=>pm.classList.remove('show'),3500);
   }
@@ -2141,8 +2518,117 @@ function renderQuickDecision(){
   }
   // Stash decision for placeBet
   window._lastDecision=decision;
+  // Update hero recommendation + live context tiles
+  renderHeroRecommendation(p,decision);
+  renderLiveContext(p);
   // Update stats bar
   renderSessionStats();
+}
+
+// HERO recommendation card — primary verdict with confidence + stake CTA
+function renderHeroRecommendation(p,d){
+  const hero=$('heroRec');
+  if(!hero) return;
+  hero.classList.remove('is-positive','is-negative','is-warning');
+  const conf=p&&typeof p.pAnyGoal==='number'?Math.round(p.pAnyGoal*100):null;
+
+  if(d.verdict==='green'){
+    hero.classList.add('is-positive');
+    $('heroRecIcon').textContent='✨';  // sparkle
+    $('heroRecEyebrow').textContent='Graj — silny sygnał';
+    const market=d.market||'Over 1.5 / Next Goal';
+    $('heroRecTitle').textContent='Graj: '+market;
+    $('heroRecSub').textContent=d.reason;
+    $('heroRecConf').textContent=conf+'%';
+    const odd=bestOddFor(p);
+    const stake=Math.round((p.bankroll||1000)*(d.stakePct||0.05));
+    const payout=odd?Math.round(stake*(odd.odd-1)):null;
+    $('heroRecStake').style.display='flex';
+    $('heroRecStake').innerHTML=
+      '<span class="hero-rec-stake-pill"><span class="label">Stawka</span>'+stake+' zł</span>'
+      +(odd?'<span class="hero-rec-stake-pill"><span class="label">'+odd.label+'</span>@ '+odd.odd.toFixed(2)+'</span>':'')
+      +(payout?'<span class="hero-rec-stake-pill" style="color:var(--accent);">+ '+payout+' zł</span>':'');
+    $('heroRecPrimary').textContent='Zapisz bet — '+stake+' zł';
+    $('heroRecPrimary').disabled=false;
+    $('heroRecPrimary').className='hero-rec-cta primary';
+    $('heroRecSecondary').textContent='Pomiń';
+    $('heroRecSecondary').className='hero-rec-cta ghost';
+  } else if(d.verdict==='yellow'){
+    hero.classList.add('is-warning');
+    $('heroRecIcon').textContent='⚡';
+    $('heroRecEyebrow').textContent='Możesz zaryzykować';
+    $('heroRecTitle').textContent='Ryzyko: 1 gol';
+    $('heroRecSub').textContent=d.reason;
+    $('heroRecConf').textContent=conf+'%';
+    const odd=bestOddFor(p);
+    const stake=Math.round((p.bankroll||1000)*(d.stakePct||0.02));
+    const payout=odd?Math.round(stake*(odd.odd-1)):null;
+    $('heroRecStake').style.display='flex';
+    $('heroRecStake').innerHTML=
+      '<span class="hero-rec-stake-pill"><span class="label">Stawka</span>'+stake+' zł</span>'
+      +(odd?'<span class="hero-rec-stake-pill"><span class="label">'+odd.label+'</span>@ '+odd.odd.toFixed(2)+'</span>':'')
+      +(payout?'<span class="hero-rec-stake-pill" style="color:var(--warning);">+ '+payout+' zł</span>':'');
+    $('heroRecPrimary').textContent='Zapisz bet — '+stake+' zł';
+    $('heroRecPrimary').disabled=false;
+    $('heroRecPrimary').className='hero-rec-cta secondary';
+    $('heroRecSecondary').textContent='Pomiń';
+    $('heroRecSecondary').className='hero-rec-cta ghost';
+  } else {
+    hero.classList.add('is-negative');
+    $('heroRecIcon').textContent='⏸';  // pause
+    $('heroRecEyebrow').textContent='Wstrzymaj — brak edge';
+    $('heroRecTitle').textContent='Pomiń ten mecz';
+    $('heroRecSub').textContent=d.reason||'Czekam na lepszy sygnał. Skip to też dobra decyzja.';
+    $('heroRecConf').textContent=conf!=null?conf+'%':'—';
+    $('heroRecStake').style.display='none';
+    $('heroRecPrimary').textContent='Zapisz pomijam';
+    $('heroRecPrimary').disabled=false;
+    $('heroRecPrimary').className='hero-rec-cta secondary';
+    $('heroRecSecondary').textContent='Czekam';
+    $('heroRecSecondary').className='hero-rec-cta ghost';
+  }
+}
+
+// LIVE CONTEXT — 4 tiles: minute / score / edge / anomaly
+function renderLiveContext(p){
+  if(!p){
+    return;
+  }
+  // Minute
+  const min=p.minute||0;
+  $('ctxMinute').textContent=min>0?min+"'":'—';
+  if(min>0){
+    const remMin=Math.max(0,90-min);
+    $('ctxMinuteMeta').textContent='Pozostało '+remMin+' min';
+  } else {
+    $('ctxMinuteMeta').textContent='Wpisz minutę meczu';
+  }
+  // Score
+  $('ctxScore').textContent=(p.homeScore||0)+' : '+(p.awayScore||0);
+  $('ctxScoreMeta').textContent=p.homeTeam&&p.awayTeam?(p.homeTeam+' vs '+p.awayTeam):'Aktualny wynik live';
+  // Best edge — re-compute from odds
+  const odd=bestOddFor(p);
+  if(odd&&p.pAnyGoal){
+    // Choose probability matching the market
+    let modelP=p.pAnyGoal;
+    if(odd.label==='BTTS'&&p.pHomeScores&&p.pAwayScores) modelP=p.pHomeScores*p.pAwayScores;
+    const edge=(modelP-1/odd.odd)*100;
+    $('ctxEdge').textContent=(edge>=0?'+':'')+edge.toFixed(0)+'%';
+    $('ctxEdgeMeta').textContent=odd.label+' @ '+odd.odd.toFixed(2)+' · model '+(modelP*100).toFixed(0)+'%';
+  } else {
+    $('ctxEdge').textContent='—';
+    $('ctxEdgeMeta').textContent='Wpisz kursy bukmachera';
+  }
+  // Anomaly strength
+  const s=p.predatorStrength||0;
+  $('ctxAnomaly').textContent=s>0?s.toFixed(1):'—';
+  if(s>=6){
+    $('ctxAnomalyMeta').textContent='Silna anomalia — '+(p.predatorBest&&p.predatorBest.market||'sprawdź Predator Mode');
+  } else if(s>=3){
+    $('ctxAnomalyMeta').textContent='Sygnał w obserwacji';
+  } else {
+    $('ctxAnomalyMeta').textContent='Bez anomalii';
+  }
 }
 
 function placeBet(verdict){
@@ -2279,6 +2765,13 @@ function loadCalibration(){
 }
 function saveCalibration(arr){
   localStorage.setItem(CAL_KEY,JSON.stringify(arr.slice(-CAL_MAX)));
+}
+
+// Accordion toggle — flip .open class on parent .acc
+function toggleAcc(headEl){
+  const acc=headEl.closest('.acc');
+  if(!acc) return;
+  acc.classList.toggle('open');
 }
 
 function toggleCalibration(){
@@ -2681,30 +3174,30 @@ function renderScanCards(matches,isMulti){
 </script>
 
 <!-- STRATEGY CHEATSHEET -->
-<div id="stratTab" onclick="document.getElementById('stratPanel').classList.toggle('open')" style="position:fixed;right:0;top:50%;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--green-bd);border-right:none;border-radius:8px 0 0 8px;padding:8px 6px;cursor:pointer;z-index:200;font-family:var(--mono);font-size:10px;color:var(--green);writing-mode:vertical-rl;letter-spacing:.1em;">STRATEGY</div>
-<div id="stratPanel" style="position:fixed;right:-220px;top:50%;transform:translateY(-50%);width:210px;max-height:80vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--green-bd);border-right:none;border-radius:10px 0 0 10px;padding:1rem .85rem;z-index:199;transition:right .3s ease;font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8;">
-  <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:.6rem;letter-spacing:.1em;">STRATEGY CHEATSHEET</div>
+<div id="stratTab" onclick="document.getElementById('stratPanel').classList.toggle('open')" style="position:fixed;right:0;top:50%;transform:translateY(-50%);background:var(--surface);border:1px solid var(--border-strong);border-right:none;border-radius:8px 0 0 8px;padding:10px 6px;cursor:pointer;z-index:200;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text-dim);writing-mode:vertical-rl;letter-spacing:0.12em;">SKRÓT STRATEGII</div>
+<div id="stratPanel" style="position:fixed;right:-240px;top:50%;transform:translateY(-50%);width:230px;max-height:80vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border-strong);border-right:none;border-radius:12px 0 0 12px;padding:18px 16px;z-index:199;transition:right .3s ease;font-family:var(--sans);font-size:12px;color:var(--text-dim);line-height:1.6;">
+  <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:12px;letter-spacing:0.12em;text-transform:uppercase;">Skrót strategii</div>
 
-  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">TRAFFIC LIGHT</div>
-  <div><span style="color:var(--red);">NO BET</span> → skip</div>
-  <div><span style="color:var(--yellow);">WATCH</span> → obserwuj</div>
-  <div style="margin-bottom:.5rem;"><span style="color:var(--green);">BET</span> → sprawdz Edge%</div>
+  <div style="color:var(--text-faint);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">Sygnalizator</div>
+  <div><span style="color:var(--negative);font-weight:600;">Nie graj</span> → pomiń</div>
+  <div><span style="color:var(--warning);font-weight:600;">Obserwuj</span> → poczekaj</div>
+  <div style="margin-bottom:14px;"><span style="color:var(--positive);font-weight:600;">Graj</span> → sprawdź Edge%</div>
 
-  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">CORNERS</div>
-  <div>Hist% > 75% = <span style="color:var(--green);">HOT</span></div>
+  <div style="color:var(--text-faint);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">Rzuty rożne</div>
+  <div>Hist > 75% = <span style="color:var(--accent);font-weight:600;">HOT</span></div>
   <div>Corners/match > 9</div>
-  <div style="margin-bottom:.5rem;">Minuta 45-70</div>
+  <div style="margin-bottom:14px;">Minuta 45–70</div>
 
-  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">EDGE%</div>
-  <div><span style="color:var(--green);">STRONG</span> 15%+ → typuj</div>
-  <div><span style="color:var(--yellow);">VALUE</span> 5-14% → typuj</div>
-  <div><span style="color:#ff9f43;">SLIM</span> 2-4% → skip</div>
-  <div style="margin-bottom:.5rem;"><span style="color:var(--red);">NO EDGE</span> → skip</div>
+  <div style="color:var(--text-faint);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">Edge%</div>
+  <div><span style="color:var(--positive);font-weight:600;">Strong</span> 15%+ → typuj</div>
+  <div><span style="color:var(--warning);font-weight:600;">Value</span> 5–14% → typuj</div>
+  <div><span style="color:var(--accent-soft);font-weight:600;">Slim</span> 2–4% → pomiń</div>
+  <div style="margin-bottom:14px;"><span style="color:var(--negative);font-weight:600;">No edge</span> → pomiń</div>
 
-  <div style="color:var(--text3);font-size:9px;letter-spacing:.08em;margin-bottom:3px;">LAST 15 MIN</div>
-  <div>ANY GOAL > 65% + VALUE</div>
+  <div style="color:var(--text-faint);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">Ostatnie 15 min</div>
+  <div>Any goal > 65% + value</div>
   <div>Away xG > 0.5 → value</div>
-  <div>Red card → lambda x1.25</div>
+  <div>Czerwona = balanced decay</div>
 </div>
 <style>
 #stratPanel.open{right:0!important;}

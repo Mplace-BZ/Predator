@@ -4,6 +4,38 @@
 Single-page aplikacja do przewidywania wyników meczów piłkarskich w czasie rzeczywistym.
 Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwyższych kursów.
 
+## Brand identity (v7.0)
+**Match Predictor** to apka MPlace. Tonalnie: Linear / Vercel dashboard, NIE casino panel.
+- Logo: pomarańczowy płomień MPlace (inline SVG) + "Match Predictor" tekstowo
+- Akcent: `#FF5A1F` (jeden), drugi: `#FFB347` (accent-soft)
+- Stany semantyczne: positive `#4ADE80`, negative `#EF4444`, warning `#FFB347` — **TYLKO** dla werdyktów
+- Reguła kolorów: max 3 akcenty na ekranie, kolor = znaczenie, nie dekoracja
+- Font: Manrope (system-ui fallback). Mono tylko dla logów / paste textarea.
+- Tabular figures dla wszystkich liczb metryk
+- Spacing: wielokrotności 8px, padding kart 24px desktop / 16px mobile, gap między sekcjami 32px
+- Border-radius: 12px (karty), 8px (input/btn), 999px (badge)
+- Dark mode only, WCAG AA na text (kontrast text-dim podkręcony do 4.5:1)
+
+## Layout v7.0 (3-section hierarchy)
+1. **HEADER** — minimalny: flame logo + "Match Predictor" + traffic light (Czekam / Obserwuj / Graj / Nie graj)
+2. **HERO RECOMMENDATION** — full-width karta, ikona + verdict title + reason; pewność modelu (64px) + CTA "Zapisz bet". Zmienia kolor border per stan (positive/warning/negative).
+3. **LIVE CONTEXT** — 4 tile grid (mobile 2x2): Minuta, Wynik, Najlepszy edge, Siła sygnału. Liczby 36px białe. Akcent tylko na ikonie label.
+4. **DETAILS** — 3 collapsible accordions (open by default for input/predictions, closed for raw data):
+   - "Wklej dane meczu" — Match Scanner + paste (FootyStats/Sofascore) + score bar + red card
+   - "Pełne predykcje modelu" — hero tiles + goal timing + results panel + edge% + corners + cards + value bets + calibration
+   - "Edytuj dane meczu" — wszystkie inputy sezonu/live/corners/cards
+5. **FOOTER** — "Powered by MPlace · Match Predictor v7.0" + flame icon
+
+## Microcopy translation (v7.0)
+Wszystkie etykiety user-facing przerobione na PL human-friendly:
+- "Home scores next" → "Gospodarze strzelą"
+- "Any goal remaining" → "Padnie jeszcze gol"
+- "Most likely final score" → "Najbardziej prawdopodobny wynik"
+- "Peak windows" → "Najgroźniejsze minuty"
+- "Parse Data" → "Wczytaj dane"
+- "BET / WATCH / NO BET" → "Graj / Obserwuj / Nie graj"
+- "STRATEGY CHEATSHEET" → "Skrót strategii"
+
 ## Stack techniczny
 - Vanilla HTML/CSS/JS — zero dependencies, zero backendu
 - GitHub Pages: https://mplace-bz.github.io/Predator/
@@ -14,7 +46,7 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v6.7 (Quick Bet Gamification)
+## Aktualna wersja: v7.0 (MPlace Redesign — Linear/Vercel tone)
 
 ## Red Card Model Logic (v6.5 — time-decayed, balanced)
 Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
