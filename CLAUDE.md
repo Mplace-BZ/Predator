@@ -46,7 +46,7 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v7.3 (Specific Pick Engine + FootyStats blend)
+## Aktualna wersja: v7.4 (Risk Guardrails + Watch List + Mobile + Explain)
 
 ## Goal Velocity (v7.1)
 **Problem:** PSG-Bayern @ 5:3 min 66 — model dawał "52% any goal" oparty o sezonowy xG. Mecz tymczasem był szaleńczy (8 goli vs ~2 oczekiwanych). Bayern strzelił → 5:4. Model za bardzo się trzymał baseline'u.

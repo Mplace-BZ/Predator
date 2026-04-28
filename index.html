@@ -149,10 +149,27 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .hero-rec-cta.ghost:hover{color:var(--text);}
 .hero-rec-cta:disabled{opacity:.4;cursor:not-allowed;}
 @media(max-width:640px){
-  .hero-rec{grid-template-columns:1fr;padding:24px 20px;text-align:left;}
-  .hero-rec-right{text-align:left;}
-  .hero-rec-conf{font-size:48px;}
-  .hero-rec-title{font-size:22px;}
+  .hero-rec{grid-template-columns:1fr;padding:20px 16px;text-align:left;gap:12px;}
+  .hero-rec-right{text-align:left;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .hero-rec-conf{font-size:40px;}
+  .hero-rec-conf-label{display:inline;margin-left:8px;}
+  .hero-rec-title{font-size:20px;}
+  .hero-rec-icon{width:40px;height:40px;font-size:22px;}
+  .hero-rec-stake{margin-top:8px;}
+}
+@media(max-width:500px){
+  .wrap{padding:12px 12px 60px;}
+  .section{margin-bottom:20px;}
+  .hero-rec{padding:16px 14px;}
+  .hero-rec-left{gap:12px;}
+  .context-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .context-tile{padding:12px 14px;}
+  .context-tile-value{font-size:26px;}
+  .picks-header{flex-direction:column;align-items:flex-start;gap:4px;}
+  .verdict-bar{gap:8px;}
+  .verdict-btn{padding:10px 12px;}
+  .vb-icon{font-size:14px;}
+  .vb-label{font-size:12px;}
 }
 
 /* ───────────────────────── Verdict bar (3 buttons) ───────────────────────── */
@@ -175,6 +192,63 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .vb-red.active{border-color:var(--negative-bd);background:var(--negative-tint);}
 .vb-red.active .vb-label{color:var(--negative);}
 .vb-red.active .vb-stake{color:var(--negative);}
+
+/* ───────────────────────── Modal (settings + explain) ───────────────────────── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(14,14,16,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.modal-title{font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
+.modal-close{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:20px;padding:4px 8px;line-height:1;}
+.modal-close:hover{color:var(--text);}
+.modal-row{margin-bottom:14px;}
+.modal-row label{display:block;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.modal-row input[type=text],.modal-row input[type=number],.modal-row input[type=url]{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:8px 12px;}
+.modal-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint);}
+.modal-row .hint{font-size:11px;color:var(--text-dim);margin-top:4px;}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+.explain-section{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+.explain-key{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.explain-val{font-size:14px;color:var(--text);font-variant-numeric:tabular-nums;line-height:1.5;}
+.explain-formula{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:4px;}
+
+/* ───────────────────────── Actions bar (watch list, settings) ───────────────────────── */
+.actions-bar{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:24px;}
+.actions-bar .btn{flex-shrink:0;}
+.watchlist-wrap{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;}
+.watchlist-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+.watchlist{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
+.watch-item{display:flex;align-items:center;gap:10px;padding:6px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;}
+.watch-info{flex:1;min-width:0;}
+.watch-teams{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.watch-meta{font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+.watch-remove{background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:18px;padding:0 6px;line-height:1;}
+.watch-remove:hover{color:var(--negative);}
+
+/* ───────────────────────── Risk Dashboard ───────────────────────── */
+.risk-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+@media(max-width:768px){.risk-bar{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.risk-bar{grid-template-columns:1fr;}}
+.risk-tile{display:flex;flex-direction:column;gap:3px;padding:6px 10px;border-right:1px solid var(--border);min-width:0;}
+.risk-tile:last-child{border-right:none;}
+@media(max-width:768px){.risk-tile{border-right:none;border-bottom:1px solid var(--border);padding-bottom:10px;}.risk-tile:nth-last-child(-n+2){border-bottom:none;}}
+.risk-tile.risk-tile-action{flex-direction:column;align-items:flex-start;}
+.risk-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);}
+.risk-value{font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;line-height:1.2;}
+.risk-value.is-positive{color:var(--positive);}
+.risk-value.is-negative{color:var(--negative);}
+.risk-value.is-warning{color:var(--warning);}
+.risk-value.is-accent{color:var(--accent);}
+.risk-meta{font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+.risk-bar-track{height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden;margin-top:4px;}
+.risk-bar-fill{height:100%;background:var(--accent);transition:width .3s ease,background .15s;}
+.risk-bar-fill.warn{background:var(--warning);}
+.risk-bar-fill.danger{background:var(--negative);}
+.risk-cool-btn{margin-top:4px;font-family:var(--sans);font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--border-strong);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s;letter-spacing:0;}
+.risk-cool-btn:hover{color:var(--text);border-color:var(--accent);}
+.risk-bar.cool-off{background:var(--negative-tint);border-color:var(--negative-bd);}
+.risk-bar.cool-off .risk-value{color:var(--negative);}
+.risk-bar.cool-off .risk-cool-btn{background:var(--negative);color:#0E0E10;border-color:var(--negative);}
 
 /* ───────────────────────── Specific picks section ───────────────────────── */
 .picks-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;}
@@ -203,10 +277,18 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .pick-card.high-edge .pick-cta:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
 .pick-card.placed{opacity:.65;}
 .pick-card.placed .pick-cta{background:var(--positive-tint);color:var(--positive);border-color:var(--positive-bd);pointer-events:none;}
+.pick-explain{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-dim);font-size:10px;font-weight:700;cursor:pointer;margin-left:8px;line-height:1;padding:0;font-family:var(--sans);transition:color .15s,border-color .15s;}
+.pick-explain:hover{color:var(--accent);border-color:var(--accent);}
+.pick-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.pick-bk{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;color:var(--text-dim);font-size:14px;font-weight:600;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}
+.pick-bk:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-tint);}
 @media(max-width:640px){
-  .pick-card{grid-template-columns:auto 1fr;grid-template-rows:auto auto;}
+  .pick-card{grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;padding:14px 16px;}
   .pick-card .pick-meta{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;width:100%;border-top:1px dashed var(--border);padding-top:10px;}
-  .pick-card .pick-cta{grid-column:1/-1;justify-content:center;}
+  .pick-card .pick-actions{grid-column:1/-1;justify-content:flex-end;}
+  .pick-card .pick-cta{flex:1;justify-content:center;}
+  .pick-card .pick-title{font-size:14px;}
+  .pick-card .pick-icon{width:32px;height:32px;font-size:16px;}
 }
 
 /* ───────────────────────── Match context tags ───────────────────────── */
@@ -637,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.3</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.4</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -647,6 +729,46 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     </div>
   </div>
 </header>
+
+<!-- ───── RISK DASHBOARD ───── -->
+<section class="risk-bar" id="riskBar">
+  <div class="risk-tile" id="riskExposure" title="Stake postawiony dziś / dzienny limit">
+    <span class="risk-label">Dzisiejsze ryzyko</span>
+    <span class="risk-value" id="riskExposureValue">—</span>
+    <div class="risk-bar-track"><div class="risk-bar-fill" id="riskExposureFill"></div></div>
+  </div>
+  <div class="risk-tile" id="riskPL" title="Profit/Loss z dzisiaj (zamknięte zakłady)">
+    <span class="risk-label">P&amp;L dziś</span>
+    <span class="risk-value" id="riskPLValue">—</span>
+    <span class="risk-meta" id="riskPLMeta">brak betów</span>
+  </div>
+  <div class="risk-tile" id="riskStreak" title="Aktualna passa wygranych/przegranych">
+    <span class="risk-label">Passa</span>
+    <span class="risk-value" id="riskStreakValue">—</span>
+    <span class="risk-meta" id="riskStreakMeta">brak danych</span>
+  </div>
+  <div class="risk-tile risk-tile-action" id="riskCoolOff">
+    <span class="risk-label">Tryb</span>
+    <span class="risk-value" id="riskMode">Aktywny</span>
+    <button class="risk-cool-btn" id="riskCoolBtn" onclick="toggleCoolOff()" title="Zamroź betowanie na 30 minut">Zamroź 30 min</button>
+  </div>
+</section>
+
+<!-- ───── WATCH LIST + ACTIONS ───── -->
+<section class="actions-bar">
+  <button class="btn btn-ghost" onclick="watchCurrentMatch()" title="Dodaj aktualny mecz do watch list — alarm gdy minuta osiągnięta">
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>
+    Śledź ten mecz
+  </button>
+  <button class="btn btn-ghost" onclick="openSettings()" title="Ustawienia: limit dzienny, bukmacher">
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="3"/><path d="M10 1v3M10 16v3M19 10h-3M4 10H1M16.36 3.64l-2.12 2.12M5.76 14.24l-2.12 2.12M16.36 16.36l-2.12-2.12M5.76 5.76L3.64 3.64"/></svg>
+    Ustawienia
+  </button>
+  <div class="watchlist-wrap">
+    <div class="watchlist-label">Watch list</div>
+    <div id="watchList" class="watchlist"></div>
+  </div>
+</section>
 
 <!-- ───── MATCH CONTEXT TAGS ───── -->
 <div class="tag-bar" id="tagBar">
@@ -1242,12 +1364,54 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </section>
 <!-- ───── /ACCORDION: Dane sezonu i live ───── -->
 
+<!-- ───── MODALS ───── -->
+<div class="modal-backdrop" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Ustawienia</div>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-row">
+      <label>Limit dzienny (% bankrolla)</label>
+      <input type="number" id="setDailyLimit" min="5" max="60" step="1" value="20">
+      <div class="hint">Maksymalna suma stawek na dzień. Powyżej limitu — confirm dialog. Default 20% (= 200 zł przy 1000 zł bankrollu).</div>
+    </div>
+    <div class="modal-row">
+      <label>Bukmacher — URL bazowy</label>
+      <input type="url" id="setBookmaker" placeholder="https://bc.game" value="">
+      <div class="hint">Każdy pick dostanie button "Otwórz @ bukmacher" → nowa zakładka. Wpisz np. https://bc.game lub https://www.betclic.pl</div>
+    </div>
+    <div class="modal-row">
+      <label>Kelly multiplier</label>
+      <input type="number" id="setKellyMult" min="0.10" max="1.00" step="0.05" value="0.25">
+      <div class="hint">Stała mnożenia Kelly. Default 0.25 = ćwiartka Kelly (konserwatywne). 1.0 = pełny Kelly (agresywne).</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeSettings()">Anuluj</button>
+      <button class="btn btn-accent" onclick="saveSettings()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="explainModal" onclick="if(event.target===this)closeExplain()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="explainTitle">Wyjaśnienie picka</div>
+      <button class="modal-close" onclick="closeExplain()">&times;</button>
+    </div>
+    <div id="explainBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeExplain()">Zamknij</button>
+    </div>
+  </div>
+</div>
+
 <footer style="margin-top:48px;text-align:center;font-size:12px;color:var(--text-dim);font-family:var(--sans);">
   <div style="display:inline-flex;align-items:center;gap:8px;padding:12px 0;">
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.3
+    Powered by MPlace · Match Predictor v7.4
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -3199,6 +3363,10 @@ function renderSpecificPicks(){
     :'Live (stake cap 5% · edge ≥ 5%)';
   $('picksCount').textContent=picks.length+' '+(picks.length===1?'typ':'typy')+' z edge\'em';
 
+  // Stash picks for Explain modal access
+  window._lastPicks=picks;
+  const bkUrl=getBookmakerUrl();
+
   list.innerHTML=picks.map((pick,i)=>{
     const cls=['pick-card'];
     if(pick.edge>=15) cls.push('high-edge');
@@ -3210,14 +3378,19 @@ function renderSpecificPicks(){
     return '<div class="'+cls.join(' ')+'" data-pick-idx="'+i+'">'
       +'<div class="pick-icon">'+icon+'</div>'
       +'<div class="pick-body">'
-        +'<div class="pick-title">'+pick.label+' @ '+pick.odd.toFixed(2)+'</div>'
+        +'<div class="pick-title">'+pick.label+' @ '+pick.odd.toFixed(2)
+          +' <button class="pick-explain" onclick="openExplain('+i+')" title="Wyjaśnij ten pick" aria-label="Wyjaśnij">?</button>'
+        +'</div>'
         +'<div class="pick-reason">Model '+(pick.modelP*100).toFixed(0)+'% · '+pick.reason+'</div>'
       +'</div>'
       +'<div class="pick-meta">'
         +'<span class="pick-edge">'+edgeStr+'</span>'
         +'<span class="pick-detail">stawka '+pick.stake+' zł · +'+pick.payout+' zł</span>'
       +'</div>'
-      +'<button class="pick-cta" onclick=\'placeBet("green",'+pickJson+')\'>Zapisz</button>'
+      +'<div class="pick-actions">'
+        +(bkUrl?'<button class="pick-bk" onclick=\'openBookmaker("'+pickJson+'")\' title="Otwórz bukmachera (skopiuje typ do schowka)">↗</button>':'')
+        +'<button class="pick-cta" onclick=\'placeBet("green",'+pickJson+')\'>Zapisz</button>'
+      +'</div>'
     +'</div>';
   }).join('');
 }
@@ -3225,6 +3398,26 @@ function renderSpecificPicks(){
 function placeBet(verdict,pick){
   const p=window._lastPredictions,d=window._lastDecision;
   if(!p||!d){ qdToast('Brak danych meczu','red'); return; }
+  // Cool-off lockout
+  if(verdict!=='red'&&isCoolOffActive()){
+    const remMin=Math.ceil(getCoolOffRemaining()/60000);
+    qdToast('🛡 Cool-off mode — '+remMin+' min do końca','red',3000);
+    return;
+  }
+  // Daily exposure check
+  if(verdict!=='red'){
+    const m=computeTodayMetrics();
+    const bankroll=p.bankroll||1000;
+    const limitZl=Math.round(bankroll*getDailyLimitPct());
+    const proposedStake=pick?pick.stake:Math.round(bankroll*(d.stakePct||0.02));
+    if(m.stakeSumAll+proposedStake>limitZl){
+      const willOver=Math.round(((m.stakeSumAll+proposedStake)/bankroll)*100);
+      if(!confirm('⚠ Limit dzienny przekroczony!\n\nZaangażowane dziś: '+m.stakeSumAll+' zł\nPo tym becie: '+(m.stakeSumAll+proposedStake)+' zł ('+willOver+'% bankrolla)\nLimit: '+limitZl+' zł\n\nKontynuować mimo to?')){
+        qdToast('🛡 Bet anulowany — limit chroni Twój bankroll','yellow',2500);
+        return;
+      }
+    }
+  }
   // pick mode: granular market bet (from picks list)
   if(pick&&pick.label){
     const list=loadCalibration();
@@ -3322,70 +3515,254 @@ function qdToast(msg,color,dur=2400){
   _toastTimer=setTimeout(()=>{t.classList.remove('show','celebrate');},dur);
 }
 
+// Determine if a calibration entry was won — supports all market types via marketGroup
+function entryWon(e){
+  if(!e.actual||!e.bet) return null;
+  const m=e.bet.market||'';
+  const ml=m.toLowerCase();
+  const grp=e.bet.marketGroup;
+  const startH=parseInt(e.scoreAtSnap.split(':')[0])||0;
+  const startA=parseInt(e.scoreAtSnap.split(':')[1])||0;
+  const endH=e.actual.homeScore,endA=e.actual.awayScore;
+  const goalsAfter=(endH+endA)-(startH+startA);
+  // Goals markets: parse line from label
+  if(grp==='goals'||ml.includes('over')&&ml.includes('gol')){
+    const lineM=m.match(/(\d+\.5)/);
+    if(lineM){
+      const line=parseFloat(lineM[1]);
+      const finalGoals=endH+endA;
+      return ml.includes('under')?finalGoals<line:finalGoals>line;
+    }
+    return goalsAfter>=1;
+  }
+  if(grp==='btts'||ml.includes('btts')||ml.includes('obie strzel')){
+    return endH>0&&endA>0;
+  }
+  if(grp==='1x2'){
+    if(ml.includes('gospodarze')||ml.includes('home')||ml.includes('(1)')) return endH>endA;
+    if(ml.includes('remis')||ml.includes('draw')||ml.includes('(x)')) return endH===endA;
+    if(ml.includes('goście')||ml.includes('away')||ml.includes('(2)')) return endA>endH;
+  }
+  if(grp==='corners'){
+    return null; // need user-entered final corners count to verify
+  }
+  if(grp==='risk'){
+    return null; // red card / penalty — need user input
+  }
+  if(grp==='next-goal'){
+    return e.actual.anyGoalAfterSnap;
+  }
+  // Legacy: verdict-based bet (pre-v7.3)
+  if(e.bet.verdict==='green'||e.bet.verdict==='yellow'){
+    if(ml.includes('over 1.5')||ml.includes('over 1,5')) return goalsAfter>=2;
+    return e.actual.anyGoalAfterSnap;
+  }
+  return null;
+}
+
 // Compute current win streak from calibration (only entries with bet+actual)
 function computeStreak(list){
   let streak=0;
   for(let i=list.length-1;i>=0;i--){
-    const e=list[i];
-    if(!e.actual||!e.bet) continue;
-    const won=e.bet.verdict==='green'||e.bet.verdict==='yellow'
-      ? (e.bet.market.includes('Over 1.5')
-          ? ((e.actual.homeScore+e.actual.awayScore)-(parseInt(e.scoreAtSnap.split(':')[0])+parseInt(e.scoreAtSnap.split(':')[1])))>=2
-          : e.actual.anyGoalAfterSnap)
-      : null;
+    const won=entryWon(list[i]);
     if(won===null) continue;
     if(won) streak++; else break;
   }
   return streak;
 }
 
-function renderSessionStats(){
+// Compute current LOSS streak (used for cool-off auto-trigger)
+function computeLossStreak(list){
+  let losses=0;
+  for(let i=list.length-1;i>=0;i--){
+    const won=entryWon(list[i]);
+    if(won===null) continue;
+    if(!won) losses++; else break;
+  }
+  return losses;
+}
+
+// Compute today's metrics in one pass — used by both session stats and risk bar
+function computeTodayMetrics(){
   const list=loadCalibration();
   const today=new Date().toISOString().slice(0,10);
-  const todays=list.filter(e=>e.date&&e.date.startsWith(today)&&e.actual&&e.bet);
-  const wins=todays.filter(e=>{
-    const startGoals=e.scoreAtSnap.split(':').map(Number).reduce((a,b)=>a+b,0);
-    const endGoals=e.actual.homeScore+e.actual.awayScore;
-    if(e.bet.market&&e.bet.market.includes('Over 1.5')) return (endGoals-startGoals)>=2;
-    return e.actual.anyGoalAfterSnap;
-  }).length;
-  const losses=todays.length-wins;
-  // ROI computation: P&L = sum(payout if win, -stake if loss) / sum(stakes)
-  let stakeSum=0,plSum=0;
-  todays.forEach(e=>{
-    if(!e.bet||!e.bet.stake) return;
-    const startGoals=e.scoreAtSnap.split(':').map(Number).reduce((a,b)=>a+b,0);
-    const endGoals=e.actual.homeScore+e.actual.awayScore;
-    const won=e.bet.market&&e.bet.market.includes('Over 1.5')
-      ? (endGoals-startGoals)>=2
-      : e.actual.anyGoalAfterSnap;
-    stakeSum+=e.bet.stake;
-    plSum+=won?(e.bet.potentialPayout||0):(-e.bet.stake);
+  const todaysAll=list.filter(e=>e.date&&e.date.startsWith(today)&&e.bet);
+  const todaysClosed=todaysAll.filter(e=>e.actual);
+  const todaysOpen=todaysAll.filter(e=>!e.actual);
+  let wins=0,losses=0,unknown=0;
+  let stakeSumClosed=0,plSum=0;
+  let stakeSumAll=0;
+  todaysAll.forEach(e=>{
+    if(e.bet.stake) stakeSumAll+=e.bet.stake;
   });
-  const roi=stakeSum>0?(plSum/stakeSum)*100:0;
-
+  todaysClosed.forEach(e=>{
+    const won=entryWon(e);
+    const stake=e.bet.stake||0;
+    stakeSumClosed+=stake;
+    if(won===true){ wins++; plSum+=e.bet.potentialPayout||0; }
+    else if(won===false){ losses++; plSum-=stake; }
+    else unknown++;
+  });
+  const roi=stakeSumClosed>0?(plSum/stakeSumClosed)*100:0;
   const streak=computeStreak(list);
-  const fire=streak>=5?'🔥🔥🔥':streak>=3?'🔥🔥':streak>=1?'🔥':'';
+  const lossStreak=computeLossStreak(list);
+  return {
+    list,today,todaysAll,todaysClosed,todaysOpen,
+    wins,losses,unknown,stakeSumClosed,stakeSumAll,plSum,roi,
+    streak,lossStreak
+  };
+}
 
+// ── Cool-off mode (30 min lockout after 3 losses or manual) ──
+const COOL_KEY='predator_cool_off';
+function isCoolOffActive(){
+  try{
+    const t=parseInt(localStorage.getItem(COOL_KEY)||'0');
+    return t>Date.now();
+  }catch(_){ return false; }
+}
+function getCoolOffRemaining(){
+  try{
+    const t=parseInt(localStorage.getItem(COOL_KEY)||'0');
+    return Math.max(0,t-Date.now());
+  }catch(_){ return 0; }
+}
+function startCoolOff(durationMs=30*60*1000){
+  localStorage.setItem(COOL_KEY,(Date.now()+durationMs).toString());
+  renderRiskBar();
+  qdToast('Tryb chłodzenia: 30 min przerwy 🛡','yellow',3000);
+}
+function endCoolOff(){
+  localStorage.removeItem(COOL_KEY);
+  renderRiskBar();
+}
+function toggleCoolOff(){
+  if(isCoolOffActive()) endCoolOff();
+  else startCoolOff();
+}
+
+// ── Daily exposure limit ──
+function getDailyLimitPct(){
+  // Default 20% bankroll/day. Persisted in localStorage as integer.
+  try{
+    const v=parseInt(localStorage.getItem('predator_daily_limit')||'20');
+    return Math.max(5,Math.min(60,v||20))/100;
+  }catch(_){ return 0.20; }
+}
+
+// Risk Dashboard renderer
+function renderRiskBar(){
+  const m=computeTodayMetrics();
+  const bankroll=n('bankroll')||1000;
+  const limitPct=getDailyLimitPct();
+  const limitZl=Math.round(bankroll*limitPct);
+  const exposurePct=bankroll>0?(m.stakeSumAll/bankroll)*100:0;
+  const exposureCap=limitPct*100;
+
+  // Tile 1: Exposure
+  $('riskExposureValue').textContent=m.stakeSumAll+' zł / '+limitZl+' zł';
+  const fill=$('riskExposureFill');
+  const fillPct=Math.min(100,(exposurePct/exposureCap)*100);
+  fill.style.width=fillPct+'%';
+  fill.classList.remove('warn','danger');
+  if(exposurePct>=exposureCap) fill.classList.add('danger');
+  else if(exposurePct>=exposureCap*0.7) fill.classList.add('warn');
+  $('riskExposureValue').className='risk-value'+(exposurePct>=exposureCap?' is-negative':exposurePct>=exposureCap*0.7?' is-warning':'');
+
+  // Tile 2: P&L
+  const plEl=$('riskPLValue');
+  if(m.todaysClosed.length===0){
+    plEl.textContent='—';
+    plEl.className='risk-value';
+    $('riskPLMeta').textContent=m.todaysOpen.length>0?(m.todaysOpen.length+' otwarte'):'brak betów dziś';
+  } else {
+    plEl.textContent=(m.plSum>=0?'+':'')+m.plSum+' zł';
+    plEl.className='risk-value '+(m.plSum>0?'is-positive':m.plSum<0?'is-negative':'');
+    $('riskPLMeta').textContent=m.wins+'W / '+m.losses+'L · ROI '+(m.roi>=0?'+':'')+m.roi.toFixed(0)+'%';
+  }
+
+  // Tile 3: Streak
+  const sv=$('riskStreakValue');
+  if(m.streak>0){
+    const fire=m.streak>=5?'🔥🔥🔥':m.streak>=3?'🔥🔥':'🔥';
+    sv.textContent=fire+' '+m.streak;
+    sv.className='risk-value is-positive';
+    $('riskStreakMeta').textContent=m.streak+' wygranych pod rząd';
+  } else if(m.lossStreak>0){
+    sv.textContent='⚠ '+m.lossStreak+'L';
+    sv.className='risk-value is-negative';
+    $('riskStreakMeta').textContent=m.lossStreak===1?'1 strata':m.lossStreak+' straty pod rząd';
+  } else {
+    sv.textContent='—';
+    sv.className='risk-value';
+    $('riskStreakMeta').textContent='brak passy';
+  }
+
+  // Tile 4: Cool-off mode
+  const coolActive=isCoolOffActive();
+  const remMs=getCoolOffRemaining();
+  const remMin=Math.ceil(remMs/60000);
+  const modeEl=$('riskMode');
+  const btnEl=$('riskCoolBtn');
+  const bar=$('riskBar');
+  if(coolActive){
+    bar.classList.add('cool-off');
+    modeEl.textContent='Chłodzenie';
+    modeEl.className='risk-value is-negative';
+    btnEl.textContent='Odblokuj ('+remMin+' min)';
+  } else {
+    bar.classList.remove('cool-off');
+    if(m.lossStreak>=3){
+      modeEl.textContent='Tilt risk';
+      modeEl.className='risk-value is-warning';
+      btnEl.textContent='Zamroź 30 min';
+    } else if(exposurePct>=exposureCap){
+      modeEl.textContent='Limit dzienny';
+      modeEl.className='risk-value is-warning';
+      btnEl.textContent='Zamroź 30 min';
+    } else {
+      modeEl.textContent='Aktywny';
+      modeEl.className='risk-value is-accent';
+      btnEl.textContent='Zamroź 30 min';
+    }
+  }
+
+  // Auto-trigger cool-off after 3 consecutive losses (once per session — flag in localStorage)
+  if(m.lossStreak>=3&&!coolActive){
+    const lastAutoKey='predator_cool_off_auto_'+m.today;
+    if(!localStorage.getItem(lastAutoKey)){
+      localStorage.setItem(lastAutoKey,'1');
+      startCoolOff();
+      qdToast('🛑 3 straty z rzędu — auto-cool-off 30 min','red',4000);
+    }
+  }
+}
+
+function renderSessionStats(){
+  // Now defers to risk bar (which has more detail)
+  renderRiskBar();
+  // Legacy qdStats panel still updated for compat (hidden)
+  const m=computeTodayMetrics();
   const stats=$('qdStats');
-  if(!todays.length&&streak===0){
-    stats.innerHTML='<span class="qd-stat" style="color:var(--text3);">Sesja: brak dziś betów. Kliknij GREEN/YELLOW po wpisaniu danych.</span>';
+  if(!stats) return;
+  if(!m.todaysClosed.length&&m.streak===0){
+    stats.innerHTML='<span class="qd-stat" style="color:var(--text-faint);">Sesja: brak dziś betów.</span>';
     return;
   }
   let parts=[];
-  if(streak>0) parts.push('<span class="qd-stat"><span class="qd-streak-fire">'+fire+'</span> STREAK: <span class="qd-stat-val" style="color:var(--green);">'+streak+'</span></span>');
-  if(todays.length){
-    const wlColor=wins>losses?'var(--green)':wins<losses?'var(--red)':'var(--yellow)';
-    parts.push('<span class="qd-stat">DZIŚ: <span class="qd-stat-val" style="color:'+wlColor+';">'+wins+'W / '+losses+'L</span></span>');
-    if(stakeSum>0){
-      const roiColor=roi>0?'var(--green)':'var(--red)';
-      parts.push('<span class="qd-stat">ROI: <span class="qd-stat-val" style="color:'+roiColor+';">'+(roi>=0?'+':'')+roi.toFixed(0)+'%</span></span>');
-      parts.push('<span class="qd-stat" style="color:var(--text3);">P&amp;L: '+(plSum>=0?'+':'')+plSum+' zł</span>');
+  if(m.streak>0){
+    const fire=m.streak>=5?'🔥🔥🔥':m.streak>=3?'🔥🔥':'🔥';
+    parts.push('<span class="qd-stat">'+fire+' STREAK: <span class="qd-stat-val" style="color:var(--positive);">'+m.streak+'</span></span>');
+  }
+  if(m.todaysClosed.length){
+    const wlColor=m.wins>m.losses?'var(--positive)':m.wins<m.losses?'var(--negative)':'var(--warning)';
+    parts.push('<span class="qd-stat">DZIŚ: <span class="qd-stat-val" style="color:'+wlColor+';">'+m.wins+'W / '+m.losses+'L</span></span>');
+    if(m.stakeSumClosed>0){
+      const roiColor=m.roi>0?'var(--positive)':'var(--negative)';
+      parts.push('<span class="qd-stat">ROI: <span class="qd-stat-val" style="color:'+roiColor+';">'+(m.roi>=0?'+':'')+m.roi.toFixed(0)+'%</span></span>');
     }
   }
-  // Open positions (placed but no outcome yet)
-  const open=list.filter(e=>e.bet&&!e.actual);
-  if(open.length) parts.push('<span class="qd-stat" style="color:var(--yellow);">⏳ Otwarte: '+open.length+'</span>');
+  if(m.todaysOpen.length) parts.push('<span class="qd-stat" style="color:var(--warning);">⏳ Otwarte: '+m.todaysOpen.length+'</span>');
   stats.innerHTML=parts.join('');
 }
 
@@ -3461,7 +3838,6 @@ function updateOutcome(id){
   if(finalA===null) return;
   const fh=parseInt(finalH),fa=parseInt(finalA);
   if(isNaN(fh)||isNaN(fa)){ alert('Nieprawidłowy wynik'); return; }
-  // Compute outcome from snapshot perspective: did goals/wins predicted from snapshot point happen
   const [snapH,snapA]=entry.scoreAtSnap.split(':').map(Number);
   const anyGoalAfterSnap=(fh+fa)>(snapH+snapA);
   const homeScoredAfterSnap=fh>snapH;
@@ -3472,8 +3848,21 @@ function updateOutcome(id){
     anyGoalAfterSnap,homeScoredAfterSnap,awayScoredAfterSnap,
     finalOutcome
   };
+  // CLV tracking — optional closing odd
+  if(entry.bet&&entry.bet.odd&&!entry.bet.closingOdd){
+    const closeOddStr=prompt('Kurs zamknięcia (CLV) — jakie były finalne kursy na ten rynek? Pomiń jeśli nie wiesz.\n\n('+entry.bet.market+')',entry.bet.odd);
+    if(closeOddStr&&closeOddStr.trim()){
+      const co=parseFloat(closeOddStr);
+      if(!isNaN(co)&&co>=1.01&&co<=50){
+        entry.bet.closingOdd=co;
+        // CLV = (myOdd / closingOdd) - 1; positive = beat the close
+        entry.bet.clv=((entry.bet.odd/co)-1)*100;
+      }
+    }
+  }
   saveCalibration(list);
   renderCalibration();
+  renderRiskBar();
 }
 
 function removeMatch(id){
@@ -3555,6 +3944,21 @@ function renderCalibration(){
       +'Total: '+closed.length+' meczów z wynikami · '
       +(predatorBets.length>0?'Predator Mode: '+predatorHits+'/'+predatorBets.length+' = '+(predatorWinRate*100).toFixed(0)+'% hit rate':'Brak Predator-active')
     +'</div>';
+
+  // CLV stats — closing line value tracking
+  const withCLV=closed.filter(e=>e.bet&&e.bet.clv!=null);
+  if(withCLV.length>=3){
+    const avgCLV=withCLV.reduce((s,e)=>s+e.bet.clv,0)/withCLV.length;
+    const positiveCLV=withCLV.filter(e=>e.bet.clv>0).length;
+    const clvColor=avgCLV>2?'var(--positive)':avgCLV>0?'var(--warning)':'var(--negative)';
+    $('calStats').innerHTML+=
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:6px;">'
+      +'CLV (closing line value): średnio '
+      +'<span style="color:'+clvColor+';font-weight:700;">'+(avgCLV>=0?'+':'')+avgCLV.toFixed(1)+'%</span>'
+      +' · pobito close w '+positiveCLV+'/'+withCLV.length+' betach. '
+      +'<span style="color:var(--text-faint);">Dodatnie CLV = łapiesz kursy zanim bukmacher je skoryguje.</span>'
+      +'</div>';
+  }
 }
 
 // ── LOCAL STORAGE ────────────────────────────────────────────────
@@ -3604,6 +4008,171 @@ applyTagsUI();
 
 calc();
 renderCalibration();
+renderRiskBar();
+
+// Tick cool-off countdown every 30s
+setInterval(()=>{
+  if(isCoolOffActive()) renderRiskBar();
+},30000);
+
+// ── WATCH LIST — track matches, alert when signal develops ──
+const WATCH_KEY='predator_watchlist';
+function loadWatchList(){
+  try{ return JSON.parse(localStorage.getItem(WATCH_KEY)||'[]'); }catch(_){ return []; }
+}
+function saveWatchList(arr){ localStorage.setItem(WATCH_KEY,JSON.stringify(arr.slice(-30))); }
+function addToWatchList(match){
+  const list=loadWatchList();
+  if(list.find(w=>w.home===match.home&&w.away===match.away)) return;
+  list.push({...match,added:Date.now()});
+  saveWatchList(list);
+  renderWatchList();
+}
+function removeFromWatchList(idx){
+  const list=loadWatchList();
+  list.splice(idx,1);
+  saveWatchList(list);
+  renderWatchList();
+}
+function watchCurrentMatch(){
+  const p=window._lastPredictions;
+  if(!p||!p.homeTeam||!p.awayTeam){ qdToast('Wpisz najpierw drużyny','red',2000); return; }
+  addToWatchList({
+    home:p.homeTeam,away:p.awayTeam,
+    targetMinute:p.minute<25?30:Math.min(75,p.minute+15),
+    snappedAt:p.minute,score:p.homeScore+':'+p.awayScore,
+    note:''
+  });
+  // Request notification permission lazily
+  if('Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+  qdToast('Mecz w watch list — alarm na min '+(p.minute<25?30:Math.min(75,p.minute+15))+'\'','green',2500);
+}
+function renderWatchList(){
+  const el=$('watchList');
+  if(!el) return;
+  const list=loadWatchList();
+  if(!list.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">Brak meczów w watch list. Klik "Śledź" przy aktywnym meczu.</div>';
+    return;
+  }
+  el.innerHTML=list.map((w,i)=>{
+    const ageMin=Math.round((Date.now()-w.added)/60000);
+    return '<div class="watch-item">'
+      +'<div class="watch-info">'
+        +'<div class="watch-teams">'+w.home+' vs '+w.away+'</div>'
+        +'<div class="watch-meta">cel: min '+w.targetMinute+"' · od "+w.snappedAt+"' "+w.score+' · '+(ageMin<60?ageMin+'min temu':Math.round(ageMin/60)+'h temu')+'</div>'
+      +'</div>'
+      +'<button class="watch-remove" onclick="removeFromWatchList('+i+')">&times;</button>'
+    +'</div>';
+  }).join('');
+}
+// Permission-aware browser notification (no inline SVG to avoid escaping issues)
+function notifyWatch(title,body){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='granted'){
+    try{ new Notification(title,{body}); }catch(_){}
+  }
+}
+renderWatchList();
+
+// ── Settings (modal) ──
+function openSettings(){
+  $('setDailyLimit').value=Math.round(getDailyLimitPct()*100);
+  $('setBookmaker').value=localStorage.getItem('predator_bookmaker_url')||'';
+  $('setKellyMult').value=parseFloat(localStorage.getItem('predator_kelly_mult')||'0.25');
+  $('settingsModal').classList.add('open');
+}
+function closeSettings(){ $('settingsModal').classList.remove('open'); }
+function saveSettings(){
+  const dl=parseInt($('setDailyLimit').value)||20;
+  localStorage.setItem('predator_daily_limit',Math.max(5,Math.min(60,dl)).toString());
+  const bk=$('setBookmaker').value.trim();
+  if(bk) localStorage.setItem('predator_bookmaker_url',bk);
+  else localStorage.removeItem('predator_bookmaker_url');
+  const km=parseFloat($('setKellyMult').value)||0.25;
+  localStorage.setItem('predator_kelly_mult',Math.max(0.10,Math.min(1.0,km)).toString());
+  closeSettings();
+  qdToast('Ustawienia zapisane','green',2000);
+  if(typeof calc==='function') calc();
+}
+function getBookmakerUrl(){ return localStorage.getItem('predator_bookmaker_url')||''; }
+function openBookmaker(pickJson){
+  let pick;
+  try{ pick=JSON.parse(pickJson); }catch(e){ return; }
+  const url=getBookmakerUrl();
+  if(!url){
+    if(confirm('Nie masz wpisanego URL bukmachera. Otworzyć ustawienia?')) openSettings();
+    return;
+  }
+  const desc=pick.label+' @ '+pick.odd.toFixed(2)+' · stawka '+pick.stake+' zł';
+  if(navigator.clipboard){ navigator.clipboard.writeText(desc).catch(()=>{}); }
+  window.open(url,'_blank','noopener');
+  qdToast('Otwarto bukmachera · skopiowano typ','green',2500);
+}
+
+// ── Explain Model modal ──
+function openExplain(pickIdx){
+  const pick=window._lastPicks?window._lastPicks[pickIdx]:null;
+  const p=window._lastPredictions;
+  if(!pick||!p) return;
+  const tags=[...(window._matchTags||[])];
+  const fp=window.footyPredictions||{};
+  let html='';
+  html+='<div class="explain-section">';
+  html+='<div class="explain-key">Rynek</div>';
+  html+='<div class="explain-val"><strong style="color:var(--accent);">'+pick.label+'</strong> @ '+pick.odd.toFixed(2)+'</div>';
+  html+='</div>';
+  html+='<div class="explain-section">';
+  html+='<div class="explain-key">Prawdopodobieństwo modelu</div>';
+  html+='<div class="explain-val">'+(pick.modelP*100).toFixed(1)+'% — '+pick.reason+'</div>';
+  html+='<div class="explain-formula">Implied bukmachera: 1 / '+pick.odd.toFixed(2)+' = '+(100/pick.odd).toFixed(1)+'%</div>';
+  html+='</div>';
+  html+='<div class="explain-section">';
+  html+='<div class="explain-key">Edge</div>';
+  html+='<div class="explain-val" style="color:'+(pick.edge>=15?'var(--accent)':pick.edge>=5?'var(--text)':'var(--text-dim)')+';">'+(pick.edge>=0?'+':'')+pick.edge.toFixed(1)+'%</div>';
+  html+='<div class="explain-formula">Edge = model − implied = '+(pick.modelP*100).toFixed(1)+'% − '+(100/pick.odd).toFixed(1)+'% = '+(pick.edge>=0?'+':'')+pick.edge.toFixed(1)+'%</div>';
+  html+='</div>';
+  html+='<div class="explain-section">';
+  html+='<div class="explain-key">Stawka (Kelly)</div>';
+  const kellyMult=parseFloat(localStorage.getItem('predator_kelly_mult')||'0.25');
+  const kellyFull=(pick.modelP*pick.odd-1)/(pick.odd-1);
+  html+='<div class="explain-val">'+pick.stake+' zł · potential +'+pick.payout+' zł</div>';
+  html+='<div class="explain-formula">Full Kelly = (p × odds − 1) / (odds − 1) = '+kellyFull.toFixed(3)+' = '+(kellyFull*100).toFixed(1)+'% bankrolla</div>';
+  html+='<div class="explain-formula">Stosujemy '+(kellyMult*100).toFixed(0)+'% Kelly + cap → '+(pick.kelly*100).toFixed(2)+'% bankrolla</div>';
+  html+='</div>';
+  html+='<div class="explain-section">';
+  html+='<div class="explain-key">Kontekst meczu</div>';
+  html+='<div class="explain-val">'+(p.homeTeam||'Home')+' vs '+(p.awayTeam||'Away')+' · min '+p.minute+"' · wynik "+p.homeScore+':'+p.awayScore+'</div>';
+  html+='<div class="explain-formula">xG remaining: H '+p.hLambdaRem.toFixed(2)+' · A '+p.aLambdaRem.toFixed(2)+' · total '+p.totalLambda.toFixed(2)+'</div>';
+  if(tags.length){
+    html+='<div class="explain-formula" style="color:var(--accent);">Tagi: '+tags.join(', ')+'</div>';
+  }
+  if(fp&&Object.keys(fp).length){
+    const fpStr=[
+      fp.over25!=null?'O2.5: '+(fp.over25*100).toFixed(0)+'%':'',
+      fp.btts!=null?'BTTS: '+(fp.btts*100).toFixed(0)+'%':'',
+      fp.goalsPerMatch!=null?fp.goalsPerMatch+' goli/mecz':'',
+      fp.cornersPerMatch!=null?fp.cornersPerMatch+' corners/mecz':''
+    ].filter(Boolean).join(' · ');
+    if(fpStr) html+='<div class="explain-formula">FootyStats hist: '+fpStr+'</div>';
+  }
+  html+='</div>';
+  if(p.predatorBest&&p.predatorStrength){
+    html+='<div class="explain-section">';
+    html+='<div class="explain-key">Predator Mode</div>';
+    html+='<div class="explain-val">Siła: '+p.predatorStrength.toFixed(1)+'/10</div>';
+    html+='<div class="explain-formula">'+p.predatorBest.reason+'</div>';
+    html+='</div>';
+  }
+  $('explainTitle').textContent=pick.label+' @ '+pick.odd.toFixed(2);
+  $('explainBody').innerHTML=html;
+  $('explainModal').classList.add('open');
+}
+function closeExplain(){ $('explainModal').classList.remove('open'); }
+
+window._lastPicks=[];
 
 // ── MATCH SCANNER ────────────────────────────────────────────────
 async function readScanSSE(response){
