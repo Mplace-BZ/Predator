@@ -155,6 +155,38 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
   .hero-rec-title{font-size:22px;}
 }
 
+/* ───────────────────────── Verdict bar (3 buttons) ───────────────────────── */
+.verdict-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:640px){.verdict-bar{grid-template-columns:1fr;}}
+.verdict-btn{cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;font-family:var(--sans);color:var(--text);transition:border-color .15s,background .15s,opacity .15s;opacity:.6;}
+.verdict-btn:hover{opacity:.95;background:var(--surface-2);}
+.verdict-btn.active{opacity:1;}
+.verdict-btn.placed{opacity:.85;}
+.verdict-btn.placed::after{content:'\2713';position:absolute;}
+.vb-icon{font-size:18px;line-height:1;}
+.vb-label{font-size:14px;font-weight:600;letter-spacing:-0.005em;color:var(--text);}
+.vb-stake{font-size:12px;font-weight:600;color:var(--text-dim);font-variant-numeric:tabular-nums;text-align:right;}
+.vb-green.active{border-color:var(--accent);background:var(--accent-tint);}
+.vb-green.active .vb-label{color:var(--accent);}
+.vb-green.active .vb-stake{color:var(--accent);}
+.vb-yellow.active{border-color:var(--warning-bd);background:var(--warning-tint);}
+.vb-yellow.active .vb-label{color:var(--warning);}
+.vb-yellow.active .vb-stake{color:var(--warning);}
+.vb-red.active{border-color:var(--negative-bd);background:var(--negative-tint);}
+.vb-red.active .vb-label{color:var(--negative);}
+.vb-red.active .vb-stake{color:var(--negative);}
+
+/* ───────────────────────── Match context tags ───────────────────────── */
+.tag-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
+.tag-bar-label{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);align-self:center;margin-right:4px;}
+.tag-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s,color .15s;font-family:var(--sans);}
+.tag-pill:hover{color:var(--text);border-color:var(--border-strong);}
+.tag-pill.active{background:var(--accent-tint);border-color:var(--accent);color:var(--accent);}
+.tag-pill .tag-icon{font-size:13px;}
+
+/* ───────────────────────── Velocity badge ───────────────────────── */
+.velocity-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--accent-tint);border:1px solid var(--accent-bd);color:var(--accent);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-0.005em;}
+
 /* ───────────────────────── Live context grid ───────────────────────── */
 .context-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 @media(max-width:768px){.context-grid{grid-template-columns:repeat(2,1fr);}}
@@ -572,7 +604,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.0</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.1</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -582,6 +614,18 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     </div>
   </div>
 </header>
+
+<!-- ───── MATCH CONTEXT TAGS ───── -->
+<div class="tag-bar" id="tagBar">
+  <span class="tag-bar-label">Kontekst:</span>
+  <button class="tag-pill" data-tag="final" onclick="toggleTag(this)"><span class="tag-icon">🏆</span> Finał</button>
+  <button class="tag-pill" data-tag="semifinal" onclick="toggleTag(this)"><span class="tag-icon">🥈</span> Półfinał</button>
+  <button class="tag-pill" data-tag="decider" onclick="toggleTag(this)"><span class="tag-icon">🎯</span> Mecz decydujący</button>
+  <button class="tag-pill" data-tag="derby" onclick="toggleTag(this)"><span class="tag-icon">🔥</span> Derby</button>
+  <button class="tag-pill" data-tag="extratime" onclick="toggleTag(this)"><span class="tag-icon">⏱️</span> Dogrywka</button>
+  <button class="tag-pill" data-tag="rain" onclick="toggleTag(this)"><span class="tag-icon">🌧️</span> Deszcz / złe warunki</button>
+  <button class="tag-pill" data-tag="meaningless" onclick="toggleTag(this)"><span class="tag-icon">😴</span> Mecz o nic</button>
+</div>
 
 <!-- ───── HERO RECOMMENDATION ───── -->
 <section class="section">
@@ -604,6 +648,28 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       </div>
     </div>
   </div>
+</section>
+
+<!-- ───── VERDICT BAR — 3 explicit choices ───── -->
+<section class="section" style="margin-top:-16px;">
+  <div class="verdict-bar">
+    <button id="vbGreen" class="verdict-btn vb-green" onclick="placeBet('green')">
+      <span class="vb-icon">✨</span>
+      <span class="vb-label">Obstaw 1–2 gole</span>
+      <span class="vb-stake" id="vbGreenStake">—</span>
+    </button>
+    <button id="vbYellow" class="verdict-btn vb-yellow" onclick="placeBet('yellow')">
+      <span class="vb-icon">⚡</span>
+      <span class="vb-label">Ryzykuj 1 gol</span>
+      <span class="vb-stake" id="vbYellowStake">—</span>
+    </button>
+    <button id="vbRed" class="verdict-btn vb-red" onclick="placeBet('red')">
+      <span class="vb-icon">⏸</span>
+      <span class="vb-label">Wstrzymaj się</span>
+      <span class="vb-stake">Skip ten mecz</span>
+    </button>
+  </div>
+  <div id="vbToast" class="qd-toast"></div>
 </section>
 
 <!-- ───── LIVE CONTEXT — 4 tiles ───── -->
@@ -1121,7 +1187,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.0
+    Powered by MPlace · Match Predictor v7.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -1326,6 +1392,43 @@ function calc(){
     hLambdaRem*=(1+hBoost);
     aLambdaRem*=(1+aBoost);
     timingBoostInfo={idx,hPct,aPct,hBoost,aBoost,from:goalTiming.h[idx]?.from,to:goalTiming.h[idx]?.to};
+  }
+
+  // ── Goal Velocity override ──
+  // When actual goals scored so far are way above what season xG predicted at this minute,
+  // the match is "trending wild" — boost remaining lambdas. This catches PSG-Bayern style games
+  // where season-baseline xG underestimates current intensity.
+  let velocityInfo=null;
+  const totalGoalsNow=homeScore+awayScore;
+  if(minute>=20&&totalGoalsNow>=2&&hXG+aXG>0){
+    const expectedByNow=(hXG+aXG)*(minute/90);
+    const ratio=totalGoalsNow/Math.max(0.4,expectedByNow);
+    if(ratio>1.4){
+      // Smooth ramp: 1.4× expected → 7% boost, 2× → 25% boost, 3× → 45% boost (capped 50%)
+      const velMult=Math.min(1.5,1+(ratio-1.4)*0.18);
+      const preH=hLambdaRem,preA=aLambdaRem;
+      hLambdaRem*=velMult;
+      aLambdaRem*=velMult;
+      velocityInfo={observed:totalGoalsNow,expected:expectedByNow,ratio,velMult};
+      console.log('[VELOCITY]',totalGoalsNow,'goli @',minute,"' vs expected",expectedByNow.toFixed(2),'(ratio',ratio.toFixed(2)+')','→ ×'+velMult.toFixed(2),'| H:',preH.toFixed(2),'->',hLambdaRem.toFixed(2),'A:',preA.toFixed(2),'->',aLambdaRem.toFixed(2));
+    }
+    // Note: NO dampen — 0:0 with high xG is anomaly (opportunity), not signal to lower lambdas.
+  }
+
+  // ── Match Context tags — modify lambdas based on selected tags ──
+  // Tags stored in window._matchTags Set. Each tag has a multiplier on lambdas.
+  const tags=window._matchTags||new Set();
+  let tagMult=1;
+  if(tags.has('final')) tagMult*=1.08;        // Final — open, both want goals
+  if(tags.has('semifinal')) tagMult*=1.05;
+  if(tags.has('decider')) tagMult*=1.05;      // Match decydujący o awansie/utrzymaniu
+  if(tags.has('derby')) tagMult*=1.05;        // Derby — emotional, more chances
+  if(tags.has('rain')) tagMult*=0.88;         // Deszcz — gorsze warunki, mniej goli
+  if(tags.has('meaningless')) tagMult*=0.85;  // Mecz o nic — obie strony zrelaksowane
+  if(tags.has('extratime')) tagMult*=0.92;    // Dogrywka — fatigue, ostrożność
+  if(tagMult!==1){
+    hLambdaRem*=tagMult;
+    aLambdaRem*=tagMult;
   }
 
   const totalLambda=hLambdaRem+aLambdaRem;
@@ -1868,7 +1971,8 @@ function calc(){
     predatorStrength:predatorReasons[0]?predatorReasons[0].strength:0,
     bigChancesTotal:n('lHBC')+n('lABC'),
     oddOver:n('oddOver'),oddNextGoal:n('oddNextGoal'),oddBTTS:n('oddBTTS'),
-    bankroll:n('bankroll')||1000
+    bankroll:n('bankroll')||1000,
+    velocityInfo, tagsActive:[...(window._matchTags||[])]
   };
   renderQuickDecision();
 }
@@ -2478,6 +2582,53 @@ function bestOddFor(p){
   return null;
 }
 
+// ── Match context tags (multi-select) ──
+const TAGS_KEY='predator_match_tags';
+function loadTags(){
+  try{ return new Set(JSON.parse(localStorage.getItem(TAGS_KEY)||'[]')); }catch(_){ return new Set(); }
+}
+function saveTags(){
+  if(!window._matchTags) return;
+  localStorage.setItem(TAGS_KEY,JSON.stringify([...window._matchTags]));
+}
+function toggleTag(btn){
+  const tag=btn.getAttribute('data-tag');
+  if(!window._matchTags) window._matchTags=new Set();
+  if(window._matchTags.has(tag)){
+    window._matchTags.delete(tag);
+    btn.classList.remove('active');
+  } else {
+    window._matchTags.add(tag);
+    btn.classList.add('active');
+  }
+  saveTags();
+  if(typeof calc==='function') calc();
+}
+function applyTagsUI(){
+  if(!window._matchTags) return;
+  document.querySelectorAll('.tag-pill').forEach(btn=>{
+    btn.classList.toggle('active',window._matchTags.has(btn.getAttribute('data-tag')));
+  });
+}
+
+// ── Render the 3-button verdict bar (mirrors quick decision but visible) ──
+function renderVerdictBar(p,d){
+  ['vbGreen','vbYellow','vbRed'].forEach(id=>$(id)?.classList.remove('active'));
+  const map={green:'vbGreen',yellow:'vbYellow',red:'vbRed'};
+  const activeId=map[d.verdict]||'vbRed';
+  $(activeId)?.classList.add('active');
+
+  const odd=bestOddFor(p);
+  const greenStake=Math.round((p.bankroll||1000)*0.05);
+  const yellowStake=Math.round((p.bankroll||1000)*0.02);
+  $('vbGreenStake').textContent=d.verdict==='green'&&odd
+    ? greenStake+' zł · @'+odd.odd.toFixed(2)
+    : greenStake+' zł';
+  $('vbYellowStake').textContent=d.verdict==='yellow'&&odd
+    ? yellowStake+' zł · @'+odd.odd.toFixed(2)
+    : yellowStake+' zł';
+}
+
 function renderQuickDecision(){
   const p=window._lastPredictions;
   const decision=decideQuickBet(p);
@@ -2518,9 +2669,10 @@ function renderQuickDecision(){
   }
   // Stash decision for placeBet
   window._lastDecision=decision;
-  // Update hero recommendation + live context tiles
+  // Update hero recommendation + live context tiles + verdict bar
   renderHeroRecommendation(p,decision);
   renderLiveContext(p);
+  renderVerdictBar(p,decision);
   // Update stats bar
   renderSessionStats();
 }
@@ -2603,9 +2755,14 @@ function renderLiveContext(p){
   } else {
     $('ctxMinuteMeta').textContent='Wpisz minutę meczu';
   }
-  // Score
+  // Score — surface velocity badge if match is wild
   $('ctxScore').textContent=(p.homeScore||0)+' : '+(p.awayScore||0);
-  $('ctxScoreMeta').textContent=p.homeTeam&&p.awayTeam?(p.homeTeam+' vs '+p.awayTeam):'Aktualny wynik live';
+  if(p.velocityInfo){
+    const v=p.velocityInfo;
+    $('ctxScoreMeta').innerHTML='<span class="velocity-badge">⚡ '+v.observed+' goli vs '+v.expected.toFixed(1)+' xG (×'+v.velMult.toFixed(2)+')</span>';
+  } else {
+    $('ctxScoreMeta').textContent=p.homeTeam&&p.awayTeam?(p.homeTeam+' vs '+p.awayTeam):'Aktualny wynik live';
+  }
   // Best edge — re-compute from odds
   const odd=bestOddFor(p);
   if(odd&&p.pAnyGoal){
@@ -2679,9 +2836,11 @@ function placeBet(verdict){
 
 let _toastTimer=null;
 function qdToast(msg,color,dur=2400){
-  const t=$('qdToast');
+  // Use visible verdict-bar toast (qdToast is in deprecated panel as of v7.0)
+  const t=$('vbToast')||$('qdToast');
+  if(!t) return;
   t.textContent=msg;
-  const c=color==='red'?'var(--red)':color==='yellow'?'var(--yellow)':'var(--green)';
+  const c=color==='red'?'var(--negative)':color==='yellow'?'var(--warning)':'var(--positive)';
   t.style.borderColor=c;
   t.style.color=c;
   t.classList.add('show','celebrate');
@@ -2964,6 +3123,10 @@ $('rcActive').addEventListener('change',()=>{
 $('rcHome').addEventListener('change',calc);
 $('rcAway').addEventListener('change',calc);
 $('rcMinute').addEventListener('input',calc);
+
+// Restore match context tags from previous session
+window._matchTags=loadTags();
+applyTagsUI();
 
 calc();
 renderCalibration();

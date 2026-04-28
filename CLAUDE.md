@@ -46,7 +46,49 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v7.0 (MPlace Redesign — Linear/Vercel tone)
+## Aktualna wersja: v7.1 (Velocity + Verdict Bar + Match Tags)
+
+## Goal Velocity (v7.1)
+**Problem:** PSG-Bayern @ 5:3 min 66 — model dawał "52% any goal" oparty o sezonowy xG. Mecz tymczasem był szaleńczy (8 goli vs ~2 oczekiwanych). Bayern strzelił → 5:4. Model za bardzo się trzymał baseline'u.
+
+**Fix (calc, ~linia 1331):**
+```js
+const expectedByNow = (hXG+aXG) * (minute/90);
+const ratio = totalGoalsNow / Math.max(0.4, expectedByNow);
+if(ratio > 1.4){
+  velMult = min(1.5, 1 + (ratio-1.4) * 0.18);
+  hLambdaRem *= velMult; aLambdaRem *= velMult;
+}
+```
+- Ratio 1.4 → 0% boost (próg)
+- Ratio 2.0 → +11% boost
+- Ratio 3.0 → +29%
+- Ratio 4.0+ → +47% (capped 50%)
+- **NIE dampen** — 0:0 z wysokim xG to anomalia (okazja), nie sygnał "mniej goli"
+- Surface: w LIVE CONTEXT pod tile WYNIK pojawia się badge `⚡ 8 goli vs 2.1 xG (×1.43)`
+
+## Match Context Tags (v7.1)
+7 togglowanych pigułek nad HERO REC. Multi-select, persistowane w localStorage `predator_match_tags`. Każdy tag mnoży lambdy:
+
+| Tag | Mnożnik | Logika |
+|-----|---------|--------|
+| 🏆 Finał | ×1.08 | Otwarty mecz, obie strony chcą goli |
+| 🥈 Półfinał | ×1.05 | Less open than final |
+| 🎯 Mecz decydujący | ×1.05 | O awans / utrzymanie |
+| 🔥 Derby | ×1.05 | Emocjonalne, więcej szans |
+| ⏱️ Dogrywka | ×0.92 | Zmęczenie, ostrożność |
+| 🌧️ Deszcz | ×0.88 | Gorsze warunki, wolniejsza gra |
+| 😴 Mecz o nic | ×0.85 | Obie zrelaksowane |
+
+Tagi się kumulują (multiplikacyjnie). Restore on boot przez `loadTags()`.
+
+## Verdict Bar (v7.1)
+Wracają 3 przyciski (z v6.7 ale w MPlace tonacji), pod HERO REC:
+- 🟧 **Obstaw 1–2 gole** (5% bankrolla) — aktywny gdy GREEN verdict
+- 🟨 **Ryzykuj 1 gol** (2% bankrolla) — aktywny gdy YELLOW
+- 🟥 **Wstrzymaj się** — aktywny gdy RED
+
+Tylko 1 aktywny na raz (border + bg w stanie semantycznym), reszta na 0.6 opacity. Klik = `placeBet(verdict)` jak poprzednio. Toast wyświetla się przez `vbToast` (qdToast schowany w deprecated panelu).
 
 ## Red Card Model Logic (v6.5 — time-decayed, balanced)
 Multipliers are time-decayed: full impact at min 0, fade to neutral at min 90.
