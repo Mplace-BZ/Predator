@@ -604,7 +604,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.2</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -625,6 +625,9 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <button class="tag-pill" data-tag="extratime" onclick="toggleTag(this)"><span class="tag-icon">⏱️</span> Dogrywka</button>
   <button class="tag-pill" data-tag="rain" onclick="toggleTag(this)"><span class="tag-icon">🌧️</span> Deszcz / złe warunki</button>
   <button class="tag-pill" data-tag="meaningless" onclick="toggleTag(this)"><span class="tag-icon">😴</span> Mecz o nic</button>
+  <button class="tag-pill" data-tag="cup" onclick="toggleTag(this)"><span class="tag-icon">🏅</span> Mecz pucharu</button>
+  <button class="tag-pill" data-tag="youth" onclick="toggleTag(this)"><span class="tag-icon">🧒</span> U19 / U20 / młodzież</button>
+  <button class="tag-pill" data-tag="topvbottom" onclick="toggleTag(this)"><span class="tag-icon">⚖️</span> Top vs słaby</button>
 </div>
 
 <!-- ───── HERO RECOMMENDATION ───── -->
@@ -1187,7 +1190,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.1
+    Powered by MPlace · Match Predictor v7.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -1426,6 +1429,9 @@ function calc(){
   if(tags.has('rain')) tagMult*=0.88;         // Deszcz — gorsze warunki, mniej goli
   if(tags.has('meaningless')) tagMult*=0.85;  // Mecz o nic — obie strony zrelaksowane
   if(tags.has('extratime')) tagMult*=0.92;    // Dogrywka — fatigue, ostrożność
+  if(tags.has('cup')) tagMult*=1.04;          // Puchar — motywacja
+  if(tags.has('youth')) tagMult*=1.10;        // U20/U19 — chaotyczne, więcej goli (otwarta gra)
+  if(tags.has('topvbottom')) tagMult*=1.06;   // Top vs słaby — favorytt strzela więcej
   if(tagMult!==1){
     hLambdaRem*=tagMult;
     aLambdaRem*=tagMult;
@@ -2079,18 +2085,27 @@ function parseFooty(){
   if(xgHome) $('hXG').value=clamp(xgHome[1],0,5);
   if(xgAway) $('aXG').value=clamp(xgAway[1],0,5);
 
-  // xG fallback: use "xG1.451.371.53" but with smarter decimal splitting
-  // Split concatenated decimals: d{1,2}.d{1,2} pattern repeated
+  // xG fallback: handle BOTH "xG1.451.371.53" (2-dec) AND "xG1.51.81.1" (1-dec, U20 leagues)
+  // FootyStats concatenates Overall/Home/Away values without separators — fixed-width split.
   if(!xgHome||!xgAway){
     const xgLine=txt.match(/\bxG(?!A)(\d[\d.]{4,18})/);
     if(xgLine){
-      // Split "1.451.371.53" into ["1.45","1.37","1.53"]
-      // Each number: 1-2 digits + dot + 2 digits (most common)
       const raw=xgLine[1];
-      const parts=raw.match(/\d{1,2}\.\d{2}/g)||raw.match(/\d{1,2}\.\d{1}/g);
-      if(parts&&parts.length>=3){
-        if(!xgHome) $('hXG').value=clamp(parseFloat(parts[1]),0,5);
-        if(!xgAway) $('aXG').value=clamp(parseFloat(parts[2]),0,5);
+      const split=(width)=>{
+        if(raw.length<width*3||raw.length%width!==0) return null;
+        const out=[];
+        for(let i=0;i<raw.length;i+=width){
+          const v=parseFloat(raw.substr(i,width));
+          if(isNaN(v)||v>6||v<0) return null;
+          out.push(v);
+        }
+        return out.length>=3?out:null;
+      };
+      // Try 2-decimal (4 chars: d.dd), then 1-decimal (3 chars: d.d)
+      const parts=split(4)||split(3);
+      if(parts){
+        if(!xgHome) $('hXG').value=clamp(parts[1],0,5);
+        if(!xgAway) $('aXG').value=clamp(parts[2],0,5);
       }
     }
   }
@@ -2524,20 +2539,31 @@ function countFilledRequiredFields(){
 }
 
 function decideQuickBet(p){
-  if(!p) return {verdict:'red',reason:'Brak danych — wpisz/wklej dane meczu'};
+  if(!p) return {verdict:'red',reason:'Brak danych — wklej FootyStats / Sofascore'};
   const fieldsFilled=countFilledRequiredFields();
   const totalReq=Object.keys(FIELD_LABELS).length;
   const hasOddsForOver=p.oddOver>=1.30||p.oddNextGoal>=1.30||p.oddBTTS>=1.30;
 
-  // Hard skips
-  if(!p.minute||p.minute<1) return {verdict:'red',reason:'Wpisz minutę meczu'};
-  if(p.minute>75) return {verdict:'red',reason:'Za późno ('+p.minute+"' >75) — brak czasu na gol"};
-  if(fieldsFilled<8) return {verdict:'red',reason:'Brak danych ('+fieldsFilled+'/'+totalReq+' pól) — popraw paste'};
-  if(!hasOddsForOver) return {verdict:'red',reason:'Wpisz kursy (Over/Next Goal/BTTS) — bez tego brak edge'};
+  // Hard skips — order matters (most diagnostic first)
+  if(!p.minute||p.minute<1) return {verdict:'red',reason:'Wpisz minutę meczu w polu poniżej'};
+  if(p.minute>75) return {verdict:'red',reason:'Za późno (min '+p.minute+", > 75) — gol mało prawdopodobny"};
+  if(fieldsFilled<8) return {verdict:'red',reason:'Wczytaj pełne dane FootyStats ('+fieldsFilled+'/'+totalReq+' pól wypełnionych)'};
+  if(!hasOddsForOver) return {verdict:'red',reason:'Wpisz kursy bukmachera (Over / Next Goal / BTTS) — bez nich brak edge'};
+
+  // Compute best edge from odds (used in pre-match tier and reasoning)
+  const odd=bestOddFor(p);
+  let bestEdge=null,bestEdgeMkt=null;
+  if(odd){
+    let modelP=p.pAnyGoal;
+    if(odd.label==='BTTS'&&p.pHomeScores&&p.pAwayScores) modelP=p.pHomeScores*p.pAwayScores;
+    bestEdge=(modelP-1/odd.odd)*100;
+    bestEdgeMkt=odd.label;
+  }
 
   const goalPct=Math.round(p.pAnyGoal*100);
+  const edgeStr=bestEdge!=null?' · edge '+(bestEdge>=0?'+':'')+bestEdge.toFixed(0)+'% ('+bestEdgeMkt+' @'+odd.odd.toFixed(2)+')':'';
 
-  // GREEN — strong, multi-condition signal (anomaly window starts at 30')
+  // GREEN — strong live signal (anomaly window 30-72')
   if(
     p.minute>=30&&p.minute<=72&&
     p.pAnyGoal>=0.70&&
@@ -2546,15 +2572,32 @@ function decideQuickBet(p){
   ){
     return {
       verdict:'green',
-      reason:'Model '+goalPct+'% any goal · xG rem '+p.totalLambda.toFixed(2)
+      reason:'Model '+goalPct+'% padnie gol · xG rem '+p.totalLambda.toFixed(2)
         +(p.predatorStrength>=6?' · Predator '+p.predatorStrength.toFixed(1)+'/10':'')
-        +(p.bigChancesTotal>=2?' · BC '+p.bigChancesTotal:''),
+        +(p.bigChancesTotal>=2?' · BC '+p.bigChancesTotal:'')+edgeStr,
       market:p.pOver15>=0.35?'Over 1.5 (rem) lub Next Goal':'Next Goal Any',
       stakePct:0.05
     };
   }
 
-  // YELLOW — moderate
+  // GREEN — pre-match / early high-edge tier
+  // Allows betting at min 1-29 IF model is very confident AND bookmaker is mispricing.
+  // Useful for goal-rich leagues (U20, lower divisions) where pre-match edge is reliable.
+  if(
+    p.minute>=1&&p.minute<30&&
+    p.pAnyGoal>=0.78&&
+    bestEdge!=null&&bestEdge>=8&&
+    p.totalLambda>=1.5
+  ){
+    return {
+      verdict:'green',
+      reason:'Goal-fest forecast · model '+goalPct+'% · xG rem '+p.totalLambda.toFixed(2)+edgeStr,
+      market:bestEdgeMkt==='Over'?'Over 1.5 / Over 2.5':'Next Goal Any',
+      stakePct:0.04   // Slightly smaller than peak GREEN (less live confirmation)
+    };
+  }
+
+  // YELLOW — moderate live signal
   if(
     p.minute>=25&&p.minute<=75&&
     p.pAnyGoal>=0.50&&
@@ -2564,14 +2607,35 @@ function decideQuickBet(p){
       verdict:'yellow',
       reason:'Model '+goalPct+'% · xG rem '+p.totalLambda.toFixed(2)
         +(p.predatorStrength>=3?' · Predator '+p.predatorStrength.toFixed(1)+'/10':'')
-        +(p.bigChancesTotal>=1?' · BC '+p.bigChancesTotal:''),
+        +(p.bigChancesTotal>=1?' · BC '+p.bigChancesTotal:'')+edgeStr,
       market:'Next Goal Any',
       stakePct:0.02
     };
   }
 
-  // Default RED
-  return {verdict:'red',reason:'Słaby sygnał — model '+goalPct+'%, brak anomalii'};
+  // YELLOW — pre-match decent edge
+  if(
+    p.minute>=1&&p.minute<25&&
+    p.pAnyGoal>=0.65&&
+    bestEdge!=null&&bestEdge>=5&&
+    p.totalLambda>=1.2
+  ){
+    return {
+      verdict:'yellow',
+      reason:'Wczesny edge · model '+goalPct+'%'+edgeStr+' · czekaj na min 25-30 albo wchodź teraz',
+      market:'Next Goal Any',
+      stakePct:0.015  // Smaller — early bet has higher variance
+    };
+  }
+
+  // RED — diagnostic explanation
+  if(p.minute>=1&&p.minute<25){
+    return {verdict:'red',reason:'Mecz dopiero startuje (min '+p.minute+'). Model '+goalPct+'%'+edgeStr+'. Czekaj do 25-30 minuty na sygnał live.'};
+  }
+  if(p.pAnyGoal<0.45){
+    return {verdict:'red',reason:'Niska szansa na gol — model '+goalPct+'%, xG rem '+p.totalLambda.toFixed(2)+edgeStr};
+  }
+  return {verdict:'red',reason:'Brak silnego sygnału — model '+goalPct+'%, brak anomalii'+edgeStr};
 }
 
 function bestOddFor(p){
