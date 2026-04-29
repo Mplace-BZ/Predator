@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.5</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.6</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -908,7 +908,22 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <!-- PASTE -->
 <div class="paste-card">
-  <div class="paste-label">FootyStats — sezon, H2H, statystyki</div>
+  <!-- AUTO-FETCH (FootyStats API) -->
+  <div style="background:var(--surface-2);border:1px dashed var(--accent-bd);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+    <div class="paste-label" style="margin-bottom:6px;color:var(--accent);">⚡ Auto-fetch z FootyStats API</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select id="footyLeagueSel" onchange="footyLoadMatches()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:12px;padding:5px 8px;min-width:140px;flex:1;">
+        <option value="">Załaduj ligi...</option>
+      </select>
+      <select id="footyMatchSel" onchange="footyMatchSelected()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:12px;padding:5px 8px;min-width:200px;flex:2;">
+        <option value="">Wybierz mecz...</option>
+      </select>
+      <button class="btn btn-sm btn-accent" onclick="footyAutoFetch()" id="footyFetchBtn" disabled>🔄 Pobierz</button>
+    </div>
+    <div id="footyFetchOut" style="display:none;font-family:var(--mono);font-size:11px;margin-top:8px;padding:6px 10px;border-radius:6px;background:var(--surface);color:var(--text-dim);"></div>
+  </div>
+
+  <div class="paste-label">FootyStats — sezon, H2H, statystyki (paste manual)</div>
   <textarea id="rawPaste" style="min-height:80px" placeholder="Wklej pełny blok FootyStats (wynik, minuta, xG, H2H, sezon, kursy)..."></textarea>
   <div style="display:flex;align-items:center;gap:.6rem;margin-top:.85rem">
     <div class="paste-label" style="color:var(--accent-soft);margin-bottom:0">Sofascore / FlashScore — statystyki live</div>
@@ -1423,7 +1438,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.5
+    Powered by MPlace · Match Predictor v7.6
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4147,6 +4162,179 @@ async function footyTest(kind){
     out.textContent='✗ '+(Date.now()-t0)+'ms\nError: '+e.message;
   }
 }
+
+// ── FootyStats auto-fetch ──
+window._footyMatches = {};  // {seasonId: [matches]}
+window._footyTeams = {};    // teamId → cached team data (also in sessionStorage)
+
+async function footyLoadTeam(teamId){
+  if(window._footyTeams[teamId]) return window._footyTeams[teamId];
+  const cacheKey='footy_team_'+teamId;
+  try{
+    const c=sessionStorage.getItem(cacheKey);
+    if(c){
+      const obj=JSON.parse(c);
+      if(Date.now()-obj.t<3600000){
+        window._footyTeams[teamId]=obj.data;
+        return obj.data;
+      }
+    }
+  }catch(_){}
+  const r=await footyFetch('team',{team_id:teamId});
+  const data=r.data&&r.data[0];
+  if(data){
+    window._footyTeams[teamId]=data;
+    try{ sessionStorage.setItem(cacheKey,JSON.stringify({t:Date.now(),data})); }catch(_){}
+  }
+  return data;
+}
+
+async function footyInitLeagueDropdown(){
+  const sel=$('footyLeagueSel');
+  if(!sel) return;
+  try{
+    const r=await footyFetch('league-list',{chosen_leagues_only:'true'});
+    const opts=['<option value="">Wybierz sezon...</option>'];
+    (r.data||[]).forEach(league=>{
+      (league.season||[]).slice(-3).reverse().forEach(s=>{
+        opts.push('<option value="'+s.id+'">'+league.name+' '+s.year+'</option>');
+      });
+    });
+    sel.innerHTML=opts.join('');
+  }catch(e){
+    sel.innerHTML='<option value="">⚠ Worker offline</option>';
+    console.error('[footy] league list:',e);
+  }
+}
+
+async function footyLoadMatches(){
+  const seasonId=$('footyLeagueSel').value;
+  const matchSel=$('footyMatchSel');
+  const btn=$('footyFetchBtn');
+  if(!seasonId){
+    matchSel.innerHTML='<option value="">Wybierz mecz...</option>';
+    btn.disabled=true;
+    return;
+  }
+  matchSel.innerHTML='<option value="">⏳ Ładuję mecze...</option>';
+  try{
+    if(!window._footyMatches[seasonId]){
+      const r=await footyFetch('league-matches',{season_id:seasonId,page:1});
+      window._footyMatches[seasonId]=r.data||[];
+    }
+    const matches=window._footyMatches[seasonId];
+    // Show last 50 matches sorted by date desc
+    const sorted=matches.slice().sort((a,b)=>(b.date_unix||0)-(a.date_unix||0)).slice(0,50);
+    const opts=['<option value="">Wybierz mecz... ('+matches.length+' w sezonie)</option>'];
+    sorted.forEach(m=>{
+      const d=m.date_unix?new Date(m.date_unix*1000).toLocaleDateString('pl'):'—';
+      const score=m.status==='complete'?(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length:'•';
+      const label=d+' · '+(m.home_name||'?')+' '+score+' '+(m.away_name||'?');
+      opts.push('<option value="'+m.id+'">'+label+'</option>');
+    });
+    matchSel.innerHTML=opts.join('');
+  }catch(e){
+    matchSel.innerHTML='<option value="">⚠ '+e.message+'</option>';
+  }
+}
+
+function footyMatchSelected(){
+  $('footyFetchBtn').disabled=!$('footyMatchSel').value;
+}
+
+function footyMapMatch(match,homeT,awayT){
+  const set=(id,v)=>{ if(v!=null&&v!==''&&!isNaN(v)) $(id).value=v; };
+
+  // Match-level (live + score)
+  $('homeTeam').value=match.home_name||'';
+  $('awayTeam').value=match.away_name||'';
+  $('homeScore').value=(match.homeGoals||[]).length;
+  $('awayScore').value=(match.awayGoals||[]).length;
+  $('minute').value=match.status==='complete'?90:(match.minute||1);
+
+  set('lHCorn',match.team_a_corners);
+  set('lACorn',match.team_b_corners);
+  set('lHYC',match.team_a_yellow_cards);
+  set('lAYC',match.team_b_yellow_cards);
+  set('lHDA',match.team_a_dangerous_attacks);
+  set('lADA',match.team_b_dangerous_attacks);
+  set('lHSOT',match.team_a_shotsOnTarget);
+  set('lASOT',match.team_b_shotsOnTarget);
+  set('lHPoss',match.team_a_possession);
+
+  // Odds
+  set('oddHome',match.odds_ft_1);
+  set('oddDraw',match.odds_ft_x);
+  set('oddAway',match.odds_ft_2);
+  set('oddOver',match.odds_ft_over25);
+  set('oddUnder',match.odds_ft_under25);
+  set('oddBTTS',match.odds_btts_yes);
+
+  // Season stats per team — Home
+  if(homeT&&homeT.stats){
+    const s=homeT.stats;
+    set('hXG',s.xg_for_avg_home||s.xg_for_avg_overall);
+    set('hScored',s.seasonScoredAVG_home);
+    set('hConc',s.seasonConcededAVG_home);
+    set('hCS',s.seasonCSPercentage_home);
+    set('hCornSeason',s.cornersAVG_home);
+    set('hYCSeason',s.cardsAVG_home);
+    set('hPPG',s.seasonPPG_home);
+  }
+  if(awayT&&awayT.stats){
+    const s=awayT.stats;
+    set('aXG',s.xg_for_avg_away||s.xg_for_avg_overall);
+    set('aScored',s.seasonScoredAVG_away);
+    set('aConc',s.seasonConcededAVG_away);
+    set('aCS',s.seasonCSPercentage_away);
+    set('aCornSeason',s.cornersAVG_away);
+    set('aYCSeason',s.cardsAVG_away);
+    set('aPPG',s.seasonPPG_away);
+  }
+
+  // Trigger save + recalc
+  if(typeof saveFields==='function') saveFields();
+  if(typeof renderFieldStatus==='function') renderFieldStatus();
+  if(typeof calc==='function') calc();
+}
+
+async function footyAutoFetch(){
+  const seasonId=$('footyLeagueSel').value;
+  const matchId=$('footyMatchSel').value;
+  if(!matchId) return;
+  const out=$('footyFetchOut');
+  const btn=$('footyFetchBtn');
+  btn.disabled=true;
+  out.style.display='block';
+  out.style.color='var(--text-dim)';
+  out.textContent='⏳ Pobieram dane meczu...';
+
+  try{
+    const matches=window._footyMatches[seasonId]||[];
+    const match=matches.find(m=>String(m.id)===String(matchId));
+    if(!match) throw new Error('Mecz nie znaleziony w cache');
+
+    out.textContent='⏳ Statystyki '+(match.home_name||'home')+'...';
+    const homeT=await footyLoadTeam(match.homeID);
+    out.textContent='⏳ Statystyki '+(match.away_name||'away')+'...';
+    const awayT=await footyLoadTeam(match.awayID);
+
+    footyMapMatch(match,homeT,awayT);
+
+    out.style.color='var(--positive)';
+    out.textContent='✓ Załadowano: '+match.home_name+' '+(match.homeGoals||[]).length+':'+(match.awayGoals||[]).length+' '+match.away_name;
+    setTimeout(()=>{ out.style.display='none'; },5000);
+  }catch(e){
+    out.style.color='var(--negative)';
+    out.textContent='✗ Error: '+e.message;
+  } finally {
+    btn.disabled=false;
+  }
+}
+
+// Init dropdown on first idle
+if(document.readyState==='complete') setTimeout(footyInitLeagueDropdown,500);
+else window.addEventListener('load',()=>setTimeout(footyInitLeagueDropdown,500));
 
 function openSettings(){
   $('setDailyLimit').value=Math.round(getDailyLimitPct()*100);
