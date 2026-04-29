@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.8</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.9</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -856,14 +856,21 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </section>
 
-<!-- ───── MULTI-MATCH SCAN (dziś warte typowania) ───── -->
+<!-- ───── MULTI-MATCH SCAN (najbliższe 24h) ───── -->
 <section class="section" id="scanTodaySection">
   <div class="picks-header">
     <div>
-      <div class="eyebrow" style="color:var(--accent);">🎯 Dziś warte typowania (skan 50 lig)</div>
-      <div class="picks-meta" id="scanTodayMeta">Klik "Skanuj" — Predator znajdzie najlepsze edge'y dla wszystkich meczów dziś</div>
+      <div class="eyebrow" style="color:var(--accent);">🎯 Skan API — mecze warte typowania</div>
+      <div class="picks-meta" id="scanTodayMeta">Klik "Skanuj" — Predator znajdzie edge'y dla najbliższych meczów (50 lig Hobby)</div>
     </div>
-    <button class="btn btn-accent" onclick="footyScanToday()" id="scanTodayBtn">🎯 Skanuj dziś</button>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <select id="scanDayFilter" onchange="footyApplyDayFilter()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:12px;padding:5px 8px;">
+        <option value="all">Wszystkie</option>
+        <option value="today">Tylko dziś</option>
+        <option value="tomorrow">Tylko jutro</option>
+      </select>
+      <button class="btn btn-accent" onclick="footyScanToday()" id="scanTodayBtn">🎯 Skanuj</button>
+    </div>
   </div>
   <div id="scanTodayOut" style="display:none;font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;"></div>
   <div class="picks-list" id="scanTodayList" style="margin-top:12px;"></div>
@@ -1451,7 +1458,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.8
+    Powered by MPlace · Match Predictor v7.9
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4478,18 +4485,54 @@ async function footyScanToday(){
   }
 }
 
+// Day label: "Dziś", "Jutro", or formatted date. Tomorrow = next calendar day in Warsaw timezone
+function footyDayLabel(unix){
+  if(!unix) return '';
+  const matchD=new Date(unix*1000);
+  const now=new Date();
+  // Compare YYYY-MM-DD in Warsaw timezone
+  const fmt=d=>d.toLocaleDateString('pl',{timeZone:'Europe/Warsaw'});
+  const today=fmt(now);
+  const tom=fmt(new Date(now.getTime()+86400000));
+  const md=fmt(matchD);
+  const time=matchD.toLocaleTimeString('pl',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Warsaw'});
+  if(md===today) return 'Dziś '+time;
+  if(md===tom) return 'Jutro '+time;
+  return matchD.toLocaleDateString('pl',{day:'2-digit',month:'2-digit',timeZone:'Europe/Warsaw'})+' '+time;
+}
+
+function footyApplyDayFilter(){
+  if(!window._scanCardsCache||!window._scanCardsCache.length) return;
+  footyRenderScanCards(window._scanCardsCache,window._scanCardsCache._totalScanned||0);
+}
+
 function footyRenderScanCards(cards,totalScanned){
   const list=$('scanTodayList');
-  $('scanTodayMeta').textContent=cards.length>0
-    ?'Top edge dziś · sortowane po wartości · '+totalScanned+' meczów przeskanowanych'
-    :'Brak meczów z edge\'em w dzisiejszej puli';
-  if(!cards.length){
-    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Żaden mecz nie ma edge\'a ≥ 2%. Bukmacher dobrze wycenił.</div>';
+  // Apply day filter
+  const filter=$('scanDayFilter')?.value||'all';
+  const now=new Date();
+  const fmt=d=>d.toLocaleDateString('pl',{timeZone:'Europe/Warsaw'});
+  const todayStr=fmt(now);
+  const tomStr=fmt(new Date(now.getTime()+86400000));
+  let filtered=cards;
+  if(filter==='today') filtered=cards.filter(c=>fmt(new Date((c.match.date_unix||0)*1000))===todayStr);
+  else if(filter==='tomorrow') filtered=cards.filter(c=>fmt(new Date((c.match.date_unix||0)*1000))===tomStr);
+
+  // Cache full list for re-filter
+  if(typeof totalScanned!=='undefined'){ cards._totalScanned=totalScanned; window._scanCardsCache=cards; }
+
+  $('scanTodayMeta').textContent=filtered.length>0
+    ?'Top edge · '+filtered.length+' meczów ('+totalScanned+' przeskanowanych)'
+    :'Brak meczów z edge\'em w wybranym filtrze';
+  if(!filtered.length){
+    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Żaden mecz nie ma edge\'a w tym filtrze.</div>';
     return;
   }
-  list.innerHTML=cards.slice(0,10).map((c,i)=>{
+  list.innerHTML=filtered.slice(0,15).map((c,i)=>{
     const m=c.match;
-    const date=m.date_unix?new Date(m.date_unix*1000).toLocaleString('pl',{hour:'2-digit',minute:'2-digit'}):'';
+    const dayLabel=footyDayLabel(m.date_unix);
+    // Find original index in cache for footyLoadFromScan
+    const cacheIdx=window._scanCardsCache.indexOf(c);
     const cls=['pick-card'];
     if(c.bestEdge>=15) cls.push('high-edge');
     else if(c.bestEdge>=8) cls.push('warn');
@@ -4498,7 +4541,7 @@ function footyRenderScanCards(cards,totalScanned){
     return '<div class="'+cls.join(' ')+'">'
       +'<div class="pick-icon">'+icon+'</div>'
       +'<div class="pick-body">'
-        +'<div class="pick-title">'+m.home_name+' vs '+m.away_name+' <span style="color:var(--text-dim);font-weight:500;font-size:11px;margin-left:6px;">'+date+'</span></div>'
+        +'<div class="pick-title">'+m.home_name+' vs '+m.away_name+' <span style="color:var(--text-dim);font-weight:500;font-size:11px;margin-left:6px;">'+dayLabel+'</span></div>'
         +'<div class="pick-reason">'+c.bestMarket.label+' @ '+c.bestMarket.odd.toFixed(2)+' · model '+(c.bestMarket.modelP*100).toFixed(0)+'% · xG '+c.totalLam.toFixed(2)+(c.allMarkets.length>1?' · '+(c.allMarkets.length-1)+' więcej rynków':'')+'</div>'
       +'</div>'
       +'<div class="pick-meta">'
@@ -4506,7 +4549,7 @@ function footyRenderScanCards(cards,totalScanned){
         +'<span class="pick-detail">edge</span>'
       +'</div>'
       +'<div class="pick-actions">'
-        +'<button class="pick-cta" onclick="footyLoadFromScan('+i+')">Analizuj</button>'
+        +'<button class="pick-cta" onclick="footyLoadFromScan('+cacheIdx+')">Analizuj</button>'
       +'</div>'
     +'</div>';
   }).join('');
