@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.7</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.8</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -854,6 +854,19 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="context-tile-meta" id="ctxAnomalyMeta">Wykrywanie anomalii</div>
     </div>
   </div>
+</section>
+
+<!-- ───── MULTI-MATCH SCAN (dziś warte typowania) ───── -->
+<section class="section" id="scanTodaySection">
+  <div class="picks-header">
+    <div>
+      <div class="eyebrow" style="color:var(--accent);">🎯 Dziś warte typowania (skan 50 lig)</div>
+      <div class="picks-meta" id="scanTodayMeta">Klik "Skanuj" — Predator znajdzie najlepsze edge'y dla wszystkich meczów dziś</div>
+    </div>
+    <button class="btn btn-accent" onclick="footyScanToday()" id="scanTodayBtn">🎯 Skanuj dziś</button>
+  </div>
+  <div id="scanTodayOut" style="display:none;font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;"></div>
+  <div class="picks-list" id="scanTodayList" style="margin-top:12px;"></div>
 </section>
 
 <!-- ───── KONKRETNE TYPY ───── -->
@@ -1438,7 +1451,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.7
+    Powered by MPlace · Match Predictor v7.8
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4366,6 +4379,152 @@ async function footyAutoFetch(){
 }
 
 // Init dropdown on first idle
+// ── Multi-match scan: skan wszystkich meczów dziś, sortuj po edge ──
+window._scanCardsCache=[];
+
+function footyComputeMatchCard(match,homeT,awayT){
+  const sH=(homeT&&homeT.stats)||{};
+  const sA=(awayT&&awayT.stats)||{};
+  // Quick xG model
+  const hXG=sH.xg_for_avg_home||sH.xg_for_avg_overall||0;
+  const aXG=sA.xg_for_avg_away||sA.xg_for_avg_overall||0;
+  if(hXG+aXG===0) return null;
+  const totalLam=hXG+aXG;
+  // pOver25 via Poisson (uses existing helpers)
+  const pOver25=1-poissonCum(totalLam,2);
+  const pOver15=1-poissonCum(totalLam,1);
+  // BTTS: blend Poisson with FootyStats season % (more reliable for high-scoring leagues)
+  const pBTTSPoisson=(1-poisson(hXG,0))*(1-poisson(aXG,0));
+  const bttsHistAvg=((sH.seasonBTTSPercentage_home||0)+(sA.seasonBTTSPercentage_away||0))/200;
+  const pBTTS=bttsHistAvg>0?(bttsHistAvg*0.7+pBTTSPoisson*0.3):pBTTSPoisson;
+
+  const markets=[];
+  // Goals — pick relevant line based on totalLam (auto-tier)
+  if(match.odds_ft_over25){
+    const edge=(pOver25-1/match.odds_ft_over25)*100;
+    if(pOver25>=0.40&&edge>=2) markets.push({label:'Over 2.5',edge,odd:match.odds_ft_over25,modelP:pOver25,group:'goals'});
+  }
+  if(match.odds_ft_under25){
+    const pUnder=1-pOver25;
+    const edge=(pUnder-1/match.odds_ft_under25)*100;
+    if(pUnder>=0.40&&edge>=2) markets.push({label:'Under 2.5',edge,odd:match.odds_ft_under25,modelP:pUnder,group:'goals'});
+  }
+  if(match.odds_btts_yes&&pBTTS>=0.40){
+    const edge=(pBTTS-1/match.odds_btts_yes)*100;
+    if(edge>=2) markets.push({label:'BTTS',edge,odd:match.odds_btts_yes,modelP:pBTTS,group:'btts'});
+  }
+  // 1X2 — basic from PPG
+  const hPPG=sH.seasonPPG_home||1.5;
+  const aPPG=sA.seasonPPG_away||1.5;
+  const ppgTot=hPPG+aPPG+1.5;
+  const pH=hPPG/ppgTot,pA=aPPG/ppgTot,pD=1.5/ppgTot;
+  if(match.odds_ft_1){
+    const edge=(pH-1/match.odds_ft_1)*100;
+    if(pH>=0.40&&edge>=3) markets.push({label:'Home Win',edge,odd:match.odds_ft_1,modelP:pH,group:'1x2'});
+  }
+  if(match.odds_ft_2){
+    const edge=(pA-1/match.odds_ft_2)*100;
+    if(pA>=0.40&&edge>=3) markets.push({label:'Away Win',edge,odd:match.odds_ft_2,modelP:pA,group:'1x2'});
+  }
+
+  if(!markets.length) return null;
+  markets.sort((a,b)=>b.edge-a.edge);
+  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam};
+}
+
+async function footyScanToday(){
+  const out=$('scanTodayOut');
+  const list=$('scanTodayList');
+  const btn=$('scanTodayBtn');
+  btn.disabled=true;
+  out.style.display='block';
+  out.style.color='var(--text-dim)';
+  out.textContent='⏳ Pobieram dzisiejsze mecze...';
+  list.innerHTML='';
+  try{
+    const r=await footyFetch('todays-matches');
+    let matches=(r.data||[]).filter(m=>m.odds_ft_over25||m.odds_btts_yes||m.odds_ft_1);
+    if(!matches.length){
+      out.textContent='Brak meczów dziś z kursami w wybranych ligach.';
+      btn.disabled=false;
+      return;
+    }
+    const cards=[];
+    for(let i=0;i<matches.length;i++){
+      const m=matches[i];
+      out.textContent='⏳ '+(i+1)+'/'+matches.length+': '+m.home_name+' vs '+m.away_name;
+      try{
+        const [homeT,awayT]=await Promise.all([
+          footyLoadTeam(m.homeID),
+          footyLoadTeam(m.awayID)
+        ]);
+        const card=footyComputeMatchCard(m,homeT,awayT);
+        if(card) cards.push(card);
+      }catch(e){
+        console.warn('[scan] skip',m.id,e);
+      }
+    }
+    cards.sort((a,b)=>b.bestEdge-a.bestEdge);
+    window._scanCardsCache=cards;
+    footyRenderScanCards(cards,matches.length);
+    out.style.color='var(--positive)';
+    out.textContent='✓ Skan zakończony · '+cards.length+'/'+matches.length+' meczów z edge';
+    setTimeout(()=>{out.style.display='none';},4000);
+  }catch(e){
+    out.style.color='var(--negative)';
+    out.textContent='✗ '+e.message;
+  } finally {
+    btn.disabled=false;
+  }
+}
+
+function footyRenderScanCards(cards,totalScanned){
+  const list=$('scanTodayList');
+  $('scanTodayMeta').textContent=cards.length>0
+    ?'Top edge dziś · sortowane po wartości · '+totalScanned+' meczów przeskanowanych'
+    :'Brak meczów z edge\'em w dzisiejszej puli';
+  if(!cards.length){
+    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Żaden mecz nie ma edge\'a ≥ 2%. Bukmacher dobrze wycenił.</div>';
+    return;
+  }
+  list.innerHTML=cards.slice(0,10).map((c,i)=>{
+    const m=c.match;
+    const date=m.date_unix?new Date(m.date_unix*1000).toLocaleString('pl',{hour:'2-digit',minute:'2-digit'}):'';
+    const cls=['pick-card'];
+    if(c.bestEdge>=15) cls.push('high-edge');
+    else if(c.bestEdge>=8) cls.push('warn');
+    const icon=c.bestMarket.group==='goals'?'⚽':c.bestMarket.group==='btts'?'🎯':c.bestMarket.group==='1x2'?'🏟️':'📊';
+    const edgeStr='+'+c.bestEdge.toFixed(0)+'%';
+    return '<div class="'+cls.join(' ')+'">'
+      +'<div class="pick-icon">'+icon+'</div>'
+      +'<div class="pick-body">'
+        +'<div class="pick-title">'+m.home_name+' vs '+m.away_name+' <span style="color:var(--text-dim);font-weight:500;font-size:11px;margin-left:6px;">'+date+'</span></div>'
+        +'<div class="pick-reason">'+c.bestMarket.label+' @ '+c.bestMarket.odd.toFixed(2)+' · model '+(c.bestMarket.modelP*100).toFixed(0)+'% · xG '+c.totalLam.toFixed(2)+(c.allMarkets.length>1?' · '+(c.allMarkets.length-1)+' więcej rynków':'')+'</div>'
+      +'</div>'
+      +'<div class="pick-meta">'
+        +'<span class="pick-edge">'+edgeStr+'</span>'
+        +'<span class="pick-detail">edge</span>'
+      +'</div>'
+      +'<div class="pick-actions">'
+        +'<button class="pick-cta" onclick="footyLoadFromScan('+i+')">Analizuj</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+async function footyLoadFromScan(idx){
+  const card=window._scanCardsCache[idx];
+  if(!card) return;
+  // Reuse existing footyMapMatch
+  footyMapMatch(card.match,card.homeT,card.awayT);
+  // Scroll to picks section
+  setTimeout(()=>{
+    const el=$('picksSection');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },200);
+  qdToast('Załadowano '+card.match.home_name+' vs '+card.match.away_name,'green',2500);
+}
+
 if(document.readyState==='complete') setTimeout(footyInitLeagueDropdown,500);
 else window.addEventListener('load',()=>setTimeout(footyInitLeagueDropdown,500));
 
