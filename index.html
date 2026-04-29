@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.6</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.7</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1438,7 +1438,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.6
+    Powered by MPlace · Match Predictor v7.7
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4194,15 +4194,24 @@ async function footyInitLeagueDropdown(){
   if(!sel) return;
   try{
     const r=await footyFetch('league-list',{chosen_leagues_only:'true'});
-    const opts=['<option value="">Wybierz sezon...</option>'];
-    (r.data||[]).forEach(league=>{
-      (league.season||[]).slice(-3).reverse().forEach(s=>{
-        opts.push('<option value="'+s.id+'">'+league.name+' '+s.year+'</option>');
-      });
+    const leagues=(r.data||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    const opts=['<option value="">Wybierz ligę... ('+leagues.length+' dostępnych)</option>'];
+    leagues.forEach(league=>{
+      const seasons=league.season||[];
+      if(!seasons.length) return;
+      // Pick latest season by year (handles both YYYY and YYYYYYYY formats)
+      const latest=seasons.slice().sort((a,b)=>{
+        const ay=parseInt(String(a.year||'0').slice(-4))||0;
+        const by=parseInt(String(b.year||'0').slice(-4))||0;
+        return by-ay;
+      })[0];
+      const country=latest.country?'['+latest.country+'] ':'';
+      opts.push('<option value="'+latest.id+'">'+country+league.name+' '+latest.year+'</option>');
     });
     sel.innerHTML=opts.join('');
+    console.log('[footy] dropdown ready: '+leagues.length+' leagues');
   }catch(e){
-    sel.innerHTML='<option value="">⚠ Worker offline</option>';
+    sel.innerHTML='<option value="">⚠ Worker offline: '+e.message+'</option>';
     console.error('[footy] league list:',e);
   }
 }
@@ -4222,16 +4231,40 @@ async function footyLoadMatches(){
       const r=await footyFetch('league-matches',{season_id:seasonId,page:1});
       window._footyMatches[seasonId]=r.data||[];
     }
-    const matches=window._footyMatches[seasonId];
-    // Show last 50 matches sorted by date desc
-    const sorted=matches.slice().sort((a,b)=>(b.date_unix||0)-(a.date_unix||0)).slice(0,50);
-    const opts=['<option value="">Wybierz mecz... ('+matches.length+' w sezonie)</option>'];
-    sorted.forEach(m=>{
-      const d=m.date_unix?new Date(m.date_unix*1000).toLocaleDateString('pl'):'—';
-      const score=m.status==='complete'?(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length:'•';
-      const label=d+' · '+(m.home_name||'?')+' '+score+' '+(m.away_name||'?');
-      opts.push('<option value="'+m.id+'">'+label+'</option>');
-    });
+    const all=window._footyMatches[seasonId];
+    const now=Math.floor(Date.now()/1000);
+    // Group by status: live > upcoming (next 7 days) > recent finished (last 30 days)
+    const live=all.filter(m=>m.status==='in_play'||m.status==='incomplete'&&m.date_unix<=now+3600);
+    const upcoming=all.filter(m=>m.status==='incomplete'&&m.date_unix>now+3600&&m.date_unix<now+7*86400)
+      .sort((a,b)=>(a.date_unix||0)-(b.date_unix||0));
+    const finished=all.filter(m=>m.status==='complete')
+      .sort((a,b)=>(b.date_unix||0)-(a.date_unix||0))
+      .slice(0,30);
+    const opts=['<option value="">Wybierz mecz... ('+all.length+' w sezonie)</option>'];
+    const fmtDate=u=>u?new Date(u*1000).toLocaleString('pl',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    if(live.length){
+      opts.push('<optgroup label="🔴 LIVE TERAZ ('+live.length+')">');
+      live.forEach(m=>{
+        const score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+        opts.push('<option value="'+m.id+'">'+fmtDate(m.date_unix)+' · '+(m.home_name||'?')+' '+score+' '+(m.away_name||'?')+'</option>');
+      });
+      opts.push('</optgroup>');
+    }
+    if(upcoming.length){
+      opts.push('<optgroup label="⚡ NADCHODZĄCE ('+upcoming.length+')">');
+      upcoming.slice(0,30).forEach(m=>{
+        opts.push('<option value="'+m.id+'">'+fmtDate(m.date_unix)+' · '+(m.home_name||'?')+' vs '+(m.away_name||'?')+'</option>');
+      });
+      opts.push('</optgroup>');
+    }
+    if(finished.length){
+      opts.push('<optgroup label="✓ Ostatnio zakończone">');
+      finished.forEach(m=>{
+        const score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+        opts.push('<option value="'+m.id+'">'+fmtDate(m.date_unix)+' · '+(m.home_name||'?')+' '+score+' '+(m.away_name||'?')+'</option>');
+      });
+      opts.push('</optgroup>');
+    }
     matchSel.innerHTML=opts.join('');
   }catch(e){
     matchSel.innerHTML='<option value="">⚠ '+e.message+'</option>';
