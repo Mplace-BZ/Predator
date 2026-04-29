@@ -727,7 +727,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.11</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.12</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1471,7 +1471,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.11
+    Powered by MPlace · Match Predictor v7.12
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -3002,7 +3002,9 @@ function rankPicks(p){
   if(!p||!p.minute) return [];
   const picks=[];
   const preMatch=isPreMatch(p);
-  const minEdge=preMatch?4:5;
+  // Edge threshold zgodny z filozofią Chris'a: Value 5%+ = typuj, Slim 2-4% = pomiń
+  const minEdge=5;
+  // Stake cap niższy w pre-match (większa wariancja bez live signals)
   const stakeCap=preMatch?0.03:0.05;
   const bankroll=p.bankroll||1000;
   const minute=p.minute,remFrac=Math.max(0,(90-minute)/90);
@@ -3416,13 +3418,13 @@ function renderSpecificPicks(){
   const list=$('picksList');
   $('picksEyebrow').textContent=preMatch?'Pre-match analiza · konkretne typy':'Konkretne typy do obstawienia';
   if(!picks.length){
-    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Brak picków z edge\'em ≥ '+(preMatch?'4':'5')+'%. Wpisz więcej kursów lub poczekaj na rozwój meczu.</div>';
+    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Brak picków z edge\'em ≥ 5% (Value+). Bukmacher dobrze wycenił ten mecz.</div>';
     $('picksMeta').textContent=preMatch?'Pre-match · czekam na kursy':'Brak konkretnych typów';
     $('picksCount').textContent='';
     return;
   }
   $('picksMeta').textContent=preMatch
-    ?'Pre-match (stake cap 3% · edge ≥ 4%)'
+    ?'Pre-match (stake cap 3% · edge ≥ 5%)'
     :'Live (stake cap 5% · edge ≥ 5%)';
   $('picksCount').textContent=picks.length+' '+(picks.length===1?'typ':'typy')+' z edge\'em';
 
