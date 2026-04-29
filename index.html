@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.5</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1386,6 +1386,18 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <input type="number" id="setKellyMult" min="0.10" max="1.00" step="0.05" value="0.25">
       <div class="hint">Stała mnożenia Kelly. Default 0.25 = ćwiartka Kelly (konserwatywne). 1.0 = pełny Kelly (agresywne).</div>
     </div>
+
+    <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
+      <label style="margin-bottom:8px;">FootyStats API (auto-fetch danych)</label>
+      <div class="hint" style="margin-bottom:10px;">Test połączenia z proxy Worker → FootyStats API. Quota free trial: 1800 req/godz, 2 ligi (Premier League + Mexico).</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-sm" onclick="footyTest('health')">🧪 Test connection</button>
+        <button class="btn btn-sm" onclick="footyTest('leagues')">📋 Lista lig</button>
+        <button class="btn btn-sm" onclick="footyTest('today')">📅 Mecze dziś</button>
+      </div>
+      <pre id="footyTestOut" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--text-dim);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;display:none;"></pre>
+    </div>
+
     <div class="modal-foot">
       <button class="btn" onclick="closeSettings()">Anuluj</button>
       <button class="btn btn-accent" onclick="saveSettings()">Zapisz</button>
@@ -1411,7 +1423,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.4
+    Powered by MPlace · Match Predictor v7.5
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4078,6 +4090,64 @@ function notifyWatch(title,body){
 renderWatchList();
 
 // ── Settings (modal) ──
+// ── FootyStats API client (via Cloudflare Worker proxy) ──
+const FOOTY_PROXY='https://red-haze-5f37mplace-agent.contactmplace.workers.dev';
+const FOOTY_AUTH='Bearer Czucio123$';
+
+async function footyFetch(path,params={}){
+  const qs=new URLSearchParams(params).toString();
+  const url=FOOTY_PROXY+'/footy/'+path+(qs?'?'+qs:'');
+  const r=await fetch(url,{headers:{'Authorization':FOOTY_AUTH}});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j.error||'HTTP '+r.status);
+  return j;
+}
+async function footyHealth(){
+  const r=await fetch(FOOTY_PROXY+'/health',{headers:{'Authorization':FOOTY_AUTH}});
+  return await r.json();
+}
+async function footyTest(kind){
+  const out=$('footyTestOut');
+  out.style.display='block';
+  out.style.color='var(--text-dim)';
+  out.textContent='⏳ Loading...';
+  const t0=Date.now();
+  try{
+    let result;
+    if(kind==='health'){
+      result=await footyHealth();
+      out.style.color='var(--positive)';
+      out.textContent='✓ '+(Date.now()-t0)+'ms\n\n'+JSON.stringify(result,null,2);
+    } else if(kind==='leagues'){
+      result=await footyFetch('league-list',{chosen_leagues_only:'true'});
+      const meta=result.metadata||{};
+      const summary='✓ '+(Date.now()-t0)+'ms · quota '+meta.request_remaining+'/'+meta.request_limit+'\n\n';
+      const leagues=(result.data||[]).map(l=>{
+        const seasons=(l.season||[]).map(s=>'  - season '+s.id+' ('+s.year+')').join('\n');
+        return l.name+' ('+l.season.length+' seasons):\n'+seasons;
+      }).join('\n\n');
+      out.style.color='var(--positive)';
+      out.textContent=summary+leagues;
+    } else if(kind==='today'){
+      result=await footyFetch('todays-matches');
+      const meta=result.metadata||{};
+      const list=result.data||[];
+      let body='✓ '+(Date.now()-t0)+'ms · quota '+meta.request_remaining+'/'+meta.request_limit+'\n';
+      body+='Mecze dziś: '+list.length+'\n\n';
+      if(list.length===0){
+        body+='(Brak meczów dziś — Premier League może być w przerwie sezonowej. Free trial = 2 ligi.)';
+      } else {
+        body+=list.slice(0,10).map(m=>(m.home_name||m.homeID)+' vs '+(m.away_name||m.awayID)+' · status: '+m.status).join('\n');
+      }
+      out.style.color='var(--positive)';
+      out.textContent=body;
+    }
+  }catch(e){
+    out.style.color='var(--negative)';
+    out.textContent='✗ '+(Date.now()-t0)+'ms\nError: '+e.message;
+  }
+}
+
 function openSettings(){
   $('setDailyLimit').value=Math.round(getDailyLimitPct()*100);
   $('setBookmaker').value=localStorage.getItem('predator_bookmaker_url')||'';
