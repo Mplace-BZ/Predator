@@ -719,7 +719,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.9</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.10</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -865,10 +865,15 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
       <select id="scanDayFilter" onchange="footyApplyDayFilter()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:12px;padding:5px 8px;">
+        <option value="live">🔴 Live teraz</option>
         <option value="all">Wszystkie</option>
         <option value="today">Tylko dziś</option>
         <option value="tomorrow">Tylko jutro</option>
       </select>
+      <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);cursor:pointer;">
+        <input type="checkbox" id="scanAutoRefresh" onchange="footyToggleAutoRefresh()" style="cursor:pointer;">
+        Auto-refresh 60s
+      </label>
       <button class="btn btn-accent" onclick="footyScanToday()" id="scanTodayBtn">🎯 Skanuj</button>
     </div>
   </div>
@@ -1458,7 +1463,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.9
+    Powered by MPlace · Match Predictor v7.10
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4506,42 +4511,63 @@ function footyApplyDayFilter(){
   footyRenderScanCards(window._scanCardsCache,window._scanCardsCache._totalScanned||0);
 }
 
+// Detect if match is live: status in_play OR (incomplete + start <2h ago + not finished)
+function isLiveMatch(m){
+  if(m.status==='in_play') return true;
+  if(m.status==='complete') return false;
+  if(!m.date_unix) return false;
+  const now=Math.floor(Date.now()/1000);
+  // Started up to 2h15min ago, not yet complete = probably live
+  return m.date_unix<=now&&m.date_unix>now-8100;
+}
+
 function footyRenderScanCards(cards,totalScanned){
   const list=$('scanTodayList');
-  // Apply day filter
+  // Apply filter
   const filter=$('scanDayFilter')?.value||'all';
   const now=new Date();
   const fmt=d=>d.toLocaleDateString('pl',{timeZone:'Europe/Warsaw'});
   const todayStr=fmt(now);
   const tomStr=fmt(new Date(now.getTime()+86400000));
   let filtered=cards;
-  if(filter==='today') filtered=cards.filter(c=>fmt(new Date((c.match.date_unix||0)*1000))===todayStr);
+  if(filter==='live') filtered=cards.filter(c=>isLiveMatch(c.match));
+  else if(filter==='today') filtered=cards.filter(c=>fmt(new Date((c.match.date_unix||0)*1000))===todayStr);
   else if(filter==='tomorrow') filtered=cards.filter(c=>fmt(new Date((c.match.date_unix||0)*1000))===tomStr);
 
   // Cache full list for re-filter
   if(typeof totalScanned!=='undefined'){ cards._totalScanned=totalScanned; window._scanCardsCache=cards; }
 
-  $('scanTodayMeta').textContent=filtered.length>0
-    ?'Top edge · '+filtered.length+' meczów ('+totalScanned+' przeskanowanych)'
-    :'Brak meczów z edge\'em w wybranym filtrze';
+  const liveCount=cards.filter(c=>isLiveMatch(c.match)).length;
+  const metaText=filter==='live'
+    ?(filtered.length>0?'🔴 LIVE TERAZ · '+filtered.length+' meczów w trakcie':'Brak meczów na żywo · sprawdź ponownie za chwilę')
+    :(filtered.length>0?'Top edge · '+filtered.length+' meczów ('+totalScanned+' przeskanowanych'+(liveCount?' · 🔴 '+liveCount+' live':'')+')':'Brak meczów z edge\'em w wybranym filtrze');
+  $('scanTodayMeta').textContent=metaText;
   if(!filtered.length){
-    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Żaden mecz nie ma edge\'a w tym filtrze.</div>';
+    list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">'+(filter==='live'?'Brak meczów na żywo (lub jeszcze nie odświeżono).':'Żaden mecz nie ma edge\'a w tym filtrze.')+'</div>';
     return;
   }
   list.innerHTML=filtered.slice(0,15).map((c,i)=>{
     const m=c.match;
-    const dayLabel=footyDayLabel(m.date_unix);
-    // Find original index in cache for footyLoadFromScan
+    const isLive=isLiveMatch(m);
+    let labelHtml;
+    if(isLive){
+      const score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+      const elapsedMin=m.date_unix?Math.max(1,Math.floor((Date.now()/1000-m.date_unix)/60)):0;
+      const minDisp=elapsedMin>90?"90+'":elapsedMin+"'";
+      labelHtml='<span style="color:var(--negative);font-weight:700;font-size:11px;margin-left:6px;animation:qd-fire-flicker 1.5s infinite;">🔴 LIVE '+minDisp+'</span><span style="color:var(--text);font-weight:700;font-size:13px;margin-left:6px;font-variant-numeric:tabular-nums;">'+score+'</span>';
+    } else {
+      labelHtml='<span style="color:var(--text-dim);font-weight:500;font-size:11px;margin-left:6px;">'+footyDayLabel(m.date_unix)+'</span>';
+    }
     const cacheIdx=window._scanCardsCache.indexOf(c);
     const cls=['pick-card'];
+    if(isLive) cls.push('warn');  // Yellow border for live
     if(c.bestEdge>=15) cls.push('high-edge');
-    else if(c.bestEdge>=8) cls.push('warn');
-    const icon=c.bestMarket.group==='goals'?'⚽':c.bestMarket.group==='btts'?'🎯':c.bestMarket.group==='1x2'?'🏟️':'📊';
+    const icon=isLive?'🔴':c.bestMarket.group==='goals'?'⚽':c.bestMarket.group==='btts'?'🎯':c.bestMarket.group==='1x2'?'🏟️':'📊';
     const edgeStr='+'+c.bestEdge.toFixed(0)+'%';
     return '<div class="'+cls.join(' ')+'">'
       +'<div class="pick-icon">'+icon+'</div>'
       +'<div class="pick-body">'
-        +'<div class="pick-title">'+m.home_name+' vs '+m.away_name+' <span style="color:var(--text-dim);font-weight:500;font-size:11px;margin-left:6px;">'+dayLabel+'</span></div>'
+        +'<div class="pick-title">'+m.home_name+' vs '+m.away_name+labelHtml+'</div>'
         +'<div class="pick-reason">'+c.bestMarket.label+' @ '+c.bestMarket.odd.toFixed(2)+' · model '+(c.bestMarket.modelP*100).toFixed(0)+'% · xG '+c.totalLam.toFixed(2)+(c.allMarkets.length>1?' · '+(c.allMarkets.length-1)+' więcej rynków':'')+'</div>'
       +'</div>'
       +'<div class="pick-meta">'
@@ -4553,6 +4579,22 @@ function footyRenderScanCards(cards,totalScanned){
       +'</div>'
     +'</div>';
   }).join('');
+}
+
+// Auto-refresh — co 60s odpala scan, jeśli toggle aktywny
+let _autoRefreshTimer=null;
+function footyToggleAutoRefresh(){
+  const cb=$('scanAutoRefresh');
+  if(cb.checked){
+    if(_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+    _autoRefreshTimer=setInterval(()=>{
+      if(!document.hidden) footyScanToday();
+    },60000);
+    qdToast('Auto-refresh włączony · co 60s','green',2000);
+  } else {
+    if(_autoRefreshTimer){ clearInterval(_autoRefreshTimer); _autoRefreshTimer=null; }
+    qdToast('Auto-refresh wyłączony','yellow',1500);
+  }
 }
 
 async function footyLoadFromScan(idx){
