@@ -46,7 +46,143 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v7.12 (edge threshold consistency — 5% wszędzie)
+## Aktualna wersja: v8.6 (LIVE BETTING FIX — date param + score-aware Poisson)
+
+## v8.6 — Live betting completeness fix
+**Problem:** Predator pokazywał 0 live meczów mimo że bukmacher widział 4 trwające Europa League (Braga, Nottingham, Szachtar, Vallecano). Deep audit odsłonił 4 niezależne bugi.
+
+**Bug #1: `/todays-matches` bez `?date=` zwraca tylko upcoming next ~24h.** Zweryfikowane przez direct API curl: bare endpoint zwraca 38 matches z czego **0 live**, `?date=2026-04-30` zwraca 6 z czego **4 live**.
+
+**Bug #2: Window scan kończył się o północy Warsaw** (`endOfTodayUnix`). Przy 21:00+ wycinało wszystkie nocne mecze.
+
+**Bug #3: Pre-match Poisson na live meczu = phantom edges.** Mecz @ 2:2 w 38' liczył `pOver25 = 1-poissonCum(2.65, 2) = 0.49` z stale pre-match odd 2.30 → "edge +5.9%" — bzdura, Over 2.5 dawno hit.
+
+**Bug #4: Notification permission spam na `file://`** — Chrome resetuje uprawnienia per session.
+
+**Fix:**
+1. **3-day date span** w 4 lokalizacjach (`footyScanToday`, `dashboardLightRefresh`, `dashboardRefreshCard`, `_watchPollCache`): wczoraj+dziś+jutro UTC, dedupe by `match.id`. Z 1 do 3 calls per scan.
+2. **Window**: `[now-3h, now+12h]` (było: `[now-3h, endOfToday Warsaw]`).
+3. **Live-aware Poisson** w `footyComputeMatchCard`:
+   - `lamRem = totalLam * (90-minute)/90` dla live
+   - `goalsNeeded = floor(line) - currentGoals + 1`; jeśli `<=0` → market SKIP (linia hit, edge phantom)
+   - `pUnder` symetrycznie: skip gdy `currentGoals > maxGoals`
+   - BTTS gdy oba strzeliły → SKIP; gdy 1 strzelił → P(drugi strzeli w lamRem dla brakującego team)
+   - 1X2 dla live → SKIP całkowicie (PPG to pre-match metric, do live trzeba `Analizuj`)
+4. **Live-only placeholder card**: gdy live + wszystkie markety hit, zwraca card z `isLiveOnly:true` i `bestMarket.label='⚽ LIVE H:A min M — kliknij Analizuj'`. Pojawia się w `📡 Wszystkie live` tab. Render: badge `⚽ LIVE`, brak `@ 0.00`.
+5. **`requestNotifOnce()` helper**: skip na `file://`, localStorage flag `predator_notif_asked` (`Notification.permission==='default'` only, single-shot).
+6. **Tab `📡 Wszystkie live`** między LIVE i Dziś — wszystkie live niezależnie od edge.
+7. **Diagnostyka inline**: status bar `✓ Skan: API X → okno Y → cache Z · 🔴 N live · 💡 M z edge≥5%`. Empty path granularny: `K zakończone · L za stare · M za >12h`. Console dump LIGI z count per (debug user's chosen leagues).
+8. **Smart default tab**: gdy LIVE pusty, preferuj liveAll przed upcoming.
+
+**Tested:** 6/6 w `test/test_scan_pipeline.mjs` przeciw production workerowi:
+- T1: bare endpoint zwraca 0 live (regression check)
+- T2: `?date=` zwraca live (Europa League visible)
+- T3: 3-day span dedup ≥ today-only
+- T4: phantom edges eliminated (Over 2.5 SKIPPED dla score≥3)
+- T5: live-only placeholder cards produced (4/4 Europa League)
+- T6: pre-match nigdy nie misflagged jako live-only
+
+**Koszt API:** 1 → 3 calls per scan. Auto-refresh: 120/h → 360/h = 20% z 1800/h limitu Hobby. Per-card 🔄: 1 → 3 calls (sporadyczne). Net w aktywnym użyciu: ~410/h = 23%.
+
+**Run tests:** `node test/test_scan_pipeline.mjs` — wymaga sieci (uderza production FootyStats przez worker proxy).
+
+## v8.2 — Rate limit fix (smart subset refresh)
+**Problem:** Auto-skan co 30s × 50 lig = 6000 calls/h vs FootyStats Hobby limit 1800/h → 429 errors.
+
+**Chris's solution:** Auto-refresh tylko dla live + obstawione + watched. Pre-match dane cache'owane lokalnie.
+
+**Architektura:**
+- **Initial scan** = button "↻ Pełny skan" → 50 calls jednorazowo
+- **Auto-refresh (30s)** = `dashboardLightRefresh()` → **1 call** `/todays-matches`. Filter w cache: live + placed + watched. Pre-match nieruszane.
+- **Per-card 🔄** = 1 call `/todays-matches` (fallback `/league-matches` jeśli mecz tam nie ma)
+- **Net:** 170 calls/h vs 1800 limit = 9% użycia
+
+**429 handler:** Exponential backoff (60→120→240→300s cap). UI status: `📡 API: N/1800 (X%)` w dashboard header (szary/żółty/czerwony per usage). Cooldown badge `⏳ Rate limit — Xs` gdy throttled.
+
+
+
+## v8.1 — Full audit + integrity fix
+**Trigger:** Chris zażądał audytu "boil-the-ocean", po widzeniu sprzeczności (apka pokazywała "Graj +52%" gdy mecz realnie 4:0 a API mówi 0:0).
+
+**3-agent parallel audit znalazł 23 issue w 7 obszarach.** Wszystkie naprawione w jednej iteracji.
+
+**Krytyczne fixy:**
+1. **Stale flag** — guard `match.status==='in_play'` (no pre-match false positives), próg 0.70, propagacja przez `_currentMatchStale` + `clearMatchState()` + `clearAllOddsFields()` helpers przed każdym load.
+2. **Render sync** — `dashboardAnalyze` + `footyLoadFromScan` zawsze: clear → map → calc(). Hero rec onclick zawsze przekazuje `dec.pick` do `placeBet(verdict, pick)`. Live context blokuje render numbers gdy stale.
+3. **Edge thresholds** — `EDGE_VALUE=5, EDGE_STRONG=15, EDGE_NOTIFY=5` jako const (single source of truth).
+4. **Vision validation** — kursy 1.01-50 (nie 1-200). Notif TTL 30min, dedup per matchId.
+5. **Calibration sync** — `placeBet()` synchronizuje flag w `predator_placed_matches` automatycznie.
+6. **Race conditions** — `matchId` zamiast array index dla wszystkich dashboard akcji. Double-click guard 500ms. Stale = hard block na `placeBet()`.
+7. **Persistence** — `halfTimeScore`/`lastGoalMin` w `fieldIds` (persystowane).
+
+**Tested:** 12/12 scenariuszy passed (6 stale detection + 7 edge threshold).
+
+
+
+## Match Dashboard (v8.0)
+**Problem:** Predator był "single-match analysis tool" — Chris manualnie paste'ował każdy mecz. Niezgodne z naturą live betting (anomalie pojawiają się i znikają w 5-10 min).
+
+**Fix (v8.0):** Drop-and-go-play dashboard. Po otwarciu apki, NA GÓRZE (po risk bar) widzisz 3 zakładki:
+- **🔴 LIVE** — wszystkie mecze w trakcie z edge'em
+- **⏰ Wkrótce** — pre-match z value
+- **✅ Moje bety** — co już obstawiłeś
+
+Każda karta meczu compact: edge badge (STRONG/VALUE/SLIM, animacja pulse dla STRONG), LIVE badge (czerwona kropka pulse), pick suggestion + stake, akcje [Obstaw / Analizuj / +Watch / Ukryj].
+
+**Auto-refresh 30s** (toggle w header) + **browser notifications** dla nowych picków edge ≥+10%. Tab title flash "⚡ Predator: ...".
+
+**Bet flag persistent:** localStorage `predator_placed_matches` — checkbox "Obstawione" przy karcie, niezależny od calibration log. Reload zachowuje stan, karta przechodzi do "Moje bety" tab.
+
+**One-click Analizuj:** klik karta → `footyMapMatch` wypełnia wszystkie pola → auto-otwiera accordion `Pełne predykcje` → scroll do hero rec z verdict + Konkretne typy.
+
+**Accordion default state:** `Wklej dane manual paste` i `Pełne predykcje` zwinięte by default — Chris używa dashboard, manual paste nadal dostępny przez click.
+
+**Reused infra:** `footyScanToday`, `footyMapMatch`, `isLiveMatch`, `addToWatchList`, `notifyWatch`, `placeBet`, calibration log — wszystkie bez zmian, dashboard to dodatkowa warstwa.
+
+
+
+## Long Shot panel (v7.13)
+**Problem:** Predator miał tylko jedno pole `oddOver` / `oddUnder` z dynamicznym progiem (`nextLine = currentGoals<2?2.5:...:6.5`). Chris wygrał Over 6.5 @ 4.0 w meczu 7-goli (Bhayangkara 3-4 Persib) ale apka nie pokazała mu tego edge bo:
+1. Pole `oddOver` było uznane za "Over 2.5" → Chris wpisywał kurs Over 2.5 zamiast Over 6.5
+2. Bukmacher pokazuje wszystkie linie (Over 0.5/1.5/2.5/3.5/4.5/5.5/6.5) jednocześnie — a Predator widział tylko jedną
+
+**Fix (v7.13):** Multi-line edge panel "Wszystkie linie Over/Under (long-shot panel)":
+- 5 nowych par pól: `oddOver15`/`oddUnder15`, `oddOver35`/`oddUnder35`, `oddOver45`/`oddUnder45`, `oddOver55`/`oddUnder55`, `oddOver65`/`oddUnder65`
+- HTML: collapsible `<details>` panel pod głównym Edge% grid (zwinięty domyślnie)
+- `renderOverUnderLines(totalLambda, currentGoals)` w calc() — dla każdego progu liczy edge%, koloruje per polarity (positive/warning/negative), pokazuje model probability suffix
+- Vision parser: prompt update + example JSON wyciąga WSZYSTKIE progi z paste'a (BC.game pokazuje 7 wierszy → Vision wypełnia 14 pól)
+- `rankPicks` Specific Picks: pętla po extraThresholds [1.5,3.5,4.5,5.5,6.5]. Wykrywa `isHighVelocity = velMult≥1.2 || totalLambda≥3.5` — wtedy reasonText ma tag `🚀 long-shot w wysokokalorycznym meczu`
+- `fieldIds` dodaje 10 nowych pól do auto-save mechanism
+
+**Math:** dla progu t.5 z currentGoals scored:
+- Jeśli `currentGoals >= ceil(t)` → pOver=1 (już wpadło)
+- Inaczej `pOver = 1 - poissonCum(totalLambdaRem, floor(t - currentGoals))`
+
+**Use case Bhayangkara replay:**
+- @ min 87, score 2:3, totalLambdaRem ≈ 0.10 → pOver65 = 0.47% → edge -24.5% (model słusznie odrzuca, mimo że wygrałeś — to wariancja)
+- @ min 60, score 2:3, totalLambdaRem ≈ 0.85 (z velocity boost) → pOver65 = 21% → edge -4% (znacznie ciekawszy moment wejścia)
+- Predator pokazałby long-shot tag i Chris widziałby ten edge wcześniej
+
+
+
+## Match State Rules (v7.12 — heurystyki Chris'a)
+4 reguły kontekstowe modyfikujące lambdy lookalike velocity/match-tags. Insertion w `calc()` ~linia 1748 (po tags, przed totalLambda). Toggleable w Settings → "Moje reguły" (localStorage `predator_rule_settings`, default ON).
+
+| # | Trigger | ×Mult | Reason |
+|---|---------|-------|--------|
+| **R1** Późne 0:0 | min≥60 + 0:0 + liveXG_total<1.0 (lub brak live) | ×0.85 | Defensywny mecz, "0:0 zostaje 0:0" |
+| **R2** Pierwszy gol w 2H | totalGoals=1 + lastGoalMinute≥50 + świeżo (≤10 min) | ×1.12 | Druga drużyna goni, kontrataki, mecz się otwiera |
+| **R3** 1H deflacja | half1Goals≥3 + min≥45, **stack z velocity** | ×0.85 | "Drużyny już strzeliły, w 2H zwykle 1 gol max" |
+| **R4** Późny spark | min≥75 + score change w 5 min + remis/1g różnicy | ×1.25 | "Otwarty mecz na hura", druga musi gonić |
+
+R1 vs R2 mutual exclusive (różne `totalGoals`). R3 stack z velocity = łagodzi (×1.30→×0.85 = net ×1.105).
+
+**State extraction:**
+- Auto z FootyStats API (`footyMapMatch`) → `window._lastGoalMinute`, `window._half1HomeGoals`, `window._half1AwayGoals` z `match.homeGoals/awayGoals` arrays
+- Manual fallback: pola UI `halfTimeScore` (1:1 format) + `lastGoalMin` pod score-bar
+- Score change: delta `_lastPredictions.homeScore` vs current
+
+**UI:** chipsy w hero rec (positive-tint dla boost, negative-tint dla damp) z tooltipem reason. Calibration log per bet ma `appliedRules:['r1','r3']` — w przyszłości tunować progi real performance data.
 
 ## Goal Velocity (v7.1)
 **Problem:** PSG-Bayern @ 5:3 min 66 — model dawał "52% any goal" oparty o sezonowy xG. Mecz tymczasem był szaleńczy (8 goli vs ~2 oczekiwanych). Bayern strzelił → 5:4. Model za bardzo się trzymał baseline'u.

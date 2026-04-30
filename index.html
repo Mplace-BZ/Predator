@@ -371,6 +371,7 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .match-card-body{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;}
 .match-card.stale-data .match-card-body{padding-top:10px;}
 .badge-edge.edge-stale{background:rgba(255,179,71,0.15);border:1px solid var(--warning);color:var(--warning);}
+.badge-edge.edge-live-info{background:rgba(239,68,68,0.12);border:1px solid var(--negative);color:var(--negative);animation:edge-pulse 1.6s ease-in-out infinite;}
 
 @keyframes edge-pulse{
   0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.5);}
@@ -811,7 +812,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.5</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.6</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1695,7 +1696,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.5
+    Powered by MPlace · Match Predictor v8.6
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4842,14 +4843,16 @@ async function pollWatchList(force){
   if(fresh && !force){ data=cache.data; }
   else {
     try{
-      // 2 calls — date param zwraca live matches (bez param API zwraca tylko upcoming)
+      // 3 calls — wczoraj+dziś+jutro UTC (date param zwraca live, yesterday łapie nocne)
       const todayUTC=new Date().toISOString().slice(0,10);
       const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-      const [rT,rTm]=await Promise.all([
+      const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const [rY,rT,rTm]=await Promise.all([
+        footyFetch('todays-matches',{date:yesterdayUTC}),
         footyFetch('todays-matches',{date:todayUTC}),
         footyFetch('todays-matches',{date:tomorrowUTC})
       ]);
-      data=[...(rT.data||[]),...(rTm.data||[])];
+      data=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
       window._watchPollCache={data,ts:now};
     }catch(e){
       // Network failed — keep cache or skip silently
@@ -5274,18 +5277,62 @@ function clearMatchState(){
 function footyComputeMatchCard(match,homeT,awayT){
   const sH=(homeT&&homeT.stats)||{};
   const sA=(awayT&&awayT.stats)||{};
-  // Quick xG model
+  // Quick xG model — sezonowy
   const hXG=sH.xg_for_avg_home||sH.xg_for_avg_overall||0;
   const aXG=sA.xg_for_avg_away||sA.xg_for_avg_overall||0;
   if(hXG+aXG===0) return null;
   const totalLam=hXG+aXG;
-  // pOver25 via Poisson (uses existing helpers)
-  const pOver25=1-poissonCum(totalLam,2);
-  const pOver15=1-poissonCum(totalLam,1);
-  // BTTS: blend Poisson with FootyStats season % (more reliable for high-scoring leagues)
-  const pBTTSPoisson=(1-poisson(hXG,0))*(1-poisson(aXG,0));
-  const bttsHistAvg=((sH.seasonBTTSPercentage_home||0)+(sA.seasonBTTSPercentage_away||0))/200;
-  const pBTTS=bttsHistAvg>0?(bttsHistAvg*0.7+pBTTSPoisson*0.3):pBTTSPoisson;
+
+  // ── LIVE-AWARE adjustments (v8.6) ──
+  // Pre-match Poisson na live meczu = bug (mecz @ 2:2 w 38' nadal liczył pOver25 jak full 90min).
+  // Dla live: skaluj lambda przez (90-minute)/90 i sprawdź ile goli już padło.
+  const homeG=(match.homeGoals||[]).length;
+  const awayG=(match.awayGoals||[]).length;
+  const currentGoals=homeG+awayG;
+  const now=Math.floor(Date.now()/1000);
+  const isLive=match.status==='in_play'||(match.status!=='complete'&&match.date_unix&&match.date_unix<=now&&match.date_unix>now-8100);
+  const minute=isLive&&match.date_unix?Math.min(90,Math.max(1,Math.floor((now-match.date_unix)/60))):0;
+  const minutesRem=isLive?Math.max(0,90-minute):90;
+  const lamRem=totalLam*(minutesRem/90);
+  const hLamRem=hXG*(minutesRem/90);
+  const aLamRem=aXG*(minutesRem/90);
+
+  // Helper: pOver dla progu line.5 z uwzględnieniem current state. Zwraca null gdy market już rozstrzygnięty
+  // (Over hit albo Under przegrał) — caller pomija żeby uniknąć phantom edges od stale pre-match odds.
+  function pOver(line){
+    const goalsNeeded=Math.floor(line)-currentGoals+1;
+    if(goalsNeeded<=0) return null;  // already hit — pre-match odd jest stale, edge phantom
+    if(lamRem<=0.001) return 0;
+    return 1 - poissonCum(lamRem, goalsNeeded-1);
+  }
+  function pUnder(line){
+    const maxGoals=Math.floor(line);
+    if(currentGoals>maxGoals) return null;  // already lost (over hit)
+    const remBudget=maxGoals-currentGoals;
+    if(lamRem<=0.001) return 1.0;  // brak czasu = under wins
+    return poissonCum(lamRem, remBudget);
+  }
+  const pOver25=pOver(2.5);
+  const pUnder25=pUnder(2.5);
+  const pOver15=pOver(1.5);
+
+  // BTTS: zwraca null jeśli już rozstrzygnięte (oba strzeliły = pre-match odd stale)
+  let pBTTS;
+  if(homeG>=1 && awayG>=1){
+    pBTTS=null;  // already settled — pre-match odd stale
+  } else if(homeG>=1){
+    pBTTS=isLive?(1-poisson(aLamRem,0)):(1-poisson(aXG,0));
+  } else if(awayG>=1){
+    pBTTS=isLive?(1-poisson(hLamRem,0)):(1-poisson(hXG,0));
+  } else {
+    // Żaden nie strzelił — Poisson na lambda (live: rem; pre-match: full)
+    const hLam=isLive?hLamRem:hXG;
+    const aLam=isLive?aLamRem:aXG;
+    const pBTTSPoisson=(1-poisson(hLam,0))*(1-poisson(aLam,0));
+    const bttsHistAvg=((sH.seasonBTTSPercentage_home||0)+(sA.seasonBTTSPercentage_away||0))/200;
+    // Hist blend tylko dla pre-match (sezonowy avg nie pasuje do live state)
+    pBTTS=(!isLive && bttsHistAvg>0)?(bttsHistAvg*0.7+pBTTSPoisson*0.3):pBTTSPoisson;
+  }
 
   // ── STALE DATA DETECTION (v8.4.2 — aggressive) ──
   // Wykrywa gdy API zwraca stary score (0:0) ale bukmacher widzi inne realia (live odds).
@@ -5307,38 +5354,42 @@ function footyComputeMatchCard(match,homeT,awayT){
     return true;
   }
 
-  // Goals — pick relevant line based on totalLam (auto-tier)
-  if(match.odds_ft_over25 && isMarketSane(pOver25,match.odds_ft_over25,'Over 2.5')){
+  // Goals — skip jeśli pOver/pUnder===null (rozstrzygnięte)
+  if(match.odds_ft_over25 && pOver25!==null && isMarketSane(pOver25,match.odds_ft_over25)){
     const edge=(pOver25-1/match.odds_ft_over25)*100;
     if(pOver25>=0.40&&edge>=2) markets.push({label:'Over 2.5',edge,odd:match.odds_ft_over25,modelP:pOver25,group:'goals'});
   }
-  if(match.odds_ft_under25 && isMarketSane(1-pOver25,match.odds_ft_under25,'Under 2.5')){
-    const pUnder=1-pOver25;
-    const edge=(pUnder-1/match.odds_ft_under25)*100;
-    if(pUnder>=0.40&&edge>=2) markets.push({label:'Under 2.5',edge,odd:match.odds_ft_under25,modelP:pUnder,group:'goals'});
+  if(match.odds_ft_under25 && pUnder25!==null && isMarketSane(pUnder25,match.odds_ft_under25)){
+    const edge=(pUnder25-1/match.odds_ft_under25)*100;
+    if(pUnder25>=0.40&&edge>=2) markets.push({label:'Under 2.5',edge,odd:match.odds_ft_under25,modelP:pUnder25,group:'goals'});
   }
-  if(match.odds_btts_yes && pBTTS>=0.40 && isMarketSane(pBTTS,match.odds_btts_yes,'BTTS')){
+  if(match.odds_btts_yes && pBTTS!==null && pBTTS>=0.40 && isMarketSane(pBTTS,match.odds_btts_yes)){
     const edge=(pBTTS-1/match.odds_btts_yes)*100;
     if(edge>=2) markets.push({label:'BTTS',edge,odd:match.odds_btts_yes,modelP:pBTTS,group:'btts'});
   }
-  // 1X2 — basic from PPG
-  const hPPG=sH.seasonPPG_home||1.5;
-  const aPPG=sA.seasonPPG_away||1.5;
-  const ppgTot=hPPG+aPPG+1.5;
-  const pH=hPPG/ppgTot,pA=aPPG/ppgTot,pD=1.5/ppgTot;
-  if(match.odds_ft_1 && isMarketSane(pH,match.odds_ft_1,'Home Win')){
-    const edge=(pH-1/match.odds_ft_1)*100;
-    if(pH>=0.40&&edge>=3) markets.push({label:'Home Win',edge,odd:match.odds_ft_1,modelP:pH,group:'1x2'});
-  }
-  if(match.odds_ft_2 && isMarketSane(pA,match.odds_ft_2,'Away Win')){
-    const edge=(pA-1/match.odds_ft_2)*100;
-    if(pA>=0.40&&edge>=3) markets.push({label:'Away Win',edge,odd:match.odds_ft_2,modelP:pA,group:'1x2'});
+  // 1X2 — PPG split. Skip dla live matches (PPG to pre-match metric, dla live trzeba live model — Analizuj).
+  if(!isLive){
+    const hPPG=sH.seasonPPG_home||1.5;
+    const aPPG=sA.seasonPPG_away||1.5;
+    const ppgTot=hPPG+aPPG+1.5;
+    const pH=hPPG/ppgTot,pA=aPPG/ppgTot;
+    if(match.odds_ft_1 && isMarketSane(pH,match.odds_ft_1)){
+      const edge=(pH-1/match.odds_ft_1)*100;
+      if(pH>=0.40&&edge>=3) markets.push({label:'Home Win',edge,odd:match.odds_ft_1,modelP:pH,group:'1x2'});
+    }
+    if(match.odds_ft_2 && isMarketSane(pA,match.odds_ft_2)){
+      const edge=(pA-1/match.odds_ft_2)*100;
+      if(pA>=0.40&&edge>=3) markets.push({label:'Away Win',edge,odd:match.odds_ft_2,modelP:pA,group:'1x2'});
+    }
   }
 
   if(!markets.length){
-    // No sane markets — but if stale data detected, return card with warning so user can refresh manually
     if(staleData){
       return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚠ Sprawdź wynik',odd:0,modelP:0,group:'stale'},allMarkets:[],totalLam,staleData:true,staleReason};
+    }
+    // LIVE bez aktywnych rynków (wszystkie linie hit) — pokaż jako placeholder w liveAll
+    if(isLive){
+      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚽ LIVE '+homeG+':'+awayG+' min '+minute+' — kliknij Analizuj',odd:0,modelP:0,group:'live-info'},allMarkets:[],totalLam,staleData:false,staleReason:'',isLiveOnly:true};
     }
     return null;
   }
@@ -5378,22 +5429,24 @@ async function footyScanToday(){
   const list=$('scanTodayList');
   const btn=$('scanTodayBtn');
   if(btn) btn.disabled=true;
-  if(out){ out.style.display='block'; out.style.color='var(--text-dim)'; out.textContent='⏳ 2 calls do /todays-matches (dziś + jutro UTC)…'; }
+  if(out){ out.style.display='block'; out.style.color='var(--text-dim)'; out.textContent='⏳ 3 calls do /todays-matches (wczoraj+dziś+jutro UTC)…'; }
   if(list) list.innerHTML='';
   try{
-    // 1. TWO calls → /todays-matches?date=YYYY-MM-DD dla dzisiaj UTC + jutra UTC
-    // Bez date param API zwraca tylko upcoming next 24h — pomija live matches!
-    // Z date param zwraca wszystkie mecze tego dnia (past/in-play/future).
+    // 1. THREE calls → /todays-matches?date=YYYY-MM-DD dla wczoraj+dziś+jutro UTC.
+    // Bez date param API zwraca tylko upcoming next 24h — pomija live matches.
+    // Yesterday łapie mecze które startowały po północy UTC i nadal trwają (Brazil/Asia).
+    // Today + tomorrow łapią aktualne live + nadchodzące.
     const todayUTC=new Date().toISOString().slice(0,10);
     const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const [rToday,rTomorrow]=await Promise.all([
+    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const [rY,rT,rTm]=await Promise.all([
+      footyFetch('todays-matches',{date:yesterdayUTC}),
       footyFetch('todays-matches',{date:todayUTC}),
       footyFetch('todays-matches',{date:tomorrowUTC})
     ]);
-    // Merge + dedupe by match id (mecze w nocy mogą być w obu odpowiedziach)
-    const merged=[...(rToday.data||[]),...(rTomorrow.data||[])];
+    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
     const allMatches=Array.from(new Map(merged.map(m=>[m.id,m])).values());
-    console.log('[scan] today UTC ('+todayUTC+'): '+(rToday.data||[]).length+' matches · tomorrow UTC ('+tomorrowUTC+'): '+(rTomorrow.data||[]).length+' matches · dedup: '+allMatches.length);
+    console.log('[scan] yesterday UTC ('+yesterdayUTC+'): '+(rY.data||[]).length+' · today ('+todayUTC+'): '+(rT.data||[]).length+' · tomorrow ('+tomorrowUTC+'): '+(rTm.data||[]).length+' · dedup: '+allMatches.length);
     const dashStatus=document.getElementById('dashboardStatus');
     if(dashStatus) dashStatus.textContent='⏳ Pobrano '+allMatches.length+' meczów (2 calls) · liczę edge…';
     if(out) out.textContent='⏳ Pobrano '+allMatches.length+' meczów · liczę edge…';
@@ -5718,18 +5771,25 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
     ?'<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>'
     :'';
 
-  // Pick text — różne dla normalnych picks vs stale
-  const pickHtml=card.staleData
-    ?'<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>'
-    :'🎯 <span class="pick-market">'+card.bestMarket.label+' @ '+card.bestMarket.odd.toFixed(2)+'</span>'
+  // Pick text — różne wersje per stan: stale / live-info / normal
+  let pickHtml;
+  if(card.staleData){
+    pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>';
+  } else if(card.isLiveOnly){
+    pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
+      +' <span style="color:var(--text-faint);">· wszystkie standardowe linie hit, użyj live edge calc</span>';
+  } else {
+    pickHtml='🎯 <span class="pick-market">'+card.bestMarket.label+' @ '+card.bestMarket.odd.toFixed(2)+'</span>'
       +' · model '+(card.bestMarket.modelP*100).toFixed(0)+'%'
       +(payout?' · <span class="pick-stake">'+stakeSuggest+'zł → +'+payout+'zł</span>':'')
       +(card.allMarkets.length>1?' · <span style="color:var(--text-faint);">+'+(card.allMarkets.length-1)+' rynków</span>':'');
+  }
 
-  // Edge badge — pokazuje WARNING dla stale, nie STRONG
-  const edgeBadge=card.staleData
-    ?'<span class="badge-edge edge-stale">⚠ STALE</span>'
-    :dashboardEdgeBadge(card.bestEdge);
+  // Edge badge — STALE / LIVE-info / normalny
+  let edgeBadge;
+  if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
+  else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
+  else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
   // Disable Obstaw + Analizuj dla stale data
   const placedDisabled=card.staleData?'disabled':'';
@@ -5775,14 +5835,16 @@ async function dashboardRefreshCard(matchIdOrIdx){
   const m=card.match;
   qdToast('🔄 Odświeżam '+m.home_name+'…','green',1500);
   try{
-    // 2 calls → /todays-matches?date dla dziś+jutro UTC (bez date param API pomija live!)
+    // 3 calls → wczoraj+dziś+jutro UTC (bez date param API pomija live!)
     const todayUTC=new Date().toISOString().slice(0,10);
     const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const [rT,rTm]=await Promise.all([
+    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const [rY,rT,rTm]=await Promise.all([
+      footyFetch('todays-matches',{date:yesterdayUTC}),
       footyFetch('todays-matches',{date:todayUTC}),
       footyFetch('todays-matches',{date:tomorrowUTC})
     ]);
-    const merged=[...(rT.data||[]),...(rTm.data||[])];
+    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
     const fresh=merged.find(x=>String(x.id)===String(m.id));
     if(!fresh){
       // Match not in todays-matches (zakończony lub jutro) — fallback do league-matches force fetch
@@ -5925,11 +5987,16 @@ function renderDashboardMatches(){
   document.getElementById('dashCountUpcoming').textContent=upcomingCards.length;
   document.getElementById('dashCountPlaced').textContent=placedCards.length;
 
-  // Smart default: gdy LIVE pusty ale Dziś ma mecze, automatycznie przełącz
+  // Smart default: LIVE pusty → preferuj liveAll (raw live), potem upcoming
   let effectiveTab=activeTab;
-  if(activeTab==='live' && liveCards.length===0 && upcomingCards.length>0){
-    effectiveTab='upcoming';
-    document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='upcoming'));
+  if(activeTab==='live' && liveCards.length===0){
+    if(liveAllCards.length>0){
+      effectiveTab='liveAll';
+      document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='liveAll'));
+    } else if(upcomingCards.length>0){
+      effectiveTab='upcoming';
+      document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='upcoming'));
+    }
   }
 
   let bucket;
@@ -6064,14 +6131,16 @@ async function dashboardLightRefresh(){
     return;
   }
   try{
-    // 2 calls → /todays-matches?date=YYYY-MM-DD dla dziś + jutro UTC (date param zwraca past+live+future)
+    // 3 calls → wczoraj+dziś+jutro UTC (date param zwraca past+live+future, yesterday łapie nocne)
     const todayUTC=new Date().toISOString().slice(0,10);
     const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const [rT,rTm]=await Promise.all([
+    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    const [rY,rT,rTm]=await Promise.all([
+      footyFetch('todays-matches',{date:yesterdayUTC}),
       footyFetch('todays-matches',{date:todayUTC}),
       footyFetch('todays-matches',{date:tomorrowUTC})
     ]);
-    const merged=[...(rT.data||[]),...(rTm.data||[])];
+    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
     const todaysMap=new Map(merged.map(m=>[String(m.id),m]));
     let updated=0;
     cache.forEach(c=>{
