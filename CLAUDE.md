@@ -46,7 +46,42 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v8.7 (HONEST LIVE DATA — Hobby tier nie ma live tracking)
+## Aktualna wersja: v8.7.4 (PHANTOM UNDER EDGE FIX — early guard dla apiLiveUnreliable)
+
+## v8.7.4 — Phantom Under edge eliminated (regression od v8.7.3)
+**Trigger:** Chris zobaczył 4 Europa League/Conference karty z `STRONG +49% Under 2.5` przy score `0:0` i minucie `~111min/~117min`. Realne wyniki u bukmachera: Braga–Freiburg 1:1 90+1, Nottingham–Villa 1:0 90+5, Szachtar–Palace 1:3 90+4 (Under 2.5 PRZEGRANE!), Vallecano–Strasbourg 1:0 87'.
+
+**Root cause:** v8.7.3 świadomie zdjął blok markets dla `apiLiveUnreliable` cards (zamiast `?:?` zwracał real markets+edges z dyskretnym bannerem). Ale matematyka modelu liczyła Under na frozen 0:0:
+- `minute = min(90, 117) = 90` (cap)
+- `minutesRem = max(0, 90-90) = 0`
+- `lamRem = totalLam × 0/90 = 0`
+- `pUnder(2.5) = poissonCum(0, 2) = 1.0` (zero goli oczekiwane → Under 2.5 100% pewne)
+- `edge = 1.0 - 1/1.95 = +49%` → STRONG
+
+To NIE było "model się myli" — model dostawał frozen pre-match snapshot jako live state i robił matematycznie poprawną odpowiedź na nonsensowne pytanie. **Każdy stale-live mecz dawał ten sam phantom +49% Under** (lub Over jeśli kursy odwrotne). 3/4 trafiło przez czysty łut szczęścia, 4. zaliczyło `1:3` → "STRONG Under" przegrane.
+
+**Fix (v8.7.4) — early return guard w `footyComputeMatchCard`:**
+1. **EARLY GUARD przed any market computation:**
+   ```js
+   const apiLiveUnreliableEarly = isLive && match.status==='incomplete'
+     && match.date_unix && match.date_unix < now-300;
+   if(apiLiveUnreliableEarly) return placeholder card;
+   ```
+   Skupia się na ZASADZIE: jeśli nie ufamy danym, NIE liczymy markets w ogóle. Zero phantom edges, niezależnie od kombinacji kursów / score / minute.
+2. **Score render:** `card.apiLiveUnreliable` → `?:?` zamiast frozen `0:0`. Honest disclosure (revert v8.7.3 polityki).
+3. **Minute badge cap:** `elapsedMin >= 90 → "LIVE 90+"` zamiast `"LIVE ~111min"`. Tooltip wyjaśnia że to estymata od scheduled kickoff.
+4. **Edge badge:** `apiLiveUnreliable` → `🔴 LIVE` (czerwona pulse, nie green `⚽ LIVE`).
+5. **Pick text:** placeholder label `⚽ LIVE 90+ — sprawdź wynik u bukmachera, kliknij Analizuj`.
+6. **Banner upgrade:** z miękkiego info-tone na warning-tone z bold "Analizuj".
+
+**Filozofia v8.7.4 = wzmocnienie v8.7:** "Predator nie udaje że ma live data której nie ma." v8.7 dotyczyło tylko score, v8.7.4 rozszerzył to na CAŁY market layer. Lepiej zero rekomendacji niż phantom STRONG +49%.
+
+**Tested:** 20/20 w `test/test_scan_pipeline.mjs`:
+- T10 (real production): Rayo Vallecano @ 122min od kickoff → placeholder, brak markets ✓
+- T11 (synthetic deterministic): Braga 0:0 @ 117min → `apiLiveUnreliable:true, isLiveOnly:true, markets.length===0, bestEdge===0, label includes "Analizuj"` ✓
+- Plus regression: status='in_play' → markets normalne; fresh incomplete (kickoff <5min) → markets normalne ✓
+
+**Verified:** `/match?match_id=8516826` (Braga vs Freiburg) zwraca **identyczne** stale data co `/todays-matches` — `homeGoals:[], status:incomplete`. **FootyStats Hobby tier NIE MA żadnego endpointa z live score**, niezależnie od endpoint shape. Honest mode = jedyna sensowna polityka.
 
 ## v8.7 — Honest live data disclosure
 **Discovery:** v8.6 zaczęło wyciągać Europa League live matches, ale pokazywało 2:2 min 66 dla wszystkich 4 — a faktycznie były 1:1 47', 0:0 51', 1:1 50', 0:0 (przerwa). Direct API curl ujawnił:

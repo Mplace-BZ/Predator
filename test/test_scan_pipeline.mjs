@@ -54,7 +54,10 @@ function poisson(lam,k){ return Math.exp(-lam)*Math.pow(lam,k)/factorial(k); }
 function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
 function poissonCum(lam,k){ let s=0; for(let i=0;i<=k;i++) s+=poisson(lam,i); return s; }
 
-// ── REPLIKACJA logiki footyComputeMatchCard z index.html v8.7.2 ──
+// ── REPLIKACJA logiki footyComputeMatchCard z index.html v8.7.4 ──
+// v8.7.4: EARLY GUARD — apiLiveUnreliable (status=incomplete + kickoff>5min ago) zwraca
+// placeholder PRZED computowaniem markets. Eliminuje phantom Under edges bo lamRem=0
+// na frozen score 0:0 dawało pUnder=1.0 → STRONG +49% na fałszywych danych.
 function computeMatchCard(match,homeStats,awayStats){
   normalizeMatch(match);  // homeGoals/awayGoals: JSON string → array
   const sH=homeStats||{}, sA=awayStats||{};
@@ -68,6 +71,19 @@ function computeMatchCard(match,homeStats,awayStats){
   const currentGoals=homeG+awayG;
   const isLive=isLiveMatch(match);
   const now=Math.floor(Date.now()/1000);
+
+  // v8.7.4 EARLY GUARD: API stale-live → placeholder, zero markets
+  const apiLiveUnreliable = isLive && match.status==='incomplete' && match.date_unix && match.date_unix<now-300;
+  if(apiLiveUnreliable){
+    const elapsedMin=Math.floor((now-match.date_unix)/60);
+    const minDisp=elapsedMin>=90?'90+':('~'+elapsedMin+'min');
+    return {
+      match,bestEdge:0,
+      bestMarket:{label:'⚽ LIVE '+minDisp+' — sprawdź wynik u bukmachera, kliknij Analizuj'},
+      markets:[],isLiveOnly:true,apiLiveUnreliable:true
+    };
+  }
+
   const minute=isLive&&match.date_unix?Math.min(90,Math.max(1,Math.floor((now-match.date_unix)/60))):0;
   const minutesRem=isLive?Math.max(0,90-minute):90;
   const lamRem=totalLam*(minutesRem/90);
@@ -364,10 +380,100 @@ async function test_stale_live_detection(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TEST 10 (v8.7.4): regression dla phantom Under edge w apiLiveUnreliable
+// Bug pre-v8.7.4: status='incomplete' + kickoff>105min ago → minute capped 90 → minutesRem=0
+// → lamRem=0 → pUnder(2.5)=1.0 → "STRONG +49%" na frozen 0:0 score.
+// Fix: early return placeholder, zero markets.
+// ──────────────────────────────────────────────────────────────────────
+async function test_no_phantom_under_in_stale_live(){
+  header('TEST 10: phantom Under edge w apiLiveUnreliable (v8.7.4 regression)');
+  const todayUTC=new Date().toISOString().slice(0,10);
+  const r=await fetchFooty('todays-matches',{date:todayUTC});
+  const all=(r.data||[]).map(normalizeMatch);
+  const stale=all.filter(m=>isLiveMatch(m)&&isStaleLiveData(m));
+  if(stale.length===0){ console.log('  (brak stale-live na żywo — pomijam)'); return; }
+  let phantom=0, placeholders=0;
+  for(const m of stale.slice(0,5)){
+    const [hT,aT]=await Promise.all([
+      fetchFooty('team',{team_id:m.homeID}),
+      fetchFooty('team',{team_id:m.awayID}),
+    ]);
+    const hStats=hT.data?.[0]?.stats, aStats=aT.data?.[0]?.stats;
+    if(!hStats||!aStats) continue;
+    const card=computeMatchCard(m,hStats,aStats);
+    if(!card){ console.log('  · '+m.home_name+' vs '+m.away_name+' → null (no xG)'); continue; }
+    const elapsed=Math.floor((Date.now()/1000-m.date_unix)/60);
+    if(card.apiLiveUnreliable){
+      placeholders++;
+      console.log('  ✓ '+m.home_name+' vs '+m.away_name+' ('+elapsed+'min od kickoff) → placeholder, brak markets');
+    } else if(card.markets && card.markets.find(mk=>mk.label==='Under 2.5'&&mk.edge>20)){
+      phantom++;
+      const u=card.markets.find(mk=>mk.label==='Under 2.5');
+      console.log('  ✗ '+m.home_name+' vs '+m.away_name+' → PHANTOM Under 2.5 edge +'+u.edge.toFixed(1)+'% na stale data!');
+    } else {
+      console.log('  · '+m.home_name+' vs '+m.away_name+' → '+(card.bestMarket?.label||'no pick'));
+    }
+  }
+  console.log('  Result: '+placeholders+' placeholder · '+phantom+' phantom');
+  assert(phantom===0,'żaden stale-live mecz nie produkuje phantom Under edge');
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// TEST 11 (v8.7.4): unit test phantom Under z syntetycznymi danymi
+// Gwarantuje że nawet gdy production ma 0 stale-live, regression jest pokryty.
+// ──────────────────────────────────────────────────────────────────────
+async function test_phantom_under_synthetic(){
+  header('TEST 11: synthetic phantom Under regression (deterministic)');
+  const now=Math.floor(Date.now()/1000);
+  // Symulacja meczu Europa League: kickoff 117min temu, status=incomplete, score 0:0 (frozen)
+  // przy realnym 1:1 90+1 u bukmachera. Przed v8.7.4 to dawało STRONG +49% Under 2.5.
+  const fakeMatch={
+    id:99999,
+    home_name:'Sporting Braga',away_name:'Freiburg',
+    homeID:1,awayID:2,
+    homeGoals:'[]',awayGoals:'[]',  // JSON string jak FootyStats zwraca
+    status:'incomplete',
+    date_unix:now-117*60,  // 117min ago = stale-live
+    odds_ft_over25:1.95,odds_ft_under25:1.95,
+    odds_btts_yes:2.10,
+    odds_ft_1:2.20,odds_ft_x:3.10,odds_ft_2:3.40
+  };
+  const fakeStats={xg_for_avg_overall:1.4,xg_for_avg_home:1.5,xg_for_avg_away:1.3,seasonPPG_home:1.6,seasonPPG_away:1.4,seasonBTTSPercentage_home:55,seasonBTTSPercentage_away:50};
+  const card=computeMatchCard(fakeMatch,fakeStats,fakeStats);
+  console.log('  Match: Braga 0:0 Freiburg, kickoff 117min ago, status=incomplete');
+  console.log('  Card returned:',card?{
+    apiLiveUnreliable:card.apiLiveUnreliable,
+    isLiveOnly:card.isLiveOnly,
+    bestEdge:card.bestEdge,
+    bestMarket:card.bestMarket?.label,
+    marketCount:card.markets?.length||0
+  }:null);
+  assert(card!==null,'card jest zwrócony (nie null)');
+  assert(card&&card.apiLiveUnreliable===true,'apiLiveUnreliable=true (FootyStats Hobby flaga)');
+  assert(card&&card.isLiveOnly===true,'isLiveOnly=true (placeholder card)');
+  assert(card&&(card.markets||[]).length===0,'zero markets — żaden phantom Under/Over/BTTS');
+  assert(card&&card.bestEdge===0,'bestEdge=0 (no recommendation)');
+  assert(card&&card.bestMarket.label.includes('LIVE')&&card.bestMarket.label.includes('Analizuj'),
+    'bestMarket label kieruje user\'a do Analizuj');
+
+  // Wariant 2: status='in_play' (trustworthy live) — markets POWINNY działać normalnie
+  const trustworthyMatch={...fakeMatch,id:99998,status:'in_play',homeGoals:'[]',awayGoals:'[]',date_unix:now-30*60};
+  const card2=computeMatchCard(trustworthyMatch,fakeStats,fakeStats);
+  console.log('  Trustworthy live (status=in_play, min 30): apiLiveUnreliable='+card2?.apiLiveUnreliable);
+  assert(card2 && !card2.apiLiveUnreliable, 'status=in_play → apiLiveUnreliable=false (markets normalne)');
+
+  // Wariant 3: status='incomplete' + kickoff 2min ago — fresh, też trust
+  const freshMatch={...fakeMatch,id:99997,status:'incomplete',homeGoals:'[]',awayGoals:'[]',date_unix:now-120};
+  const card3=computeMatchCard(freshMatch,fakeStats,fakeStats);
+  console.log('  Fresh incomplete (kickoff 2min): apiLiveUnreliable='+card3?.apiLiveUnreliable);
+  assert(card3 && !card3.apiLiveUnreliable, 'fresh incomplete (kickoff <5min ago) → apiLiveUnreliable=false');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────────────────────────────
 (async()=>{
-  console.log('Predator scan pipeline tests v8.7 · '+new Date().toLocaleString('pl'));
+  console.log('Predator scan pipeline tests v8.7.4 · '+new Date().toLocaleString('pl'));
   try{
     await test_bare_todays_matches();
     await test_dated();
@@ -378,6 +484,8 @@ async function test_stale_live_detection(){
     await test_stale_live_detection();
     await test_homegoals_string_parsing();
     await test_api_returns_string();
+    await test_no_phantom_under_in_stale_live();
+    await test_phantom_under_synthetic();
   }catch(e){
     console.error('TEST CRASH:',e);
     failed++;
