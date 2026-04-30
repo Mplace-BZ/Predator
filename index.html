@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.8</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1697,7 +1697,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.7.4
+    Powered by MPlace · Match Predictor v8.8
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -1705,6 +1705,12 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 
 <script>
 // ── GLOBAL CONSTS — declared first to avoid TDZ ──
+// v8.8: api-football PRO ($19/m, 7500/day, 300 r/min) zastępuje FootyStats Hobby.
+// CORS open (Access-Control-Allow-Origin: *) → frontend uderza directly, bez worker proxy.
+// Klucz exposed in client-side JS — akceptowalne bo no auto-renewal + cap 7500/day = brak financial damage.
+const APIFOOTBALL_BASE='https://v3.football.api-sports.io';
+const APIFOOTBALL_KEY='3821c5caa752d0533003cfa14a4c2650';
+// Legacy FootyStats proxy (zostaje dla Match Scanner Claude API + ewentualny manual fallback)
 const FOOTY_PROXY='https://red-haze-5f37mplace-agent.contactmplace.workers.dev';
 const FOOTY_AUTH='Bearer Czucio123$';
 // Edge thresholds (centralized)
@@ -4844,17 +4850,8 @@ async function pollWatchList(force){
   if(fresh && !force){ data=cache.data; }
   else {
     try{
-      // 3 calls — wczoraj+dziś+jutro UTC (date param zwraca live, yesterday łapie nocne)
-      const todayUTC=new Date().toISOString().slice(0,10);
-      const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-      const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
-      const [rY,rT,rTm]=await Promise.all([
-        footyFetch('todays-matches',{date:yesterdayUTC}),
-        footyFetch('todays-matches',{date:todayUTC}),
-        footyFetch('todays-matches',{date:tomorrowUTC})
-      ]);
-      data=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
-      data.forEach(normalizeMatch);
+      // v8.8: 1 call /fixtures?live=all (api-football real-time, wszystkie aktywne live)
+      data=await afScanLive();
       window._watchPollCache={data,ts:now};
     }catch(e){
       // Network failed — keep cache or skip silently
@@ -4940,6 +4937,312 @@ async function footyHealth(){
   const r=await fetch(FOOTY_PROXY+'/health',{headers:{'Authorization':FOOTY_AUTH}});
   return await r.json();
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// v8.8: api-football client (PRO 7500/day, 300 r/min, real-time live)
+// ──────────────────────────────────────────────────────────────────────
+// Direct fetch (CORS open). Rate-limit headers parsed: x-ratelimit-requests-remaining (day),
+// X-RateLimit-Remaining (per minute). Auto-cooldown przy 429.
+window._afCallLog=window._afCallLog||[];  // timestamps last hour
+window._afQuotaDay={current:null,limit:7500,resetUTC:null};
+window._afQuotaMin={current:null,limit:300};
+window._afBackoffUntil=0;
+async function afFetch(endpoint,params={}){
+  if(Date.now()<window._afBackoffUntil){
+    const wait=Math.ceil((window._afBackoffUntil-Date.now())/1000);
+    throw new Error('api-football cooldown — czekaj '+wait+'s');
+  }
+  const now=Date.now();
+  window._afCallLog=window._afCallLog.filter(t=>now-t<3600000);
+  window._afCallLog.push(now);
+  if(typeof updateApiCounter==='function') updateApiCounter();
+
+  const qs=new URLSearchParams(params).toString();
+  const url=APIFOOTBALL_BASE+'/'+endpoint+(qs?'?'+qs:'');
+  const r=await fetch(url,{headers:{'x-apisports-key':APIFOOTBALL_KEY}});
+  // Parse rate-limit headers
+  const remDay=r.headers.get('x-ratelimit-requests-remaining');
+  const limDay=r.headers.get('x-ratelimit-requests-limit');
+  const remMin=r.headers.get('X-RateLimit-Remaining')||r.headers.get('x-ratelimit-remaining');
+  const limMin=r.headers.get('X-RateLimit-Limit')||r.headers.get('x-ratelimit-limit');
+  if(remDay!==null) window._afQuotaDay={current:Number(limDay)-Number(remDay),limit:Number(limDay)||7500};
+  if(remMin!==null) window._afQuotaMin={current:Number(limMin)-Number(remMin),limit:Number(limMin)||300};
+
+  if(r.status===429){
+    window._afBackoffPower=(window._afBackoffPower||0)+1;
+    const ms=Math.min(300,60*Math.pow(2,window._afBackoffPower-1))*1000;
+    window._afBackoffUntil=Date.now()+ms;
+    if(typeof updateApiCounter==='function') updateApiCounter();
+    throw new Error('api-football 429 — cooldown '+(ms/1000)+'s');
+  }
+  if(!r.ok) throw new Error('api-football HTTP '+r.status);
+  const j=await r.json().catch(()=>({}));
+  // api-football puts quota errors w response.errors (np. {plan:"Free plans..."})
+  if(j.errors && !Array.isArray(j.errors) && Object.keys(j.errors).length){
+    throw new Error('api-football: '+JSON.stringify(j.errors));
+  }
+  window._afBackoffPower=0;
+  return j;
+}
+
+// Flat-schema converter — api-football fixture object → format kompatybilny z istniejącym Predator code
+// (legacy schema z FootyStats: home_name, homeID, homeGoals[], status='in_play'|'complete'|'incomplete', date_unix, _leagueName).
+// Dodaje też _af_* pola z prawdziwymi live values (status.short, status.elapsed, status.extra, score.halftime).
+function afFixtureToMatch(f){
+  if(!f||!f.fixture) return null;
+  const sShort=f.fixture.status.short;
+  const isLive=['1H','2H','HT','ET','BT','P','LIVE'].includes(sShort);
+  const isComplete=['FT','AET','PEN'].includes(sShort);
+  // Synthetic homeGoals/awayGoals arrays — Predator code używa .length jako licznika goli
+  const hg=Number(f.goals.home)||0;
+  const ag=Number(f.goals.away)||0;
+  return {
+    id:f.fixture.id,
+    home_name:f.teams.home.name, away_name:f.teams.away.name,
+    homeID:f.teams.home.id, awayID:f.teams.away.id,
+    homeGoals:Array(hg).fill('?'),  // length=count, content unused
+    awayGoals:Array(ag).fill('?'),
+    status:isComplete?'complete':(isLive?'in_play':'incomplete'),
+    date_unix:f.fixture.timestamp,
+    _leagueName:f.league.name,
+    _seasonId:f.league.id+'_'+f.league.season,
+    _af_leagueId:f.league.id,
+    _af_season:f.league.season,
+    _af_round:f.league.round,
+    _af_status:sShort, _af_elapsed:f.fixture.status.elapsed, _af_extra:f.fixture.status.extra,
+    _af_halftimeH:f.score.halftime?.home, _af_halftimeA:f.score.halftime?.away,
+    // Odds fields — wypełniane przez afLoadOdds (lazy, on-demand)
+    odds_ft_1:0, odds_ft_x:0, odds_ft_2:0,
+    odds_ft_over25:0, odds_ft_under25:0, odds_btts_yes:0,
+    odds_ft_over15:0, odds_ft_under15:0,
+    odds_ft_over35:0, odds_ft_under35:0,
+    odds_ft_over45:0, odds_ft_under45:0,
+    odds_ft_over55:0, odds_ft_under55:0,
+    odds_ft_over65:0, odds_ft_under65:0
+  };
+}
+
+// Pobiera fixtures dla daty (1 call), opcjonalnie filtruje by league
+// Daty w api-football są UTC. Timezone parameter konwertuje status timestamps.
+async function afScanFixtures(dateUTC){
+  const j=await afFetch('fixtures',{date:dateUTC,timezone:'Europe/Warsaw'});
+  return (j.response||[]).map(afFixtureToMatch).filter(Boolean);
+}
+
+// Live fixtures — 1 call, wszystkie aktywne
+async function afScanLive(){
+  const j=await afFetch('fixtures',{live:'all'});
+  return (j.response||[]).map(afFixtureToMatch).filter(Boolean);
+}
+
+// Single fixture by ID (force fresh)
+async function afLoadFixture(fixtureId){
+  const j=await afFetch('fixtures',{id:fixtureId});
+  const f=(j.response||[])[0];
+  return f?afFixtureToMatch(f):null;
+}
+
+// Team season statistics — sezonowy aggregate (cached 4h w sessionStorage)
+const AF_TEAM_TTL=4*3600*1000;
+async function afLoadTeamStats(teamId,leagueId,season){
+  const ck='af_team_'+teamId+'_'+leagueId+'_'+season;
+  try{
+    const c=sessionStorage.getItem(ck);
+    if(c){ const o=JSON.parse(c); if(Date.now()-o.t<AF_TEAM_TTL) return o.data; }
+  }catch(_){}
+  const j=await afFetch('teams/statistics',{team:teamId,league:leagueId,season:season});
+  const data=j.response||null;
+  if(data){
+    try{ sessionStorage.setItem(ck,JSON.stringify({t:Date.now(),data})); }catch(_){}
+  }
+  return data;
+}
+
+// Mapuje api-football team statistics → Predator's expected stats schema
+// (homeT.stats.xg_for_avg_home etc — używane w footyComputeMatchCard / calc()).
+function afTeamStatsToFlat(stats){
+  if(!stats||!stats.goals) return {stats:{}};
+  const g=stats.goals;
+  // goals.for.average: real goals/match (NIE xG sezonowy — api-football's only option dla pre-match)
+  const gfH=parseFloat(g.for?.average?.home)||0;
+  const gfA=parseFloat(g.for?.average?.away)||0;
+  const gfO=parseFloat(g.for?.average?.total)||0;
+  const gaH=parseFloat(g.against?.average?.home)||0;
+  const gaA=parseFloat(g.against?.average?.away)||0;
+  const gaO=parseFloat(g.against?.average?.total)||0;
+  // PPG derive z form string ("WDLDW...") — last N games
+  const form=stats.form||'';
+  let wins=0,draws=0;
+  for(const c of form){ if(c==='W') wins++; else if(c==='D') draws++; }
+  const ppg=form.length?(wins*3+draws)/form.length:1.5;
+  // Goal timing buckets (Predator's Goal Timing Heat Map v6.6)
+  const minBuckets=g.for?.minute||{};
+  const goal_min={};
+  ['0-15','16-30','31-45','46-60','61-75','76-90'].forEach(b=>{
+    goal_min[b]=parseFloat(minBuckets[b]?.percentage||'0');
+  });
+  // Clean sheet / failed_to_score → BTTS% derive (approximation)
+  const cs=stats.clean_sheet||{};
+  const fts=stats.failed_to_score||{};
+  const fixturesPlayed=stats.fixtures?.played?.total||1;
+  const csRate=(cs.total||0)/fixturesPlayed;
+  const ftsRate=(fts.total||0)/fixturesPlayed;
+  const bttsPct=Math.max(0,Math.min(100,(1-csRate-ftsRate)*100+10));  // +10 mild bias correction (overlap)
+  return {
+    stats:{
+      // Predator używa xg_for_avg_* — używamy goals.for.average jako proxy (downgrade z xG, ale funkcjonalnie OK)
+      xg_for_avg_home:gfH, xg_for_avg_away:gfA, xg_for_avg_overall:gfO,
+      xg_against_avg_home:gaH, xg_against_avg_away:gaA, xg_against_avg_overall:gaO,
+      // Goals real (pomocnicze)
+      goals_for_avg_home:gfH, goals_for_avg_away:gfA, goals_for_avg_overall:gfO,
+      // PPG (wszystkie warianty bo nie wiadomo czy team gra home/away)
+      seasonPPG_home:ppg, seasonPPG_away:ppg, seasonPPG_overall:ppg,
+      // BTTS%
+      seasonBTTSPercentage_home:bttsPct, seasonBTTSPercentage_away:bttsPct, seasonBTTSPercentage_overall:bttsPct,
+      // Goal timing (procentowo per bucket)
+      goal_timing_buckets:goal_min,
+      _form:form
+    }
+  };
+}
+
+// Bookmaker preference: Bet365 (id 8) → Pinnacle (id 4) → 1xBet (id 11) → first available
+const AF_BOOKMAKER_PRIORITY=[8,4,11,1,32];
+
+// Load pre-match odds for fixture, mapuje → Predator's odds_ft_* fields
+async function afLoadOdds(fixtureId){
+  const j=await afFetch('odds',{fixture:fixtureId});
+  const r=(j.response||[])[0];
+  if(!r||!r.bookmakers||!r.bookmakers.length) return null;
+  // Wybór bookmakera wg priorytetu
+  let bm=null;
+  for(const id of AF_BOOKMAKER_PRIORITY){
+    bm=r.bookmakers.find(b=>b.id===id);
+    if(bm) break;
+  }
+  if(!bm) bm=r.bookmakers[0];
+  const out={_bookmaker:bm.name};
+  // bet=1 Match Winner → 1X2
+  const bw=bm.bets.find(b=>b.id===1);
+  if(bw){
+    bw.values.forEach(v=>{
+      if(v.value==='Home') out.odds_ft_1=parseFloat(v.odd)||0;
+      else if(v.value==='Draw') out.odds_ft_x=parseFloat(v.odd)||0;
+      else if(v.value==='Away') out.odds_ft_2=parseFloat(v.odd)||0;
+    });
+  }
+  // bet=5 Goals Over/Under (cała linia w jednym bet)
+  const gou=bm.bets.find(b=>b.id===5);
+  if(gou){
+    gou.values.forEach(v=>{
+      const m=String(v.value).match(/(Over|Under)\s+([\d.]+)/i);
+      if(!m) return;
+      const dir=m[1].toLowerCase(), line=m[2].replace('.','');
+      const key='odds_ft_'+dir+line;
+      if(out[key]===undefined||out[key]===0) out[key]=parseFloat(v.odd)||0;
+    });
+  }
+  // bet=8 BTTS
+  const btts=bm.bets.find(b=>b.id===8);
+  if(btts){
+    btts.values.forEach(v=>{
+      if(v.value==='Yes') out.odds_btts_yes=parseFloat(v.odd)||0;
+      else if(v.value==='No') out.odds_btts_no=parseFloat(v.odd)||0;
+    });
+  }
+  return out;
+}
+
+// Live in-play odds — same shape as afLoadOdds, ale z /odds/live (real-time, 37+ markets)
+async function afLoadOddsLive(fixtureId){
+  const j=await afFetch('odds/live',{fixture:fixtureId});
+  const r=(j.response||[])[0];
+  if(!r||!r.odds) return null;
+  const out={_live:true};
+  r.odds.forEach(o=>{
+    const n=(o.name||'').toLowerCase();
+    if(n==='match winner'||n==='final score'){
+      // 1X2 live
+      o.values.forEach(v=>{
+        if(v.value==='Home') out.odds_ft_1=parseFloat(v.odd)||0;
+        else if(v.value==='Draw') out.odds_ft_x=parseFloat(v.odd)||0;
+        else if(v.value==='Away') out.odds_ft_2=parseFloat(v.odd)||0;
+      });
+    } else if(n.includes('over/under')||n.includes('total goals')){
+      o.values.forEach(v=>{
+        const dir=String(v.value).toLowerCase();
+        const handicap=String(v.handicap||v.main||'').replace('.','');
+        if(['over','under'].includes(dir)&&handicap){
+          const key='odds_ft_'+dir+handicap;
+          if(!out[key]) out[key]=parseFloat(v.odd)||0;
+        }
+      });
+    } else if(n==='both teams to score'||n.includes('both teams score')){
+      o.values.forEach(v=>{
+        if(/yes/i.test(v.value)) out.odds_btts_yes=parseFloat(v.odd)||0;
+        else if(/no/i.test(v.value)) out.odds_btts_no=parseFloat(v.odd)||0;
+      });
+    }
+  });
+  return out;
+}
+
+// Live xG + match stats (top leagues only — sprawdź coverage przed wywołaniem)
+async function afLoadFixtureStats(fixtureId){
+  const j=await afFetch('fixtures/statistics',{fixture:fixtureId});
+  const teams=j.response||[];
+  if(teams.length<2) return null;
+  function pick(team,type){
+    const s=team.statistics?.find(x=>x.type===type);
+    return s?s.value:null;
+  }
+  return {
+    home:{
+      name:teams[0].team.name,
+      xg:parseFloat(pick(teams[0],'expected_goals'))||null,
+      shots_total:Number(pick(teams[0],'Total Shots'))||0,
+      shots_on:Number(pick(teams[0],'Shots on Goal'))||0,
+      possession:parseFloat(String(pick(teams[0],'Ball Possession')||'').replace('%',''))||0,
+      corners:Number(pick(teams[0],'Corner Kicks'))||0,
+      yellow:Number(pick(teams[0],'Yellow Cards'))||0,
+      red:Number(pick(teams[0],'Red Cards'))||0
+    },
+    away:{
+      name:teams[1].team.name,
+      xg:parseFloat(pick(teams[1],'expected_goals'))||null,
+      shots_total:Number(pick(teams[1],'Total Shots'))||0,
+      shots_on:Number(pick(teams[1],'Shots on Goal'))||0,
+      possession:parseFloat(String(pick(teams[1],'Ball Possession')||'').replace('%',''))||0,
+      corners:Number(pick(teams[1],'Corner Kicks'))||0,
+      yellow:Number(pick(teams[1],'Yellow Cards'))||0,
+      red:Number(pick(teams[1],'Red Cards'))||0
+    }
+  };
+}
+
+// Match events — goals (z minute), cards (red dla Red Card Model), subs
+async function afLoadEvents(fixtureId){
+  const j=await afFetch('fixtures/events',{fixture:fixtureId});
+  const events=j.response||[];
+  const goals=[], reds=[];
+  let lastGoalMin=null, half1HG=0, half1AG=0;
+  events.forEach(e=>{
+    const min=e.time.elapsed||0, extra=e.time.extra||0;
+    const totalMin=min+(extra||0);
+    if(e.type==='Goal'&&!/missed|cancelled/i.test(e.detail||'')){
+      goals.push({minute:totalMin,team:e.team.id,player:e.player?.name});
+      if(!lastGoalMin||totalMin>lastGoalMin) lastGoalMin=totalMin;
+      if(min<=45){
+        // Z którego team'a (potrzebny home/away mapping — caller dostarcza)
+      }
+    }
+    if(e.type==='Card'&&/red/i.test(e.detail||'')){
+      reds.push({minute:totalMin,team:e.team.id});
+    }
+  });
+  return {goals,reds,lastGoalMin,events};
+}
+
 async function footyTest(kind){
   const out=$('footyTestOut');
   out.style.display='block';
@@ -4986,26 +5289,40 @@ async function footyTest(kind){
 window._footyMatches = {};  // {seasonId: [matches]}
 window._footyTeams = {};    // teamId → cached team data (also in sessionStorage)
 
-async function footyLoadTeam(teamId){
-  if(window._footyTeams[teamId]) return window._footyTeams[teamId];
-  const cacheKey='footy_team_'+teamId;
+// v8.8: footyLoadTeam(teamId, match?) — backed by api-football /teams/statistics
+// Sygnatura wsteczna kompatybilna: pierwszy arg teamId. Drugi (opcjonalny) match dostarcza
+// _af_leagueId + _af_season (api-football wymaga league+season dla team stats).
+// Zwraca: {stats:{...}} compatible z footyComputeMatchCard (xg_for_avg_*, seasonPPG_*, BTTS%).
+async function footyLoadTeam(teamId,match){
+  const leagueId=match?._af_leagueId;
+  const season=match?._af_season;
+  if(!leagueId||!season){
+    // Fallback: brak kontekstu ligi → pusty stats. Model degraduje (zero xG → null card).
+    console.warn('[footyLoadTeam] missing leagueId/season for team',teamId,'— returning empty stats');
+    return {stats:{}};
+  }
+  const ck='af_team_'+teamId+'_'+leagueId+'_'+season;
+  if(window._footyTeams[ck]) return window._footyTeams[ck];
   try{
-    const c=sessionStorage.getItem(cacheKey);
+    const c=sessionStorage.getItem(ck);
     if(c){
       const obj=JSON.parse(c);
-      if(Date.now()-obj.t<3600000){
-        window._footyTeams[teamId]=obj.data;
+      if(Date.now()-obj.t<AF_TEAM_TTL){
+        window._footyTeams[ck]=obj.data;
         return obj.data;
       }
     }
   }catch(_){}
-  const r=await footyFetch('team',{team_id:teamId});
-  const data=r.data&&r.data[0];
-  if(data){
-    window._footyTeams[teamId]=data;
-    try{ sessionStorage.setItem(cacheKey,JSON.stringify({t:Date.now(),data})); }catch(_){}
+  try{
+    const stats=await afLoadTeamStats(teamId,leagueId,season);
+    const flat=stats?afTeamStatsToFlat(stats):{stats:{}};
+    window._footyTeams[ck]=flat;
+    try{ sessionStorage.setItem(ck,JSON.stringify({t:Date.now(),data:flat})); }catch(_){}
+    return flat;
+  }catch(e){
+    console.warn('[footyLoadTeam] api-football error:',e&&e.message);
+    return {stats:{}};
   }
-  return data;
 }
 
 async function footyInitLeagueDropdown(){
@@ -5096,61 +5413,42 @@ function footyMatchSelected(){
 
 function footyMapMatch(match,homeT,awayT){
   const set=(id,v)=>{ if(v!=null&&v!==''&&!isNaN(v)) $(id).value=v; };
-  normalizeMatch(match);  // defensywnie — homeGoals/awayGoals jako array
 
-  // Track API match id so "Śledź ten mecz" can poll live status reliably
   window._currentApiMatchId = match.id || null;
+  // v8.8: api-football real-time = no stale possible. Flag zostaje as no-op dla compat.
+  window._currentMatchStale=false;
+  window._currentMatchStaleReason='';
 
-  // ── STALE DATA propagation (v8.4.2) ──
-  // Flag whether API match data is reliable. Used downstream by decideQuickBet + rankPicks
-  // to BLOCK picks when stale, preventing absurd recommendations like "Goście wygrają @ 7.85 +55%"
-  // when match is actually 4:0 home.
-  const _staleCheck=isStaleMatch(match);
-  window._currentMatchStale=_staleCheck.stale;
-  window._currentMatchStaleReason=_staleCheck.reason;
-  if(_staleCheck.stale){
-    console.warn('[STALE-DATA]',match.home_name,'vs',match.away_name,'—',_staleCheck.reason);
+  // v8.8: half-time score & last goal minute z api-football fixture object directly
+  // (score.halftime + events fetch async — events nie są blocking dla map; basic flow działa bez nich).
+  if(match._af_halftimeH!=null && match._af_halftimeA!=null){
+    window._half1HomeGoals=match._af_halftimeH;
+    window._half1AwayGoals=match._af_halftimeA;
+    const htField=document.getElementById('halfTimeScore');
+    if(htField) htField.value=match._af_halftimeH+':'+match._af_halftimeA;
+  } else {
+    window._half1HomeGoals=null;
+    window._half1AwayGoals=null;
   }
-
-  // Extract goal-minute metadata for Match State Rules
-  // FootyStats may return minutes as: 45 (number), "45" (string), "45'" (apostrophe), "45+2" (stoppage time)
-  // For stoppage time "45+2" we want 45 (1H), not 452 — take only the leading integer.
-  const parseGoalMin=v=>{
-    const s=String(v).trim();
-    const m=s.match(/^(\d{1,3})/);
-    return m?parseInt(m[1],10):NaN;
-  };
-  const homeGoalMins=(match.homeGoals||[]).map(parseGoalMin).filter(n=>!isNaN(n)&&n>0&&n<=120);
-  const awayGoalMins=(match.awayGoals||[]).map(parseGoalMin).filter(n=>!isNaN(n)&&n>0&&n<=120);
-  const allGoalMins=[...homeGoalMins,...awayGoalMins].sort((a,b)=>a-b);
-  window._lastGoalMinute=allGoalMins.length?allGoalMins[allGoalMins.length-1]:null;
-  // 1H = minutes ≤45 (stoppage time of 1H is "45+X" → 45, still in 1H bucket)
-  window._half1HomeGoals=homeGoalMins.filter(n=>n<=45).length;
-  window._half1AwayGoals=awayGoalMins.filter(n=>n<=45).length;
-  console.log('[STATE-EXTRACT] home goals:',match.homeGoals,'→ mins:',homeGoalMins,'1H:',window._half1HomeGoals);
-  console.log('[STATE-EXTRACT] away goals:',match.awayGoals,'→ mins:',awayGoalMins,'1H:',window._half1AwayGoals);
-  // Reflect into UI fields so user sees what model knows
-  const htField=document.getElementById('halfTimeScore');
-  if(htField && window._half1HomeGoals!=null) htField.value=window._half1HomeGoals+':'+window._half1AwayGoals;
-  const lgField=document.getElementById('lastGoalMin');
-  if(lgField) lgField.value=window._lastGoalMinute||'';
+  // Last goal minute — async fetch z /fixtures/events (non-blocking)
+  if(match.id && (match.status==='in_play'||match.status==='complete')){
+    afLoadEvents(match.id).then(ev=>{
+      if(ev&&ev.lastGoalMin){
+        window._lastGoalMinute=ev.lastGoalMin;
+        const lgField=document.getElementById('lastGoalMin');
+        if(lgField) lgField.value=ev.lastGoalMin;
+        if(typeof calc==='function') calc();
+      }
+    }).catch(_=>{});
+  }
 
   // Match-level (live + score)
   $('homeTeam').value=match.home_name||'';
   $('awayTeam').value=match.away_name||'';
   $('homeScore').value=(match.homeGoals||[]).length;
   $('awayScore').value=(match.awayGoals||[]).length;
-  $('minute').value=match.status==='complete'?90:(match.minute||1);
-
-  set('lHCorn',match.team_a_corners);
-  set('lACorn',match.team_b_corners);
-  set('lHYC',match.team_a_yellow_cards);
-  set('lAYC',match.team_b_yellow_cards);
-  set('lHDA',match.team_a_dangerous_attacks);
-  set('lADA',match.team_b_dangerous_attacks);
-  set('lHSOT',match.team_a_shotsOnTarget);
-  set('lASOT',match.team_b_shotsOnTarget);
-  set('lHPoss',match.team_a_possession);
+  // v8.8: real minute z api-football _af_elapsed (precyzyjne)
+  $('minute').value=match.status==='complete'?90:(match._af_elapsed||1);
 
   // Odds
   set('oddHome',match.odds_ft_1);
@@ -5159,27 +5457,51 @@ function footyMapMatch(match,homeT,awayT){
   set('oddOver',match.odds_ft_over25);
   set('oddUnder',match.odds_ft_under25);
   set('oddBTTS',match.odds_btts_yes);
+  // Long shot panel multi-line odds (v7.13)
+  set('oddOver15',match.odds_ft_over15);
+  set('oddUnder15',match.odds_ft_under15);
+  set('oddOver35',match.odds_ft_over35);
+  set('oddUnder35',match.odds_ft_under35);
+  set('oddOver45',match.odds_ft_over45);
+  set('oddUnder45',match.odds_ft_under45);
+  set('oddOver55',match.odds_ft_over55);
+  set('oddUnder55',match.odds_ft_under55);
+  set('oddOver65',match.odds_ft_over65);
+  set('oddUnder65',match.odds_ft_under65);
 
-  // Season stats per team — Home
+  // Season stats per team — api-football schema (afTeamStatsToFlat)
   if(homeT&&homeT.stats){
     const s=homeT.stats;
+    // xG sezonowy = goals.for.average (api-football nie ma true xG aggregate)
     set('hXG',s.xg_for_avg_home||s.xg_for_avg_overall);
-    set('hScored',s.seasonScoredAVG_home);
-    set('hConc',s.seasonConcededAVG_home);
-    set('hCS',s.seasonCSPercentage_home);
-    set('hCornSeason',s.cornersAVG_home);
-    set('hYCSeason',s.cardsAVG_home);
+    set('hScored',s.goals_for_avg_home||s.xg_for_avg_home);
+    set('hConc',s.xg_against_avg_home||s.xg_against_avg_overall);
     set('hPPG',s.seasonPPG_home);
   }
   if(awayT&&awayT.stats){
     const s=awayT.stats;
     set('aXG',s.xg_for_avg_away||s.xg_for_avg_overall);
-    set('aScored',s.seasonScoredAVG_away);
-    set('aConc',s.seasonConcededAVG_away);
-    set('aCS',s.seasonCSPercentage_away);
-    set('aCornSeason',s.cornersAVG_away);
-    set('aYCSeason',s.cardsAVG_away);
+    set('aScored',s.goals_for_avg_away||s.xg_for_avg_away);
+    set('aConc',s.xg_against_avg_away||s.xg_against_avg_overall);
     set('aPPG',s.seasonPPG_away);
+  }
+
+  // v8.8: live in-match stats async fetch — xG, possession, shots, corners, cards
+  // (api-football /fixtures/statistics — top ligi mają, niższe może nie). Non-blocking.
+  if(match.id && match.status==='in_play'){
+    afLoadFixtureStats(match.id).then(stats=>{
+      if(!stats) return;
+      set('liveXGH',stats.home.xg);
+      set('liveXGA',stats.away.xg);
+      set('lHSOT',stats.home.shots_on);
+      set('lASOT',stats.away.shots_on);
+      set('lHPoss',stats.home.possession);
+      set('lHCorn',stats.home.corners);
+      set('lACorn',stats.away.corners);
+      set('lHYC',stats.home.yellow);
+      set('lAYC',stats.away.yellow);
+      if(typeof calc==='function') calc();
+    }).catch(_=>{});
   }
 
   // Trigger save + recalc
@@ -5205,9 +5527,9 @@ async function footyAutoFetch(){
     if(!match) throw new Error('Mecz nie znaleziony w cache');
 
     out.textContent='⏳ Statystyki '+(match.home_name||'home')+'...';
-    const homeT=await footyLoadTeam(match.homeID);
+    const homeT=await footyLoadTeam(match.homeID,match);
     out.textContent='⏳ Statystyki '+(match.away_name||'away')+'...';
-    const awayT=await footyLoadTeam(match.awayID);
+    const awayT=await footyLoadTeam(match.awayID,match);
 
     footyMapMatch(match,homeT,awayT);
 
@@ -5294,30 +5616,10 @@ function footyComputeMatchCard(match,homeT,awayT){
   const awayG=(match.awayGoals||[]).length;
   const currentGoals=homeG+awayG;
   const now=Math.floor(Date.now()/1000);
-  const isLive=match.status==='in_play'||(match.status!=='complete'&&match.date_unix&&match.date_unix<=now&&match.date_unix>now-8100);
+  const isLive=match.status==='in_play';  // v8.8: tylko status=in_play = live (api-football real-time, no stale guesses)
 
-  // ── v8.7.4 EARLY GUARD: API stale-live detection ──
-  // FootyStats Hobby tier nie tracks live data — score/minute/status zamrożone na pre-match.
-  // Każdy market liczony na frozen data = phantom edge (np. score=0:0 + minute=90 → lamRem=0
-  // → pUnder(2.5)=1.0 → "STRONG +49%" na fałszywych danych).
-  // Honest mode: dla status='incomplete' z kickoff>5min temu ZWRACAMY placeholder, NIE liczymy markets.
-  const apiLiveUnreliableEarly = isLive && match.status==='incomplete' && match.date_unix && match.date_unix<now-300;
-  if(apiLiveUnreliableEarly){
-    if(hXG+aXG===0) return null;
-    const elapsedMin=Math.floor((now-match.date_unix)/60);
-    const minDisp=elapsedMin>=90?'90+':('~'+elapsedMin+'min');
-    return {
-      match,homeT,awayT,
-      bestEdge:0,
-      bestMarket:{label:'⚽ LIVE '+minDisp+' — sprawdź wynik u bukmachera, kliknij Analizuj',odd:0,modelP:0,group:'live-info'},
-      allMarkets:[],totalLam,
-      staleData:false,staleReason:'',
-      isLiveOnly:true,
-      apiLiveUnreliable:true
-    };
-  }
-
-  const minute=isLive&&match.date_unix?Math.min(90,Math.max(1,Math.floor((now-match.date_unix)/60))):0;
+  // v8.8: minute z REAL api-football _af_elapsed (precyzyjne) zamiast estymata od date_unix
+  const minute=isLive?Math.min(90,Math.max(1,match._af_elapsed||1)):0;
   const minutesRem=isLive?Math.max(0,90-minute):90;
   const lamRem=totalLam*(minutesRem/90);
   const hLamRem=hXG*(minutesRem/90);
@@ -5360,23 +5662,15 @@ function footyComputeMatchCard(match,homeT,awayT){
     pBTTS=(!isLive && bttsHistAvg>0)?(bttsHistAvg*0.7+pBTTSPoisson*0.3):pBTTSPoisson;
   }
 
-  // ── STALE DATA DETECTION (v8.4.2 — aggressive) ──
-  // Wykrywa gdy API zwraca stary score (0:0) ale bukmacher widzi inne realia (live odds).
-  const reportedGoals=(match.homeGoals||[]).length+(match.awayGoals||[]).length;
-  const oddH=match.odds_ft_1||0, oddA=match.odds_ft_2||0, oddD=match.odds_ft_x||0;
-  const impliedH=oddH>1.01?1/oddH:0, impliedA=oddA>1.01?1/oddA:0;
-  const staleCheck=isStaleMatch(match,reportedGoals,oddH,oddA,oddD);
-  const staleData=staleCheck.stale, staleReason=staleCheck.reason;
+  // v8.8: stale data detection ZNIKA — api-football jest real-time, status='in_play' to ground truth.
+  const staleData=false, staleReason='';
 
   const markets=[];
-  // Helper: sanity check market — odd vs model implied gap
   function isMarketSane(modelP,odd){
     if(!odd||odd<1.01) return false;
-    if(staleData) return false;  // Reject all markets when stale
     const implied=1/odd;
-    // Tighter thresholds — model i bukmacher nie mogą się tak różnić w normalnych warunkach
-    if(modelP>0.25 && implied<0.15) return false;  // model 25%+ ale bukmacher <15%
-    if(modelP<0.20 && implied>0.65) return false;  // model 20%- ale bukmacher >65%
+    if(modelP>0.25 && implied<0.15) return false;
+    if(modelP<0.20 && implied>0.65) return false;
     return true;
   }
 
@@ -5409,24 +5703,18 @@ function footyComputeMatchCard(match,homeT,awayT){
     }
   }
 
-  // FLAG: live + status='incomplete' = FootyStats Hobby nie tracks live (verified curl).
-  // To NIE blokuje markets — zamiast tego info banner na karcie. User dostaje real edges
-  // jeśli API jest aktualne (np. score rzeczywiście 0:0), albo widzi warning + klika 🔄/Analizuj
-  // jeśli różni się od bukmachera.
-  const apiLiveUnreliable = isLive && match.status==='incomplete' && match.date_unix && match.date_unix<now-300;
+  // v8.8: apiLiveUnreliable ZNIKA (FootyStats artifact). api-football real-time = no stale.
 
   if(!markets.length){
-    if(staleData){
-      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚠ Sprawdź wynik',odd:0,modelP:0,group:'stale'},allMarkets:[],totalLam,staleData:true,staleReason,apiLiveUnreliable};
-    }
-    // LIVE bez aktywnych rynków (wszystkie linie hit) — pokaż jako placeholder w liveAll
     if(isLive){
-      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚽ LIVE '+homeG+':'+awayG+' min '+minute+' — kliknij Analizuj',odd:0,modelP:0,group:'live-info'},allMarkets:[],totalLam,staleData:false,staleReason:'',isLiveOnly:true,apiLiveUnreliable};
+      // LIVE bez aktywnych rynków (wszystkie linie hit) — placeholder w liveAll tab
+      const minDisp=match._af_extra?(minute+'+'+match._af_extra):minute;
+      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚽ LIVE '+homeG+':'+awayG+' min '+minDisp+' — kliknij Analizuj',odd:0,modelP:0,group:'live-info'},allMarkets:[],totalLam,staleData:false,staleReason:'',isLiveOnly:true};
     }
     return null;
   }
   markets.sort((a,b)=>b.edge-a.edge);
-  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam,staleData,staleReason,apiLiveUnreliable};
+  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam,staleData,staleReason};
 }
 
 // Cache TTL dla league-matches: 20 min (FootyStats też ma 20-min update freq)
@@ -5456,91 +5744,64 @@ async function footyLoadLeagueMatchesCached(seasonId){
   return data;
 }
 
+// v8.8: api-football-powered scan. Real-time live data, no FootyStats stale issues.
+// 1 call /fixtures?date=today + odds polling per match (top N). Quota: ~25 calls per full scan.
 async function footyScanToday(){
   const out=$('scanTodayOut');
   const list=$('scanTodayList');
   const btn=$('scanTodayBtn');
   if(btn) btn.disabled=true;
-  if(out){ out.style.display='block'; out.style.color='var(--text-dim)'; out.textContent='⏳ 3 calls do /todays-matches (wczoraj+dziś+jutro UTC)…'; }
+  if(out){ out.style.display='block'; out.style.color='var(--text-dim)'; out.textContent='⏳ Skan api-football…'; }
   if(list) list.innerHTML='';
   try{
-    // 1. THREE calls → /todays-matches?date=YYYY-MM-DD dla wczoraj+dziś+jutro UTC.
-    // Bez date param API zwraca tylko upcoming next 24h — pomija live matches.
-    // Yesterday łapie mecze które startowały po północy UTC i nadal trwają (Brazil/Asia).
-    // Today + tomorrow łapią aktualne live + nadchodzące.
-    const todayUTC=new Date().toISOString().slice(0,10);
-    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
-    const [rY,rT,rTm]=await Promise.all([
-      footyFetch('todays-matches',{date:yesterdayUTC}),
-      footyFetch('todays-matches',{date:todayUTC}),
-      footyFetch('todays-matches',{date:tomorrowUTC})
-    ]);
-    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
-    const allMatches=Array.from(new Map(merged.map(m=>[m.id,m])).values());
-    allMatches.forEach(normalizeMatch);  // homeGoals/awayGoals: JSON string → array
-    console.log('[scan] yesterday UTC ('+yesterdayUTC+'): '+(rY.data||[]).length+' · today ('+todayUTC+'): '+(rT.data||[]).length+' · tomorrow ('+tomorrowUTC+'): '+(rTm.data||[]).length+' · dedup: '+allMatches.length);
+    // 1. Single call /fixtures?date=today (Warsaw timezone — łapie wczoraj-night-Warsaw + jutro-day)
+    const todayWarsaw=new Date(Date.now()).toLocaleDateString('sv',{timeZone:'Europe/Warsaw'});  // YYYY-MM-DD format
+    const allMatches=await afScanFixtures(todayWarsaw);
     const dashStatus=document.getElementById('dashboardStatus');
-    if(dashStatus) dashStatus.textContent='⏳ Pobrano '+allMatches.length+' meczów (2 calls) · liczę edge…';
+    if(dashStatus) dashStatus.textContent='⏳ Pobrano '+allMatches.length+' meczów · liczę edge…';
     if(out) out.textContent='⏳ Pobrano '+allMatches.length+' meczów · liczę edge…';
 
-    // ── DIAGNOSTYKA: zawsze loguj listę lig w odpowiedzi API ──
-    // (powtarzane też w empty path, ale tu też żeby user wiedział co Hobby tier zwraca)
+    // Diagnostyka — rozkład per liga
     const leagueCounts={};
     let liveCountAll=0;
     allMatches.forEach(m=>{
-      const lg=m.competition_name||m.league_name||m.country||'?';
+      const lg=m._leagueName||'?';
       leagueCounts[lg]=(leagueCounts[lg]||0)+1;
       if(m.status==='in_play') liveCountAll++;
     });
-    console.log('[scan] /todays-matches → '+allMatches.length+' meczów ('+liveCountAll+' z status=in_play). LIGI:',leagueCounts);
-    if(allMatches.length>0 && liveCountAll===0){
-      console.warn('[scan] ⚠ ZERO meczów ze status=in_play. Jeśli wiesz że są LIVE u bukmachera (np. Europa League) → te ligi NIE SĄ w Twoich 50 chosen leagues na FootyStats. Sprawdź: footystats.org/api/select-leagues');
-    }
+    console.log('[scan] api-football /fixtures?date='+todayWarsaw+' → '+allMatches.length+' meczów ('+liveCountAll+' live). LIGI:',leagueCounts);
 
-    // 2. Filter: live last 3h + upcoming next 12h (catches overnight matches Warsaw-time)
+    // 2. Filter: live last 3h + upcoming next 12h, plus league prioritization (top European/Polish)
     const now=Math.floor(Date.now()/1000);
-    const endOfTodayUnix=now+12*3600;  // historical name kept for diagnostic compat
-    const filtered=allMatches.filter(m=>{
+    const endOfTodayUnix=now+12*3600;
+    const inWindow=allMatches.filter(m=>{
       if(!m.date_unix) return false;
       if(m.status==='complete') return false;
-      // Window: live (started up to 3h ago) OR upcoming w najbliższych 12h
-      return m.date_unix>=now-10800&&m.date_unix<=endOfTodayUnix;
-    }).filter(m=>m.odds_ft_over25||m.odds_btts_yes||m.odds_ft_1);
+      return m.date_unix>=now-10800 && m.date_unix<=endOfTodayUnix;
+    });
+    // Priority leagues — UEFA + top 5 European + Poland Ekstraklasa + Premier teams
+    const PRIORITY_LEAGUES=[2,3,848,39,140,135,78,61,106,4,9,253,40,71,88,94];
+    inWindow.sort((a,b)=>{
+      const pa=PRIORITY_LEAGUES.indexOf(a._af_leagueId);
+      const pb=PRIORITY_LEAGUES.indexOf(b._af_leagueId);
+      const sa=pa===-1?999:pa;
+      const sb=pb===-1?999:pb;
+      if(sa!==sb) return sa-sb;
+      return (a.date_unix||0)-(b.date_unix||0);
+    });
 
-    if(!filtered.length){
-      // Diagnostyka: rozkład meczów per status/timing
-      const stats={complete:0,future:0,tooOld:0,live:0,noOdds:0,inWindow:0};
+    if(!inWindow.length){
+      const stats={complete:0,future:0,tooOld:0,live:0,inWindow:0};
       allMatches.forEach(m=>{
-        if(!m.date_unix) return;
         if(m.status==='complete'){ stats.complete++; return; }
         if(m.date_unix>endOfTodayUnix){ stats.future++; return; }
         if(m.date_unix<now-10800){ stats.tooOld++; return; }
         stats.inWindow++;
         if(m.status==='in_play') stats.live++;
-        if(!(m.odds_ft_over25||m.odds_btts_yes||m.odds_ft_1)) stats.noOdds++;
       });
-      // Dump 3 sample matches do konsoli żeby Chris mógł sprawdzić strukturę
-      console.log('[scan] /todays-matches returned',allMatches.length,'matches. Breakdown:',stats);
-      // Lista unikatowych lig w odpowiedzi — żeby user widział czy ma Europa League etc.
-      const leagueCounts={};
-      allMatches.forEach(m=>{
-        const lg=m.competition_name||m.league_name||m.country||'?';
-        leagueCounts[lg]=(leagueCounts[lg]||0)+1;
-      });
-      console.log('[scan] LIGI w odpowiedzi API (per match count):',leagueCounts);
-      console.warn('[scan] ⚠ Jeśli brakuje Europa League / Conference League / Champions League — dodaj je w ustawieniach FootyStats (Hobby: 50 chosen leagues).');
-      if(allMatches.length>0){
-        console.log('[scan] sample[0]:',{id:allMatches[0].id,home:allMatches[0].home_name,away:allMatches[0].away_name,status:allMatches[0].status,date:new Date((allMatches[0].date_unix||0)*1000).toLocaleString('pl'),hasOdds:!!(allMatches[0].odds_ft_over25||allMatches[0].odds_btts_yes||allMatches[0].odds_ft_1)});
-        if(allMatches.length>1) console.log('[scan] sample[mid]:',{id:allMatches[Math.floor(allMatches.length/2)].id,home:allMatches[Math.floor(allMatches.length/2)].home_name,away:allMatches[Math.floor(allMatches.length/2)].away_name,status:allMatches[Math.floor(allMatches.length/2)].status,date:new Date((allMatches[Math.floor(allMatches.length/2)].date_unix||0)*1000).toLocaleString('pl')});
-      }
-      let reason;
-      if(allMatches.length===0) reason='API zwrócił 0 meczów (sprawdź wybrane ligi)';
-      else if(stats.inWindow===0) reason=stats.complete+' zakończone · '+stats.tooOld+' za stare (>3h) · '+stats.future+' za >12h';
-      else if(stats.noOdds===stats.inWindow) reason=stats.inWindow+' w oknie ale wszystkie bez kursów';
-      else reason='unknown — sprawdź console';
+      const reason=stats.complete+' zakończone · '+stats.tooOld+' za stare (>3h) · '+stats.future+' za >12h';
       window._lastScanStats={api:allMatches.length,filtered:0,cached:0,live:0,reason,breakdown:stats};
-      if(out) out.textContent='Brak meczów dziś z kursami. '+reason+'.';
+      if(out) out.textContent='Brak meczów w oknie. '+reason+'.';
       if(list) list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Skan zakończony · '+reason+' (API: '+allMatches.length+' total).</div>';
       window._scanCardsCache=[];
       if(typeof renderDashboardMatches==='function') renderDashboardMatches();
@@ -5548,13 +5809,12 @@ async function footyScanToday(){
       return;
     }
 
-    // 3. Tag matches with league name (from match data if present, else season_id fallback)
-    filtered.forEach(m=>{
-      m._leagueName=m.competition_name||m.league_name||m.country||'';
-      m._seasonId=m.season_id||m.competition_id||null;
-    });
+    // 3. Limit do TOP_N żeby kontrolować quota: 1 fixture call + N odds calls + cached team stats
+    // (większość team stats z 4h cache — re-fetch tylko dla nowych zespołów)
+    const TOP_N=Math.min(25,inWindow.length);
+    const filtered=inWindow.slice(0,TOP_N);
 
-    // 4. Compute edge per match (team stats cached → minimal extra calls)
+    // 4. Compute edge per match — equity: pre-match odds + team stats. Live odds dopiero przy Analizuj.
     if(out) out.textContent='⏳ Obliczam edge dla '+filtered.length+' meczów…';
     const cards=[];
     let processed=0;
@@ -5567,32 +5827,38 @@ async function footyScanToday(){
         if(dashStatus) dashStatus.textContent=msg;
       }
       try{
-        const [homeT,awayT]=await Promise.all([
-          footyLoadTeam(m.homeID),
-          footyLoadTeam(m.awayID)
+        // Parallel: team stats (pre-match aggregates) + odds (pre-match bookmaker)
+        const [homeStats,awayStats,oddsObj]=await Promise.all([
+          afLoadTeamStats(m.homeID,m._af_leagueId,m._af_season).catch(()=>null),
+          afLoadTeamStats(m.awayID,m._af_leagueId,m._af_season).catch(()=>null),
+          afLoadOdds(m.id).catch(()=>null)
         ]);
+        // Merge odds into match object
+        if(oddsObj) Object.assign(m,oddsObj);
+        const homeT=homeStats?afTeamStatsToFlat(homeStats):{stats:{}};
+        const awayT=awayStats?afTeamStatsToFlat(awayStats):{stats:{}};
         const card=footyComputeMatchCard(m,homeT,awayT);
         if(card) cards.push(card);
       }catch(e){
-        console.warn('[scan] skip',m.id,e);
+        console.warn('[scan] skip',m.id,e&&e.message);
       }
     }
     cards.sort((a,b)=>b.bestEdge-a.bestEdge);
     const prevCache=window._scanCardsCache||[];
     window._scanCardsCache=cards;
     if(typeof footyRenderScanCards==='function' && $('scanTodayList')) footyRenderScanCards(cards,filtered.length);
-    // Dashboard render + notification check
     if(typeof renderDashboardMatches==='function') renderDashboardMatches();
     if(typeof dashboardCheckNewPicks==='function') dashboardCheckNewPicks(prevCache,cards);
     const liveCount=cards.filter(c=>isLiveMatch(c.match)).length;
     const valueCount=cards.filter(c=>c.bestEdge>=EDGE_VALUE).length;
     window._lastScanStats={api:allMatches.length,filtered:filtered.length,cached:cards.length,live:liveCount,value:valueCount};
-    if(out){ out.style.color='var(--positive)'; out.textContent='✓ Skan: '+cards.length+'/'+filtered.length+' meczów z edge'+(liveCount?' · 🔴 '+liveCount+' LIVE':''); }
+    if(out){ out.style.color='var(--positive)'; out.textContent='✓ Skan api-football: '+cards.length+'/'+filtered.length+' meczów z edge'+(liveCount?' · 🔴 '+liveCount+' LIVE':''); }
     setTimeout(()=>{ if(out) out.style.display='none'; },4000);
   }catch(e){
     if(out){ out.style.color='var(--negative)'; out.textContent='✗ '+e.message; }
     const dashStatus=document.getElementById('dashboardStatus');
     if(dashStatus){ dashStatus.style.color='var(--negative)'; dashStatus.textContent='✗ '+e.message; }
+    console.error('[scan] error:',e);
   } finally {
     if(btn) btn.disabled=false;
   }
@@ -5635,14 +5901,9 @@ function normalizeMatch(m){
   return m;
 }
 
-// Detect if match is live: status in_play OR (incomplete + start <2h ago + not finished)
+// v8.8: detect live = status === 'in_play' (api-football real-time, no inference needed).
 function isLiveMatch(m){
-  if(m.status==='in_play') return true;
-  if(m.status==='complete') return false;
-  if(!m.date_unix) return false;
-  const now=Math.floor(Date.now()/1000);
-  // Started up to 2h15min ago, not yet complete = probably live
-  return m.date_unix<=now&&m.date_unix>now-8100;
+  return m.status==='in_play';
 }
 
 function footyRenderScanCards(cards,totalScanned){
@@ -5791,22 +6052,20 @@ function dashboardEdgeBadge(edgePct){
   return '<span class="badge-edge edge-none">brak edge</span>';
 }
 
+// v8.8: real minute z api-football (_af_elapsed + _af_extra dla stoppage time).
+// Dokładność per-minute, brak estymat. Status mapping: 1H/2H/HT/ET/BT/P → LIVE.
 function dashboardLiveBadge(card){
   const m=card.match;
   if(isLiveMatch(m)){
-    // Dla matches gdzie API nie aktualizuje live (status='incomplete') minute jest unreliable
-    // — date_unix może być pre-match scheduled time, nie real kickoff. Pokaż "~Xmin" zamiast pewnego "X'".
-    const elapsedMin=m.date_unix?Math.max(1,Math.floor((Date.now()/1000-m.date_unix)/60)):0;
-    if(m.status==='in_play'){
-      // Tylko in_play = trustworthy minute (API tracks live)
-      const minDisp=elapsedMin>90?"90+'":elapsedMin+"'";
-      return '<span class="badge-live">LIVE '+minDisp+'</span>';
-    }
-    // status='incomplete' but live-inferred → unreliable minute, pokaż jako estymata
-    // v8.7.4: cap przy 90+ — minute>90 to bzdura (mecz trwa max ~95min realnie),
-    // a przy stale data API może zostawić status=incomplete jeszcze długo po FT.
-    const minDisp = elapsedMin>=90 ? '90+' : '~'+elapsedMin+'min';
-    return '<span class="badge-live" title="Minuta estymowana od scheduled kickoff — FootyStats Hobby nie tracks live, sprawdź u bukmachera">LIVE '+minDisp+'</span>';
+    const sShort=m._af_status||'';
+    if(sShort==='HT') return '<span class="badge-live">PRZERWA</span>';
+    if(sShort==='BT') return '<span class="badge-live">PRZERWA</span>';
+    if(sShort==='P')  return '<span class="badge-live">RZUTY KARNE</span>';
+    const elapsed=Number(m._af_elapsed)||0;
+    const extra=Number(m._af_extra)||0;
+    const minDisp=extra>0?(elapsed+"+"+extra+"'"):(elapsed?elapsed+"'":"LIVE");
+    if(sShort==='ET') return '<span class="badge-live">DOGRYWKA '+minDisp+'</span>';
+    return '<span class="badge-live">LIVE '+minDisp+'</span>';
   }
   if(m.status==='complete') return '<span class="badge-finished">Zakończony</span>';
   return '<span class="badge-upcoming">'+(footyDayLabel(m.date_unix)||'Wkrótce')+'</span>';
@@ -5817,38 +6076,26 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   const matchId=String(m.id);
   const isLive=isLiveMatch(m);
   const isPlaced=!!placedEntry;
-  // Score: po normalizeMatch homeGoals/awayGoals to real arrays. Dla apiLiveUnreliable
-  // (FootyStats Hobby nie tracks live) pokazujemy ?:? — bo "0:0" które API zwraca to frozen
-  // pre-match snapshot, nie real live state. Honest disclosure (v8.7.4).
+  // v8.8: api-football real-time = real score. Brak apiLiveUnreliable, brak ?:? hack.
   let score;
-  if(card.apiLiveUnreliable) score='?:?';
-  else if(m.status==='complete'||isLive) score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+  if(m.status==='complete'||isLive) score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
   else score='—';
   const bankroll=parseInt(localStorage.getItem('predator_bankroll'))||1000;
   const stakeSuggest=Math.round(bankroll*0.05);
   const payout=card.bestMarket && card.bestMarket.odd>1.01?Math.round(stakeSuggest*(card.bestMarket.odd-1)):null;
   const leagueBadge=m._leagueName?'<span class="match-card-league">'+m._leagueName+'</span>':'';
   const placedClass=isPlaced?'placed':'';
-  const staleClass=card.staleData?'stale-data':'';
+  const staleClass='';
 
-  // Banner header: stale (extreme odds discrepancy) lub apiLiveUnreliable (Hobby tier)
-  // v8.7.4: dla apiLiveUnreliable banner mocniejszy — Hobby tier NIE updates live, więc
-  // każdy market liczony na frozen 0:0 byłby phantom. Honest disclosure: brak rekomendacji,
-  // user wpisuje wynik ręcznie przez Analizuj.
+  // staleData (extreme odds vs score discrepancy) zostaje jako safety net na anomalie
   let staleWarning='';
   if(card.staleData){
     staleWarning='<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>';
-  } else if(card.apiLiveUnreliable){
-    staleWarning='<div class="match-card-stale-warning">⚠ FootyStats Hobby nie aktualizuje live data — sprawdź wynik u bukmachera i kliknij <b>Analizuj</b>, by wpisać aktualny stan.</div>';
   }
 
-  // Pick text — markets pokazane normalnie (apiLiveUnreliable nie blokuje markets)
   let pickHtml;
   if(card.staleData){
-    pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>';
-  } else if(card.apiLiveUnreliable){
-    // v8.7.4: brak rekomendacji — placeholder kieruje user'a do Analizuj
-    pickHtml='<span style="color:var(--negative);font-weight:600;">'+card.bestMarket.label+'</span>';
+    pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — sprawdź wynik na żywo.</span>';
   } else if(card.isLiveOnly){
     pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
       +' <span style="color:var(--text-faint);">· wszystkie standardowe linie hit, użyj live edge calc</span>';
@@ -5859,18 +6106,12 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
       +(card.allMarkets.length>1?' · <span style="color:var(--text-faint);">+'+(card.allMarkets.length-1)+' rynków</span>':'');
   }
 
-  // Edge badge — STALE (full block) / LIVE-info / normalny edge
-  // v8.7.4: apiLiveUnreliable → 🔴 LIVE (czerwona pulse, nie green-soft jak isLiveOnly)
-  // żeby user widział "to jest mecz live ale danych z API nie ufamy".
   let edgeBadge;
   if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
-  else if(card.apiLiveUnreliable) edgeBadge='<span class="badge-edge edge-live-info">🔴 LIVE</span>';
   else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
   else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
-  // Disable Obstaw dla stale ALBO apiLiveUnreliable (nie chcemy zapisywać betu z niepewnego score)
-  // Analizuj zawsze enable — user wpisze aktualny stan ręcznie jeśli apiLiveUnreliable
-  const placedDisabled=(card.staleData||card.apiLiveUnreliable)?'disabled':'';
+  const placedDisabled=card.staleData?'disabled':'';
   const analyzeDisabled='';
 
   return '<div class="match-card '+placedClass+' '+staleClass+'" data-match-id="'+matchId+'" data-edge="'+card.bestEdge.toFixed(1)+'">'
@@ -5903,8 +6144,8 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   +'</div>';
 }
 
-// Force re-fetch single match (bypass cache) — when stale data detected
-// Force fetch SINGLE match — 1 call do /todays-matches, znajdź ten mecz, update cache
+// v8.8: dashboardRefreshCard — single fixture refresh przez api-football /fixtures?id=
+// Real-time score + minute + status. Zachowuje team stats z cache (bez extra calls dla stats).
 async function dashboardRefreshCard(matchIdOrIdx){
   let card=null;
   if(typeof matchIdOrIdx==='number') card=window._scanCardsCache?.[matchIdOrIdx];
@@ -5913,45 +6154,41 @@ async function dashboardRefreshCard(matchIdOrIdx){
   const m=card.match;
   qdToast('🔄 Odświeżam '+m.home_name+'…','green',1500);
   try{
-    // 3 calls → wczoraj+dziś+jutro UTC (bez date param API pomija live!)
-    const todayUTC=new Date().toISOString().slice(0,10);
-    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
-    const [rY,rT,rTm]=await Promise.all([
-      footyFetch('todays-matches',{date:yesterdayUTC}),
-      footyFetch('todays-matches',{date:todayUTC}),
-      footyFetch('todays-matches',{date:tomorrowUTC})
-    ]);
-    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
-    merged.forEach(normalizeMatch);
-    const fresh=merged.find(x=>String(x.id)===String(m.id));
-    if(!fresh){
-      // Match not in todays-matches (zakończony lub jutro) — fallback do league-matches force fetch
-      if(m._seasonId){
-        try{ sessionStorage.removeItem('footy_lm_'+m._seasonId); }catch(_){}
-        const r2=await footyFetch('league-matches',{season_id:m._seasonId,page:1});
-        const list=r2.data||[];
-        const updated=list.find(x=>String(x.id)===String(m.id));
-        if(updated){
-          const preserved={_leagueName:m._leagueName,_seasonId:m._seasonId};
-          Object.assign(m,updated,preserved);
-        }
-      }
-    } else {
-      const preserved={_leagueName:m._leagueName,_seasonId:m._seasonId};
+    const fresh=await afLoadFixture(m.id);
+    if(fresh){
+      // Zachowaj odds z poprzedniego fetcha (oddzielny call) i league/season metadata
+      const preserved={
+        odds_ft_1:m.odds_ft_1,odds_ft_x:m.odds_ft_x,odds_ft_2:m.odds_ft_2,
+        odds_ft_over25:m.odds_ft_over25,odds_ft_under25:m.odds_ft_under25,
+        odds_btts_yes:m.odds_btts_yes,odds_btts_no:m.odds_btts_no,
+        odds_ft_over15:m.odds_ft_over15,odds_ft_under15:m.odds_ft_under15,
+        odds_ft_over35:m.odds_ft_over35,odds_ft_under35:m.odds_ft_under35,
+        odds_ft_over45:m.odds_ft_over45,odds_ft_under45:m.odds_ft_under45,
+        odds_ft_over55:m.odds_ft_over55,odds_ft_under55:m.odds_ft_under55,
+        odds_ft_over65:m.odds_ft_over65,odds_ft_under65:m.odds_ft_under65
+      };
       Object.assign(m,fresh,preserved);
+      // Refresh live odds tylko dla in_play (oszczędność quota — pre-match się nie zmienia często)
+      if(m.status==='in_play'){
+        try{
+          const liveOdds=await afLoadOddsLive(m.id);
+          if(liveOdds) Object.assign(m,liveOdds);
+        }catch(_){}
+      }
+      const newCard=footyComputeMatchCard(card.match,card.homeT,card.awayT);
+      if(newCard){
+        card.bestEdge=newCard.bestEdge;
+        card.bestMarket=newCard.bestMarket;
+        card.allMarkets=newCard.allMarkets;
+        card.staleData=false;  // api-football real-time, never stale
+        card.staleReason='';
+        card.isLiveOnly=newCard.isLiveOnly;
+      }
+      renderDashboardMatches();
+      qdToast('✓ Zaktualizowano '+m.home_name+' '+(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length,'green',2500);
+    } else {
+      qdToast('Mecz nie znaleziony w api-football','red',2000);
     }
-    // Recompute card with fresh data + cached team stats
-    const newCard=footyComputeMatchCard(card.match,card.homeT,card.awayT);
-    if(newCard){
-      card.bestEdge=newCard.bestEdge;
-      card.bestMarket=newCard.bestMarket;
-      card.allMarkets=newCard.allMarkets;
-      card.staleData=newCard.staleData;
-      card.staleReason=newCard.staleReason;
-    }
-    renderDashboardMatches();
-    qdToast('✓ Zaktualizowano '+m.home_name,'green',2000);
   }catch(e){
     qdToast('Błąd: '+e.message,'red',3000);
   }
@@ -6192,67 +6429,66 @@ async function dashboardManualRefresh(){
 
 // LIGHT refresh — auto-refresh co 30s. Tylko 1 call do /todays-matches żeby zaktualizować live + placed + watched.
 // Pre-match cards zostają z initial scan (nie ruszamy ich).
+// v8.8: dashboardLightRefresh — 1 call /fixtures?live=all (api-football real-time).
+// Aktualizuje TYLKO live + placed cards. Zachowuje team stats + odds (nie re-fetchuje).
 async function dashboardLightRefresh(){
-  if(Date.now()<window._apiBackoffUntil) return;  // skip if rate limited
+  if(Date.now()<window._afBackoffUntil) return;
   const cache=window._scanCardsCache||[];
-  if(!cache.length) return;  // nothing to refresh
+  if(!cache.length) return;
   const placed=loadPlacedMatches();
-  // Filter: only matches we care about
   const toRefresh=cache.filter(c=>{
     if(isLiveMatch(c.match)) return true;
-    if(placed[String(c.match.id)]) return true;  // user obstawił
+    if(placed[String(c.match.id)]) return true;
     return false;
   });
   if(!toRefresh.length){
-    // No live/placed — just update timestamp
     const status=document.getElementById('dashboardStatus');
     if(status) status.textContent='Brak meczów live · ostatni skan: '+new Date().toLocaleTimeString('pl');
     return;
   }
   try{
-    // 3 calls → wczoraj+dziś+jutro UTC (date param zwraca past+live+future, yesterday łapie nocne)
-    const todayUTC=new Date().toISOString().slice(0,10);
-    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    const yesterdayUTC=new Date(Date.now()-86400000).toISOString().slice(0,10);
-    const [rY,rT,rTm]=await Promise.all([
-      footyFetch('todays-matches',{date:yesterdayUTC}),
-      footyFetch('todays-matches',{date:todayUTC}),
-      footyFetch('todays-matches',{date:tomorrowUTC})
-    ]);
-    const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
-    merged.forEach(normalizeMatch);
-    const todaysMap=new Map(merged.map(m=>[String(m.id),m]));
+    // 1 call dla wszystkich live (jeden mecz może być live ale nie z naszej cache — ignorujemy)
+    const liveAll=await afScanLive();
+    const liveMap=new Map(liveAll.map(m=>[String(m.id),m]));
     let updated=0;
     cache.forEach(c=>{
-      const fresh=todaysMap.get(String(c.match.id));
+      const fresh=liveMap.get(String(c.match.id));
       if(!fresh) return;
-      // Update live state — preserve _leagueName, _seasonId from original
-      const preserved={_leagueName:c.match._leagueName,_seasonId:c.match._seasonId};
+      // Preserve odds + metadata (api-football fixture call nie zwraca odds, te są oddzielne)
+      const preserved={
+        _leagueName:c.match._leagueName,_seasonId:c.match._seasonId,
+        _af_leagueId:c.match._af_leagueId,_af_season:c.match._af_season,
+        odds_ft_1:c.match.odds_ft_1,odds_ft_x:c.match.odds_ft_x,odds_ft_2:c.match.odds_ft_2,
+        odds_ft_over25:c.match.odds_ft_over25,odds_ft_under25:c.match.odds_ft_under25,
+        odds_btts_yes:c.match.odds_btts_yes,
+        odds_ft_over15:c.match.odds_ft_over15,odds_ft_under15:c.match.odds_ft_under15,
+        odds_ft_over35:c.match.odds_ft_over35,odds_ft_under35:c.match.odds_ft_under35
+      };
       Object.assign(c.match,fresh,preserved);
-      // Recompute edge with fresh data (reuse cached homeT/awayT)
       const newCard=footyComputeMatchCard(c.match,c.homeT,c.awayT);
       if(newCard){
         c.bestEdge=newCard.bestEdge;
         c.bestMarket=newCard.bestMarket;
         c.allMarkets=newCard.allMarkets;
-        c.staleData=newCard.staleData;
-        c.staleReason=newCard.staleReason;
+        c.staleData=false;
+        c.staleReason='';
+        c.isLiveOnly=newCard.isLiveOnly;
       }
       updated++;
     });
     if(updated>0){
-      const prevCacheCopy=cache.map(c=>({...c}));  // for new picks check
+      const prevCacheCopy=cache.map(c=>({...c}));
       renderDashboardMatches();
       dashboardCheckNewPicks(prevCacheCopy,cache);
     }
     const status=document.getElementById('dashboardStatus');
-    if(status) status.textContent='Live update ('+updated+' meczów) · '+new Date().toLocaleTimeString('pl');
+    if(status) status.textContent='Live update ('+updated+' z '+toRefresh.length+' śledzonych) · '+new Date().toLocaleTimeString('pl');
   }catch(e){
-    if(/rate.?limit|cooldown/i.test(e.message)){
+    if(/cooldown/i.test(e.message)){
       const status=document.getElementById('dashboardStatus');
       if(status){ status.textContent='⏳ '+e.message; status.style.color='var(--warning)'; }
     } else {
-      console.warn('[dashboardLightRefresh]',e);
+      console.warn('[dashboardLightRefresh]',e&&e.message);
     }
   }
 }

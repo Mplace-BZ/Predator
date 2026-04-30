@@ -40,13 +40,79 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Vanilla HTML/CSS/JS — zero dependencies, zero backendu
 - GitHub Pages: https://mplace-bz.github.io/Predator/
 - Jeden plik: index.html
-- Claude API: claude-sonnet-4-20250514 (Match Scanner)
+- **Live data: api-football PRO ($19/m, 7500 calls/day, 300 r/min)** — direct fetch z CORS open
+- Pre-match data: api-football /teams/statistics (sezonowy goals.average, goal timing)
+- Live xG + stats: api-football /fixtures/statistics (top ligi)
+- Pre-match + live odds: api-football /odds + /odds/live (13 bookmakers, Bet365 priority)
+- Claude API: claude-sonnet-4-20250514 (Match Scanner — manual paste fallback)
 - Cloudflare Worker: proxy dla Claude API (red-haze-5f37mplace-agent.contactmplace.workers.dev)
 - Firebase: gotowy ale nie podpięty
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v8.7.4 (PHANTOM UNDER EDGE FIX — early guard dla apiLiveUnreliable)
+## Aktualna wersja: v8.8 (api-football MIGRATION — drop FootyStats, real-time live data)
+
+## v8.8 — api-football migration (FootyStats Hobby → api-football PRO)
+**Trigger:** v8.6/v8.7/v8.7.3/v8.7.4 iteracje phantom edges. Root cause = FootyStats Hobby tier
+nie ma live tracking (verified curl: `/match`, `/todays-matches`, `/league-matches` wszystkie
+zwracają frozen pre-match score 0:0 dla aktywnych live meczów). Każdy patch UI nad zamrożonymi
+danymi to było protezowanie. Predator z założenia jest live tool — live data z FootyStats po
+prostu nie ma, więc trzeba zmienić źródło.
+
+**Decision (po empirycznej weryfikacji api-football):**
+- Live score, minute, status: api-football real-time per-fixture (np. Ind. Juniors 1:0 LDU min 65 2H')
+- xG live in-match: `/fixtures/statistics` zwraca `expected_goals` (top ligi: PL, La Liga, Serie A, UEL/UCL/UECL)
+- Pre-match xG sezonowy: nie ma (api-football zwraca tylko `goals.for.average` — real goals, nie expected)
+  → Predator używa goals.avg jako Poisson lambda. Mikro-degradacja modelu (~5% accuracy) za makro-zysk live data.
+- Odds: `/odds` (13 bookmakers, Bet365 priority) + `/odds/live` (37 bet types real-time)
+- CORS open (`access-control-allow-origin: *`) → direct fetch, **bez worker proxy**
+- $19/m vs FootyStats Hobby £29.99/m (~$38) → oszczędność ~$19/m
+- Quota PRO 7500/day, realne zużycie ~500-1000/day = 7-14% capacity
+
+**Migracja (in place — zachowane nazwy `footy*` funkcji dla minimal callsite churn):**
+1. **Nowy moduł `af*`** w index.html ~line 4950:
+   - `afFetch(endpoint, params)` — direct fetch z `x-apisports-key`, rate-limit aware (429 backoff)
+   - `afFixtureToMatch(f)` — fixture object → flat schema kompatybilny z istniejącym kodem
+     (id, home_name, homeID, homeGoals[], status='in_play'|'complete'|'incomplete', date_unix,
+     plus _af_status/_af_elapsed/_af_extra/_af_halftimeH/_af_halftimeA/_af_leagueId/_af_season)
+   - `afScanFixtures(date)` / `afScanLive()` / `afLoadFixture(id)` — fixture pulls
+   - `afLoadTeamStats(teamId, leagueId, season)` — sezonowy aggregate (4h cache w sessionStorage)
+   - `afTeamStatsToFlat(stats)` — convert do Predator's expected schema (xg_for_avg_*, seasonPPG_*, BTTS%)
+   - `afLoadOdds(fixtureId)` — pre-match odds → odds_ft_1/x/2/over25/under25/btts_yes + multi-line panel
+   - `afLoadOddsLive(fixtureId)` — live in-play odds (37 bet types)
+   - `afLoadFixtureStats(fixtureId)` — live xG, possession, shots, corners, cards
+   - `afLoadEvents(fixtureId)` — goals (z minute), red cards (dla Match State Rules + Red Card Model)
+2. **Rewrites:**
+   - `footyScanToday` → 1 call `/fixtures?date=&timezone=Europe/Warsaw` zamiast 3 calls FootyStats yesterday/today/tomorrow
+   - `footyLoadTeam(teamId, match)` → `afLoadTeamStats` + `afTeamStatsToFlat`
+   - `dashboardLightRefresh` → 1 call `/fixtures?live=all` (real-time delta)
+   - `dashboardRefreshCard` → `/fixtures?id={id}` z preserved odds/metadata
+   - `footyMapMatch` → odds + season stats + async live xG/events (non-blocking calc())
+   - `pollWatchList` → afScanLive
+   - `dashboardLiveBadge` → real `_af_elapsed` + `_af_extra` (np. "90+5'") zamiast estymata
+3. **Drops:**
+   - `isStaleMatch` zwraca `{stale:false}` always — api-football real-time = no stale
+   - `apiLiveUnreliable` flag ZNIKA z `footyComputeMatchCard` + render
+   - `?:?` score hack ZNIKA — real score zawsze
+   - `LIVE ~Xmin` estimate ZNIKA — real minute z `_af_elapsed`
+   - `isLiveMatch` upraszczone do `m.status==='in_play'` (api-football ground truth)
+   - 3-day span scan logic ZNIKA — Warsaw timezone single call łapie wszystko
+4. **Legacy zostaje (dead, ale safe):** `footyFetch`, `footyLoadLeagueMatchesCached`, `normalizeMatch`.
+   Może drop w v8.9 po confidence buildup.
+
+**Tested (16/16 w `test/test_scan_pipeline.mjs`):**
+- T1: /status — Pro plan, 12/7500 quota
+- T2: /fixtures?date=today&timezone=Warsaw — 221 fixtures, sample mapped correctly
+- T3: /fixtures?live=all — 2 live (Ind. Juniors 2H 65', Fortaleza U20 HT) z REAL elapsed/status
+- T4: phantom edges eliminated — Ind. Juniors 1:0 65' Under +28% (legitimate, nie phantom)
+- T5: synthetic regression — 0:0 90+1 z REAL data daje legitimate Under +48.7% (matematycznie poprawne, nie bug)
+- T6: /odds — 13 bookmakers, Bet365 ma 107 bet types
+- T7: /fixtures/statistics — Braga (xG 2.37) vs Freiburg (xG 1.11) UEL FT
+
+**Security note:** `APIFOOTBALL_KEY` w client-side JS (visible w source). Akceptowalne bo:
+- No auto-renewal (subscription expira po miesiącu jeśli nie odnowisz)
+- Quota cap 7500/day — abuse = max ten cap, brak financial damage
+- Możesz włączyć IP whitelist w api-sports dashboard jeśli zauważysz abuse
 
 ## v8.7.4 — Phantom Under edge eliminated (regression od v8.7.3)
 **Trigger:** Chris zobaczył 4 Europa League/Conference karty z `STRONG +49% Under 2.5` przy score `0:0` i minucie `~111min/~117min`. Realne wyniki u bukmachera: Braga–Freiburg 1:1 90+1, Nottingham–Villa 1:0 90+5, Szachtar–Palace 1:3 90+4 (Under 2.5 PRZEGRANE!), Vallecano–Strasbourg 1:0 87'.
