@@ -121,6 +121,9 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .hero-rec{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;transition:border-color .2s;}
 .hero-rec.is-positive{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-tint) 0%,var(--surface) 60%);}
 .hero-rec.is-negative{border-color:var(--negative-bd);}
+.hero-rec.is-stale{border-color:var(--warning);background:linear-gradient(180deg,rgba(255,179,71,0.12) 0%,var(--surface) 60%);}
+.hero-rec.is-stale .hero-rec-icon{background:rgba(255,179,71,0.20);color:var(--warning);}
+.hero-rec.is-stale .hero-rec-eyebrow{color:var(--warning);font-weight:700;}
 .hero-rec.is-warning{border-color:var(--warning-bd);}
 .hero-rec-left{display:flex;align-items:center;gap:20px;min-width:0;}
 .hero-rec-icon{width:48px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--surface-2);font-size:26px;}
@@ -309,6 +312,86 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 
 /* ───────────────────────── Velocity badge ───────────────────────── */
 .velocity-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--accent-tint);border:1px solid var(--accent-bd);color:var(--accent);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-0.005em;}
+/* Match State Rule chips — shown in hero rec when rules apply */
+.rule-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.rule-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-0.005em;cursor:default;}
+.rule-chip.boost{background:var(--positive-tint);border:1px solid var(--positive-bd);color:var(--positive);}
+.rule-chip.damp{background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.28);color:var(--negative);}
+.rule-chip .rule-chip-id{font-family:var(--mono);font-size:10px;opacity:0.7;}
+
+/* ───────────────────────── Match Dashboard (v8.4) ───────────────────────── */
+.match-dashboard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:24px;}
+.dashboard-tabs{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.dash-tab{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--sans);}
+.dash-tab:hover{color:var(--text);border-color:var(--border-strong);}
+.dash-tab.active{background:var(--accent-tint);border-color:var(--accent);color:var(--accent);}
+.dash-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--surface-3);color:var(--text);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
+.dash-tab.active .dash-count{background:var(--accent);color:#0E0E10;}
+.dashboard-controls{margin-left:auto;display:inline-flex;align-items:center;gap:10px;}
+.auto-refresh-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;font-family:var(--sans);user-select:none;}
+.auto-refresh-toggle input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+.dashboard-list{display:flex;flex-direction:column;gap:10px;}
+.dashboard-list:empty::before{content:"⏳ Skanowanie meczów…";display:block;padding:32px;text-align:center;color:var(--text-faint);font-size:13px;}
+.dashboard-status{margin-top:10px;font-size:11px;color:var(--text-faint);text-align:right;font-family:var(--mono);}
+
+/* Match Card — compact per-match line */
+.match-card{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;transition:border-color .15s,transform .1s;}
+.match-card:hover{border-color:var(--border-strong);}
+.match-card.placed{border-left:3px solid var(--accent);background:linear-gradient(90deg,rgba(255,90,31,0.06) 0%,var(--surface-2) 30%);}
+.match-card.hidden{display:none;}
+.match-card-status{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:120px;}
+.badge-edge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.005em;font-family:var(--sans);}
+.badge-edge.edge-strong{background:var(--positive-tint);border:1px solid var(--positive);color:var(--positive);animation:edge-pulse 1.4s ease-in-out infinite;}
+.badge-edge.edge-value{background:var(--accent-tint);border:1px solid var(--accent-bd);color:var(--accent);}
+.badge-edge.edge-slim{background:rgba(255,179,71,0.12);border:1px solid rgba(255,179,71,0.30);color:var(--accent-soft);}
+.badge-edge.edge-none{background:var(--surface-3);border:1px solid var(--border);color:var(--text-faint);}
+.badge-live{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.30);color:var(--negative);font-size:10px;font-weight:700;font-family:var(--mono);}
+.badge-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--negative);animation:dot-pulse 1.2s ease-in-out infinite;}
+.badge-upcoming{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--surface-3);border:1px solid var(--border);color:var(--text-dim);font-size:10px;font-weight:600;font-family:var(--mono);}
+.badge-finished{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--surface-3);border:1px solid var(--border);color:var(--text-faint);font-size:10px;font-weight:600;font-family:var(--mono);}
+.match-card-info{min-width:0;display:flex;flex-direction:column;gap:6px;}
+.match-card-teams{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow:hidden;}
+.match-card-teams>span:not(.match-card-score):not(.match-card-league){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;}
+.match-card-score{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:var(--surface-3);font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--text);}
+.match-card-league{font-size:11px;color:var(--text-faint);font-family:var(--sans);}
+.match-card-pick{font-size:12px;color:var(--text-dim);font-family:var(--sans);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.match-card-pick .pick-market{color:var(--text);font-weight:600;}
+.match-card-pick .pick-stake{color:var(--accent);font-weight:600;font-family:var(--mono);}
+.match-card-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.match-card-actions button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--sans);}
+.match-card-actions button:hover{border-color:var(--border-strong);background:var(--surface-3);}
+.match-card-actions button.btn-primary{background:var(--accent);color:#0E0E10;border-color:var(--accent);}
+.match-card-actions button.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+.match-card-actions .placed-toggle{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);cursor:pointer;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);user-select:none;}
+.match-card-actions .placed-toggle:hover{border-color:var(--accent-bd);}
+.match-card-actions .placed-toggle input{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
+.match-card.placed .placed-toggle{background:var(--accent-tint);border-color:var(--accent);color:var(--accent);font-weight:600;}
+.match-card.stale-data{border-left:3px solid var(--warning);background:linear-gradient(90deg,rgba(255,179,71,0.08) 0%,var(--surface-2) 30%);}
+.match-card-stale-warning{padding:8px 12px;background:rgba(255,179,71,0.15);border-bottom:1px solid rgba(255,179,71,0.30);color:var(--warning);font-size:11px;font-weight:600;font-family:var(--sans);border-radius:11px 11px 0 0;}
+.match-card-body{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;}
+.match-card.stale-data .match-card-body{padding-top:10px;}
+.badge-edge.edge-stale{background:rgba(255,179,71,0.15);border:1px solid var(--warning);color:var(--warning);}
+
+@keyframes edge-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.5);}
+  50%{box-shadow:0 0 12px 4px rgba(74,222,128,0.4);}
+}
+@keyframes dot-pulse{
+  0%,100%{transform:scale(1);opacity:1;}
+  50%{transform:scale(1.4);opacity:0.7;}
+}
+
+@media(max-width:768px){
+  .match-card{grid-template-columns:1fr;gap:10px;}
+  .match-card-status{flex-direction:row;flex-wrap:wrap;}
+  .match-card-actions{justify-content:flex-start;}
+}
+
+.dashboard-show-more{display:block;text-align:center;padding:10px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.dashboard-show-more:hover{border-color:var(--border-strong);color:var(--text);background:var(--surface-2);}
+
+.dashboard-empty{padding:40px 20px;text-align:center;color:var(--text-faint);font-size:13px;font-family:var(--sans);}
+.dashboard-empty-icon{font-size:32px;margin-bottom:10px;opacity:0.4;}
 
 /* ───────────────────────── Live context grid ───────────────────────── */
 .context-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
@@ -501,6 +584,7 @@ footer{color:var(--text-dim);font-family:var(--sans);font-weight:500;}
 textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:var(--mono);font-size:11px;padding:.7rem .9rem;resize:vertical;min-height:90px;transition:border-color .15s;}
 textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,255,140,0.08);}
 textarea::placeholder{color:var(--text3);}
+input::placeholder{color:var(--text-faint);opacity:0.6;font-style:italic;}
 .parse-btn{margin-top:.5rem;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:7px 16px;border-radius:7px;border:1px solid var(--green-bd);background:var(--green3);color:var(--green);cursor:pointer;transition:all .15s;}
 .parse-btn:hover{background:var(--green4);border-color:var(--green);}
 .parse-msg{margin-top:.4rem;font-family:var(--mono);font-size:10px;color:var(--green);opacity:0;transition:opacity .4s;}
@@ -727,7 +811,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v7.12</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.5</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -778,6 +862,34 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </section>
 
+<!-- ───── MATCH DASHBOARD (v8.4 — live-first widok) ───── -->
+<section class="match-dashboard" id="matchDashboard">
+  <div class="dashboard-tabs">
+    <button class="dash-tab active" data-tab="live" onclick="dashboardSwitchTab('live')" title="Live + edge ≥5%">
+      🔴 LIVE <span class="dash-count" id="dashCountLive">0</span>
+    </button>
+    <button class="dash-tab" data-tab="liveAll" onclick="dashboardSwitchTab('liveAll')" title="Wszystkie mecze na żywo z cache (bez progu edge)">
+      📡 Wszystkie live <span class="dash-count" id="dashCountLiveAll">0</span>
+    </button>
+    <button class="dash-tab" data-tab="upcoming" onclick="dashboardSwitchTab('upcoming')">
+      📅 Dziś <span class="dash-count" id="dashCountUpcoming">0</span>
+    </button>
+    <button class="dash-tab" data-tab="placed" onclick="dashboardSwitchTab('placed')">
+      ✅ Moje bety <span class="dash-count" id="dashCountPlaced">0</span>
+    </button>
+    <div class="dashboard-controls">
+      <span id="dashApiCounter" style="font-size:11px;font-family:var(--mono);color:var(--text-faint);" title="API calls w ostatniej godzinie / FootyStats Hobby limit (1800/h)"></span>
+      <label class="auto-refresh-toggle" title="Po pierwszym pełnym skanie aktywuje auto-update co 30s (1 call/skan). Pre-match cache'owane.">
+        <input type="checkbox" id="dashAutoRefresh" onchange="dashboardToggleAutoRefresh()">
+        🔔 Auto-skan
+      </label>
+      <button class="btn btn-sm btn-accent" onclick="dashboardManualRefresh()" id="dashRefreshBtn" title="Skanuje wszystkie 50 lig — start tutaj">↻ Pełny skan</button>
+    </div>
+  </div>
+  <div id="dashboardList" class="dashboard-list"></div>
+  <div id="dashboardStatus" class="dashboard-status"></div>
+</section>
+
 <!-- ───── MATCH CONTEXT TAGS ───── -->
 <div class="tag-bar" id="tagBar">
   <span class="tag-bar-label">Kontekst:</span>
@@ -802,6 +914,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <div id="heroRecEyebrow" class="hero-rec-eyebrow">Czekam na dane</div>
         <div id="heroRecTitle" class="hero-rec-title">Wklej dane meczu poniżej</div>
         <div id="heroRecSub" class="hero-rec-sub">Predictor potrzebuje danych z FootyStats lub statów live, by dać rekomendację.</div>
+        <div id="heroRecRules" class="rule-badges" style="display:none;"></div>
         <div id="heroRecStake" class="hero-rec-stake" style="display:none;"></div>
       </div>
     </div>
@@ -809,8 +922,8 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div id="heroRecConf" class="hero-rec-conf">—</div>
       <div class="hero-rec-conf-label">Pewność modelu</div>
       <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-        <button id="heroRecPrimary" class="hero-rec-cta primary" onclick="placeBet(window._lastDecision&&window._lastDecision.verdict||'red')" disabled>Zapisz bet</button>
-        <button id="heroRecSecondary" class="hero-rec-cta ghost" onclick="placeBet('red')">Pomiń</button>
+        <button id="heroRecPrimary" class="hero-rec-cta primary" disabled>Zapisz bet</button>
+        <button id="heroRecSecondary" class="hero-rec-cta ghost">Pomiń</button>
       </div>
     </div>
   </div>
@@ -913,8 +1026,8 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </div>
 
-<!-- ───── ACCORDION: Wklej dane meczu (open by default) ───── -->
-<section class="acc open" id="accInput">
+<!-- ───── ACCORDION: Wklej dane meczu (manual paste — collapsed by default v8.4) ───── -->
+<section class="acc" id="accInput">
   <button class="acc-head" type="button" onclick="toggleAcc(this)">
     <svg class="acc-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 4 13 10 7 16"/></svg>
     <span class="acc-head-title">Wklej dane meczu</span>
@@ -1014,6 +1127,20 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 </div>
 
+<!-- MATCH STATE — fakultatywne pola dla reguł R2/R3/R4 -->
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.6rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
+  <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.1em;">Stan meczu</span>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text-dim);font-family:var(--mono);">1H wynik</span>
+    <input type="text" id="halfTimeScore" placeholder="np. 1:1" oninput="if(typeof calc==='function')calc()" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 8px;width:80px;text-align:center;">
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text-dim);font-family:var(--mono);">Min. ost. gola</span>
+    <input type="number" id="lastGoalMin" placeholder="np. 67" min="1" max="120" oninput="if(typeof calc==='function')calc()" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 8px;width:80px;text-align:center;">
+  </div>
+  <span style="font-size:10px;color:var(--text-faint);font-family:var(--sans);">Auto z FootyStats lub wpisz — wpływa na reguły R2/R3/R4</span>
+</div>
+
 <!-- RED CARD -->
 <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.7rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
   <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--red);">
@@ -1038,8 +1165,8 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </section>
 <!-- ───── /ACCORDION: Wklej dane meczu ───── -->
 
-<!-- ───── ACCORDION: Pełne predykcje (open by default) ───── -->
-<section class="acc open" id="accPredictions">
+<!-- ───── ACCORDION: Pełne predykcje (collapsed by default v8.4 — opens after Analizuj) ───── -->
+<section class="acc" id="accPredictions">
   <button class="acc-head" type="button" onclick="toggleAcc(this)">
     <svg class="acc-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 4 13 10 7 16"/></svg>
     <span class="acc-head-title">Pełne predykcje modelu</span>
@@ -1186,8 +1313,17 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </div>
 
   <!-- BOOKMAKER ODDS -->
-  <div class="sl" style="margin:1.1rem 0 .6rem">Kursy bukmachera</div>
-  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.85rem;padding:.7rem 1rem;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;">
+  <div class="sl" style="margin:1.1rem 0 .6rem;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <span>Kursy bukmachera</span>
+    <span style="display:inline-flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;">
+      <button class="action-btn" id="oddsPasteBtn" type="button" onclick="armOddsPaste()" title="Wklej screenshot kursów z bukmachera — AI rozpozna i wypełni pola" style="padding:6px 12px;font-size:12px;">
+        <span class="action-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/><circle cx="10" cy="10" r="3"/><path d="M7 4.5l1-2h4l1 2"/></svg></span>
+        Wklej screen kursów
+      </button>
+      <span id="oddsPasteHint" style="font-size:11px;color:var(--text-dim);font-family:var(--sans);font-weight:500;"></span>
+    </span>
+  </div>
+  <div id="oddsRow" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.85rem;padding:.7rem 1rem;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;transition:border-color .15s,background .15s;">
     <div style="display:flex;align-items:center;gap:4px;">
       <span style="font-size:10px;color:var(--blue);font-family:var(--mono);">1</span>
       <input type="number" id="oddHome" value="0" step="0.01" min="1" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:4px 6px;width:60px;text-align:center;">
@@ -1240,6 +1376,59 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <!-- EDGE% TABLE -->
   <div class="sl" style="margin:0 0 .6rem">Edge% — model vs bukmacher</div>
   <div id="edgeGrid" style="margin-bottom:.85rem"></div>
+
+  <!-- ALL OVER/UNDER LINES — wpisz wszystkie progi jakie widzisz u bukmachera -->
+  <details style="margin-bottom:.85rem;border:1px solid var(--border);border-radius:10px;background:var(--bg2);">
+    <summary style="padding:.7rem 1rem;cursor:pointer;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);font-family:var(--sans);user-select:none;">
+      Wszystkie linie Over/Under (long-shot panel)
+    </summary>
+    <div style="padding:.5rem 1rem 1rem;">
+      <div style="font-size:11px;color:var(--text-faint);margin-bottom:.7rem;">Wpisz kursy bukmachera dla każdego progu (lub wklej screen → Vision wyciągnie wszystko). Edge% pokaże która linia bije.</div>
+      <div id="overUnderLines" style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:11px;">
+        <!-- Header -->
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:0 4px;">
+          <span>Próg</span><span style="text-align:center;color:var(--green);">Over</span><span style="text-align:center;color:var(--red);">Under</span><span>Edge</span>
+        </div>
+        <!-- Rows: 1.5, 2.5, 3.5, 4.5, 5.5, 6.5 -->
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">1.5</span>
+          <input type="number" id="oddOver15" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <input type="number" id="oddUnder15" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <span id="edge15" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">2.5</span>
+          <span style="text-align:center;color:var(--text-dim);font-size:10px;">↑ pole O2.5</span>
+          <span style="text-align:center;color:var(--text-dim);font-size:10px;">↑ pole U2.5</span>
+          <span id="edge25" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">3.5</span>
+          <input type="number" id="oddOver35" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <input type="number" id="oddUnder35" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <span id="edge35" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">4.5</span>
+          <input type="number" id="oddOver45" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <input type="number" id="oddUnder45" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <span id="edge45" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">5.5</span>
+          <input type="number" id="oddOver55" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <input type="number" id="oddUnder55" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <span id="edge55" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 70px 70px 1fr;gap:8px;align-items:center;padding:0 4px;">
+          <span style="color:var(--text);">6.5</span>
+          <input type="number" id="oddOver65" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <input type="number" id="oddUnder65" step="0.01" min="1" placeholder="—" style="background:var(--bg);border:1px solid var(--border-strong);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;text-align:center;">
+          <span id="edge65" style="color:var(--text-faint);font-size:11px;"></span>
+        </div>
+      </div>
+    </div>
+  </details>
 
   <!-- CORNERS BETTING -->
   <div class="sl" style="margin:1.1rem 0 .6rem">Rzuty rożne (corners)</div>
@@ -1436,6 +1625,41 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     </div>
 
     <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
+      <label style="margin-bottom:8px;">Moje reguły (heurystyki kontekstowe)</label>
+      <div class="hint" style="margin-bottom:10px;">Modyfikatory lambd Poissona oparte na obserwacjach Chris'a. Aplikowane sekwencyjnie po velocity i match tags. Wyłącz dowolną jeśli model lepiej działa bez niej.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">
+          <input type="checkbox" id="ruleToggle_r1" onchange="toggleRule('r1')" style="margin-top:2px;accent-color:var(--accent);">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--negative);">R1</span> · Późne 0:0 trap <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">×0.85</span></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Min ≥60 + wynik 0:0 + niski xG live → defensywny mecz, "0:0 zostaje 0:0".</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">
+          <input type="checkbox" id="ruleToggle_r2" onchange="toggleRule('r2')" style="margin-top:2px;accent-color:var(--accent);">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--positive);">R2</span> · Pierwszy gol w 2H otwiera mecz <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">×1.12</span></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Pierwszy gol padł po min 50' → druga drużyna goni, kontrataki, więcej szans.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">
+          <input type="checkbox" id="ruleToggle_r3" onchange="toggleRule('r3')" style="margin-top:2px;accent-color:var(--accent);">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--negative);">R3</span> · Wysokie 1H deflacja <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">×0.85</span></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">1H ≥3 goli + min ≥45 → "drużyny już strzeliły, w 2H zwykle 1 gol max". Stack z velocity.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">
+          <input type="checkbox" id="ruleToggle_r4" onchange="toggleRule('r4')" style="margin-top:2px;accent-color:var(--accent);">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);"><span style="color:var(--positive);">R4</span> · Późny spark <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">×1.25</span></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Min ≥75 + zmiana wyniku w ostatnich 5 min + remis lub 1 gol różnicy → "mecz na hura".</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
       <label style="margin-bottom:8px;">FootyStats API (auto-fetch danych)</label>
       <div class="hint" style="margin-bottom:10px;">Test połączenia z proxy Worker → FootyStats API. Quota free trial: 1800 req/godz, 2 ligi (Premier League + Mexico).</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
@@ -1471,13 +1695,28 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v7.12
+    Powered by MPlace · Match Predictor v8.5
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
 </div>
 
 <script>
+// ── GLOBAL CONSTS — declared first to avoid TDZ ──
+const FOOTY_PROXY='https://red-haze-5f37mplace-agent.contactmplace.workers.dev';
+const FOOTY_AUTH='Bearer Czucio123$';
+// Edge thresholds (centralized)
+const EDGE_SLIM=2;
+const EDGE_VALUE=5;
+const EDGE_STRONG=15;
+const EDGE_NOTIFY=EDGE_VALUE;
+// Dashboard config
+const DASH_PLACED_KEY='predator_placed_matches';
+const DASH_PREFS_KEY='predator_dashboard_pref';
+const DASH_NOTIF_KEY='predator_notification_seen';
+const DASH_NOTIF_THRESHOLD=EDGE_NOTIFY;
+const DASH_REFRESH_INTERVAL=30000;
+
 const $=id=>document.getElementById(id);
 const n=id=>parseFloat($(id).value)||0;
 const s=id=>$(id).value.trim();
@@ -1512,6 +1751,51 @@ function poissonCum(lambda,maxK){
 
 function fmt(v,dec=0){return(v*100).toFixed(dec).replace('.',',')+'%';}
 function fmtN(v){return v.toFixed(2).replace('.',',');}
+
+// Render Over/Under edge for ALL thresholds (1.5..6.5) — long-shot panel
+// totalLambda = remaining xG (already adjusted by velocity, tags, state rules)
+// currentGoals = goals scored so far in match
+function renderOverUnderLines(totalLambda,currentGoals){
+  const thresholds=[1.5,2.5,3.5,4.5,5.5,6.5];
+  thresholds.forEach(t=>{
+    const tag=String(t).replace('.','');  // 1.5 → "15", 2.5 → "25"
+    const oddOverEl=t===2.5?$('oddOver'):$('oddOver'+tag);
+    const oddUnderEl=t===2.5?$('oddUnder'):$('oddUnder'+tag);
+    const edgeEl=$('edge'+tag);
+    if(!edgeEl) return;
+    const oOver=oddOverEl?parseFloat(oddOverEl.value):NaN;
+    const oUnder=oddUnderEl?parseFloat(oddUnderEl.value):NaN;
+    // Need (t - currentGoals) more goals to push over the line; floor for Poisson
+    const need=Math.max(0,Math.floor(t-currentGoals));
+    // pOver = P(remaining ≥ need+1) — i.e. need+1 OR MORE goals from remaining lambda
+    // currentGoals already past — so we need 'need' more to hit t+0.5 (e.g. line 4.5 with 2 goals = need 3 more, pOver = P(>=3 remaining) = 1 - P(≤2)
+    // Actually for line t.5, total final goals must be > t. With currentGoals scored, remaining must be > (t - currentGoals).
+    // floor: need = floor(t - currentGoals), so we want remaining > need (strict). P(remaining > need) = 1 - poissonCum(need).
+    const pOver=currentGoals>=Math.ceil(t)?1:(1-poissonCum(totalLambda,Math.floor(t-currentGoals)));
+    const pUnder=1-pOver;
+    let html='';
+    if(!isNaN(oOver) && oOver>=1.01){
+      const implied=1/oOver;
+      const edge=(pOver-implied)*100;
+      const cls=edge>=5?'positive':edge>=2?'warning':'negative';
+      const cssVar=edge>=5?'var(--positive)':edge>=2?'var(--warning)':'var(--negative)';
+      html+='<span style="color:'+cssVar+';">O '+(edge>=0?'+':'')+edge.toFixed(1)+'%</span>';
+    }
+    if(!isNaN(oUnder) && oUnder>=1.01){
+      const implied=1/oUnder;
+      const edge=(pUnder-implied)*100;
+      const cssVar=edge>=5?'var(--positive)':edge>=2?'var(--warning)':'var(--negative)';
+      if(html) html+=' · ';
+      html+='<span style="color:'+cssVar+';">U '+(edge>=0?'+':'')+edge.toFixed(1)+'%</span>';
+    }
+    if(!html) html='<span style="color:var(--text-faint);">—</span>';
+    // Show model probability as suffix
+    if(!isNaN(oOver) && oOver>=1.01 || !isNaN(oUnder) && oUnder>=1.01){
+      html+=' <span style="color:var(--text-faint);font-size:10px;">model: '+(pOver*100).toFixed(0)+'/'+(pUnder*100).toFixed(0)+'</span>';
+    }
+    edgeEl.innerHTML=html;
+  });
+}
 
 // Bootstrap CI: perturb lambdas ±perturbPct, return p10/p50/p90 of metric fn
 // metricFn(hLam, aLam) → probability in [0,1]
@@ -1628,6 +1912,9 @@ function calc(){
   const rcActive=$('rcActive').checked;
   const rcHome=$('rcHome').checked;
   const rcMinute=rcActive?parseInt($('rcMinute').value)||45:0;
+  // Disadvantaged / advantaged team labels (used in hero tiles, banner, status)
+  const advTeam=rcHome?awayTeam:homeTeam;
+  const disTeam=rcHome?homeTeam:awayTeam;
   // Red card: full impact when card given early, fades as match progresses
   // Balanced multipliers (0.55 / 1.55) preserve total xG instead of shrinking it
   let rcDisMod=1, rcAdvMod=1;
@@ -1722,6 +2009,26 @@ function calc(){
     hLambdaRem*=tagMult;
     aLambdaRem*=tagMult;
   }
+
+  // ── Match State Rules (Chris's heuristics — kontekstowe modyfikatory lambd) ──
+  const _prevPred=window._lastPredictions||{};
+  const _htParsed=parseHalfTimeScore();
+  const _stateRules=applyMatchStateRules({
+    minute, hScore:homeScore, aScore:awayScore,
+    h1Score: window._half1HomeGoals!=null?window._half1HomeGoals:(_htParsed?_htParsed.h:null),
+    a1Score: window._half1AwayGoals!=null?window._half1AwayGoals:(_htParsed?_htParsed.a:null),
+    lastGoalMinute: window._lastGoalMinute!=null?window._lastGoalMinute:(n('lastGoalMin')||null),
+    liveXGH, liveXGA,
+    prevHScore: _prevPred.homeScore,
+    prevAScore: _prevPred.awayScore
+  });
+  if(_stateRules.hMult!==1 || _stateRules.aMult!==1){
+    const preH=hLambdaRem,preA=aLambdaRem;
+    hLambdaRem*=_stateRules.hMult;
+    aLambdaRem*=_stateRules.aMult;
+    console.log('[STATE-RULES]',_stateRules.applied.map(r=>r.id+':'+r.label+' ×'+r.mult).join(' | '),'| H:',preH.toFixed(2),'->',hLambdaRem.toFixed(2),'A:',preA.toFixed(2),'->',aLambdaRem.toFixed(2));
+  }
+  window._lastStateRules=_stateRules;
 
   const totalLambda=hLambdaRem+aLambdaRem;
 
@@ -1876,8 +2183,6 @@ function calc(){
 
   // Status
   let statusCls,stIcon,stTitle,stBody;
-  const advTeam=rcHome?awayTeam:homeTeam;
-  const disTeam=rcHome?homeTeam:awayTeam;
   if(rcActive){
     statusCls='red-card-active';stIcon='&#9646;';
     stTitle='RED CARD ACTIVE';
@@ -2170,14 +2475,16 @@ function calc(){
     {label:'Draw (X)',model:pDraw,odds:n('oddDraw'),color:'var(--yellow)'},
     {label:'Away Win (2)',model:pAWin,odds:n('oddAway'),color:'#ff9f43'},
   ];
-  // Over/Under: use next relevant line based on current goals
-  const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:currentGoals<5?5.5:6.5;
-  $('lblOver').textContent='O'+nextLine.toFixed(1);
-  $('lblUnder').textContent='U'+nextLine.toFixed(1);
-  const pOverNext=1-poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
-  const pUnderNext=poissonCum(totalLambda,Math.floor(nextLine-currentGoals));
-  if(n('oddOver')>=1.01) markets.push({label:'Over '+nextLine.toFixed(1),model:pOverNext,odds:n('oddOver'),color:'var(--green)'});
-  if(n('oddUnder')>=1.01) markets.push({label:'Under '+nextLine.toFixed(1),model:pUnderNext,odds:n('oddUnder'),color:'var(--red)'});
+  // Over/Under: oddOver/oddUnder are LOCKED to 2.5 threshold (matches BC.game default Total).
+  // For higher thresholds (3.5, 4.5, 5.5, 6.5) use the long-shot panel.
+  // pOver = P(remaining > floor(2.5 - currentGoals)) — works correctly for any score.
+  $('lblOver').textContent='O2.5';
+  $('lblUnder').textContent='U2.5';
+  // If current goals already >2 (Over 2.5 already cashed), pOver = 1.
+  const pOver25Live = currentGoals >= 3 ? 1 : (1 - poissonCum(totalLambda, Math.floor(Math.max(0, 2.5 - currentGoals))));
+  const pUnder25Live = 1 - pOver25Live;
+  if(n('oddOver')>=1.01) markets.push({label:'Over 2.5',model:pOver25Live,odds:n('oddOver'),color:'var(--green)'});
+  if(n('oddUnder')>=1.01) markets.push({label:'Under 2.5',model:pUnder25Live,odds:n('oddUnder'),color:'var(--red)'});
   // BTTS: only if not already done
   if(!(homeScore>0&&awayScore>0)&&n('oddBTTS')>=1.01){
     const pBTTSfull=homeScore>0?pAwayScores:awayScore>0?pHomeScores:pHomeScores*pAwayScores;
@@ -2225,6 +2532,9 @@ function calc(){
     edgeGrid.innerHTML='<div style="font-size:12px;color:var(--text3);padding:.5rem">Enter bookmaker odds above to see edge calculations.</div>';
   }
 
+  // Render extended Over/Under lines (long-shot panel — all thresholds)
+  renderOverUnderLines(totalLambda,currentGoals);
+
   // Traffic light
   if(hasOdds){
     const bestEdge=Math.max(...markets.filter(m=>m.odds>=1.01).map(m=>m.model-1/m.odds))*100;
@@ -2264,7 +2574,11 @@ function calc(){
     bigChancesTotal:n('lHBC')+n('lABC'),
     oddOver:n('oddOver'),oddNextGoal:n('oddNextGoal'),oddBTTS:n('oddBTTS'),
     bankroll:n('bankroll')||1000,
-    velocityInfo, tagsActive:[...(window._matchTags||[])]
+    velocityInfo, tagsActive:[...(window._matchTags||[])],
+    appliedRules:(_stateRules.applied||[]).map(r=>r.id),
+    appliedRulesDetail:_stateRules.applied||[],
+    staleData: !!window._currentMatchStale,
+    staleReason: window._currentMatchStaleReason || ''
   };
   renderQuickDecision();
 }
@@ -2321,27 +2635,108 @@ function parseFooty(){
   const txt=$('rawPaste').value;
   if(!txt.trim()) return;
 
-  // Manual paste = no API match id; clears so watch list won't poll a stale id
+  // Diagnostic tracker — reports per-field success to user after parsing
+  const _diag={found:[],missing:[]};
+  const _track=(label,val)=>{
+    if(val!=null && val!==''){_diag.found.push(label+'='+val);console.log('[PARSE-FOOTY] ✓',label,'=',val);}
+    else {_diag.missing.push(label);console.log('[PARSE-FOOTY] ✗',label,'NOT found');}
+  };
+  window._lastParseDiag=_diag;
+  console.log('[PARSE-FOOTY] paste length:',txt.length,'chars · first 200:',JSON.stringify(txt.slice(0,200)));
+
+  // Manual paste = clear ALL match state from previous match (API or another paste)
+  // This prevents stale flag, goal minutes, HT score from previous match leaking
+  window._currentMatchStale=false;
+  window._currentMatchStaleReason='';
   window._currentApiMatchId = null;
+  window._lastGoalMinute = null;
+  window._half1HomeGoals = null;
+  window._half1AwayGoals = null;
+  const _htField=document.getElementById('halfTimeScore');
+  if(_htField) _htField.value='';
+  const _lgField=document.getElementById('lastGoalMin');
+  if(_lgField) _lgField.value='';
 
-  // Score
-  const scoreM=txt.match(/Live Score\s*\n\s*(\d+)\s*-\s*(\d+)/i)
-    ||txt.match(/(\d+)\s*-\s*(\d+)\s*\n\s*HT/i)
-    ||txt.match(/(\d+)\s*-\s*(\d+)\s*\n\s*\d+[']/);
-  if(scoreM){$('homeScore').value=scoreM[1];$('awayScore').value=scoreM[2];}
-
-  // Minute (first 250 chars only)
-  const top=txt.slice(0,250);
-  if(/\bHT[''\u2019]?\s*(\n|$)/m.test(top)){
-    $('minute').value=45;
+  // Try to extract HT score from paste — covers multiple bookie/scorer formats:
+  //   "HT 2 - 1", "HT: 2-1", "Half Time 2:1", "Polowa 2-1", "1st half 1:0", "1st half 1-0"
+  let htMatch=txt.match(/(?:^|\n|\s)(?:HT|Half\s*Time|Po[lł]owa|HT\s*:|przerwa)\s*[:\-]?\s*(\d+)\s*[-:–]\s*(\d+)/i);
+  if(!htMatch) htMatch=txt.match(/1st\s*half\s*(\d+)\s*[:\-–]\s*(\d+)/i);
+  if(!htMatch) htMatch=txt.match(/(?:^|\n)\s*HT\s*\n\s*(\d+)\s*[-:–]\s*(\d+)/i);  // "HT\n2-1" stacked
+  if(htMatch && _htField){
+    _htField.value=htMatch[1]+':'+htMatch[2];
+    window._half1HomeGoals=parseInt(htMatch[1],10);
+    window._half1AwayGoals=parseInt(htMatch[2],10);
+    console.log('[PARSE-FOOTY] HT extracted:',htMatch[1]+':'+htMatch[2]);
   } else {
-    const mm=top.match(/(\d{1,3})[''\u2019]/);
-    if(mm){const v=parseInt(mm[1]);if(v>=1&&v<=120)$('minute').value=v;}
+    console.log('[PARSE-FOOTY] HT NOT found in paste');
   }
 
-  // Teams
-  const t2=txt.match(/([\w\s\u00C0-\u024F\u0130\u0131]{3,40})\n([\w\s\u00C0-\u024F\u0130\u0131]{3,40})\nShots Total/i);
-  if(t2){$('homeTeam').value=t2[1].trim();$('awayTeam').value=t2[2].trim();}
+  // Try to extract last goal minute — only count minutes that appear directly before a scoreline "X - Y".
+  // This avoids picking up substitutions, live clock, or VAR events. Pattern handles "45' +2" stoppage.
+  const scoreGoalRe=/(\d{1,3})['’](?:\s*\+\s*\d+)?\s*[\r\n]+\s*(\d+)\s*-\s*(\d+)/g;
+  const goalMinutes=[];
+  let _gm;
+  while((_gm=scoreGoalRe.exec(txt))){
+    const min=parseInt(_gm[1],10);
+    if(min>=1 && min<=120) goalMinutes.push(min);
+  }
+  if(goalMinutes.length && _lgField){
+    goalMinutes.sort((a,b)=>b-a);
+    _lgField.value=goalMinutes[0];
+    window._lastGoalMinute=goalMinutes[0];
+  }
+
+  // \u2500\u2500 Score: 5 fallback patterns to handle FootyStats / Sofascore / FlashScore variants \u2500\u2500
+  const scoreCandidates=[
+    /Live Score\s*[\r\n]+\s*(\d+)\s*-\s*(\d+)/i,
+    /Caly\s*mecz\s*[\r\n]+\s*(\d+)\s*-\s*(\d+)/i,    // Sofascore PL "Ca\u0142y mecz\n3-0"
+    /(\d+)\s*-\s*(\d+)\s*[\r\n]+\s*HT/i,
+    /(\d+)\s*-\s*(\d+)\s*[\r\n]+\s*\d+[''\u2019]/,    // "1 - 0\n54'"
+    /(\d+)\s*-\s*(\d+)\s*[\r\n]+\s*\d+:\d{2}/        // "1 - 0\n55:47" Sofascore live clock
+  ];
+  let scoreM=null;
+  for(const re of scoreCandidates){ scoreM=txt.match(re); if(scoreM) break; }
+  if(scoreM && parseInt(scoreM[1])<=20 && parseInt(scoreM[2])<=20){
+    $('homeScore').value=scoreM[1];
+    $('awayScore').value=scoreM[2];
+    _track('Score',scoreM[1]+':'+scoreM[2]);
+  } else { _track('Score',null); }
+
+  // \u2500\u2500 Minute: scan first 400 chars for: 'HT', "X'", "MM:SS" Sofascore live clock \u2500\u2500
+  const top=txt.slice(0,400);
+  let minuteSet=false;
+  if(/\bHT[''\u2019]?\s*([\r\n]|$)/m.test(top)){
+    $('minute').value=45; _track('Minute','45 (HT)'); minuteSet=true;
+  } else {
+    // Try apostrophe pattern first: 54'
+    const mm=top.match(/(\d{1,3})[''\u2019]/);
+    if(mm){const v=parseInt(mm[1]);if(v>=1&&v<=120){$('minute').value=v;_track('Minute',v+"'");minuteSet=true;}}
+  }
+  if(!minuteSet){
+    // Fallback: Sofascore live clock "55:47" (anywhere in paste)
+    const mm2=txt.match(/[\r\n]\s*(\d{1,3}):\d{2}\s*[\r\n]/);
+    if(mm2){const v=parseInt(mm2[1]);if(v>=1&&v<=120){$('minute').value=v;_track('Minute',v+"' (live clock)");minuteSet=true;}}
+  }
+  if(!minuteSet) _track('Minute',null);
+
+  // \u2500\u2500 Teams: 4 fallback patterns. Use [^\n] (NOT \s) so team names stay on single line \u2500\u2500
+  const TEAM_CHARS="[\\w \\u00C0-\\u024F\\u0130\\u0131.\\-']{3,40}";
+  // 1) Standard: "TeamA\nTeamB\nShots Total"
+  let t2=txt.match(new RegExp("("+TEAM_CHARS+")\\n("+TEAM_CHARS+")\\nShots\\s*Total","i"));
+  // 2) "TeamA\nTeamB" right before "Posiadanie/Possession" (Sofascore live)
+  if(!t2) t2=txt.match(new RegExp("("+TEAM_CHARS+")\\n("+TEAM_CHARS+")\\n(?:Posiad|Possession|Statystyki|Strza\u0142y)","i"));
+  // 3) FootyStats header: "TeamA vs TeamB" on a single line
+  if(!t2) t2=txt.match(new RegExp("("+TEAM_CHARS+")\\s+vs\\s+("+TEAM_CHARS+")\\s*[\\r\\n]","i"));
+  if(t2){
+    const home=t2[1].trim(), away=t2[2].trim();
+    // Sanity check \u2014 drop common section headers that might leak in
+    const blacklist=/^(stats|predictions|lineups|standings|odds|all|goals|corners|cards|half|players|over|under|btts|live\s*score|home\s*team|away\s*team|caly\s*mecz)$/i;
+    if(!blacklist.test(home) && !blacklist.test(away) && home.length>=3 && away.length>=3){
+      $('homeTeam').value=home;
+      $('awayTeam').value=away;
+      _track('Teams',home+' vs '+away);
+    } else { _track('Teams',null); }
+  } else { _track('Teams',null); }
 
   // Live stats
   const sotM=txt.match(/Shots On Target\s*\n\s*(\d+)\s*\n\s*(\d+)/i);
@@ -2586,11 +2981,41 @@ function parseFooty(){
   if(oOver25&&oOver25>1.01&&oOver25<50) $('oddOver').value=oOver25;
   if(oUnder25&&oUnder25>1.01&&oUnder25<50) $('oddUnder').value=oUnder25;
   if(oBTTS&&oBTTS>1.01&&oBTTS<50) $('oddBTTS').value=oBTTS;
+
+  // ── Track season fields (post-extraction) ──
+  if(n('hXG')>0) _track('hXG',n('hXG').toFixed(2)); else _track('hXG',null);
+  if(n('aXG')>0) _track('aXG',n('aXG').toFixed(2)); else _track('aXG',null);
+  if(n('hScored')>0) _track('hScored',n('hScored').toFixed(2));
+  if(n('aScored')>0) _track('aScored',n('aScored').toFixed(2));
+  if(n('hCornSeason')>0) _track('hCorners',n('hCornSeason').toFixed(2));
+  if(n('aCornSeason')>0) _track('aCorners',n('aCornSeason').toFixed(2));
+
+  // ── Final user-visible diagnostic ──
+  console.log('[PARSE-FOOTY DONE] found:',_diag.found.length,'· missing:',_diag.missing.length);
+  console.log('  found:',_diag.found.join(' · '));
+  console.log('  missing:',_diag.missing.join(' · '));
+  // Surface to UI parseMsg (overrides "✓ Parsed" with real status)
+  setTimeout(()=>{
+    const pm=$('parseMsg');
+    if(pm && _diag.missing.length===0){
+      pm.textContent='✓ Wczytano wszystko: '+_diag.found.length+' pól';
+      pm.style.color='var(--positive)';
+    } else if(pm && _diag.found.length>0){
+      pm.textContent='⚠ Wczytano '+_diag.found.length+' pól · brakuje: '+_diag.missing.join(', ');
+      pm.style.color='var(--warning)';
+    } else if(pm){
+      pm.textContent='✗ Nie wczytano żadnych danych — sprawdź console (F12)';
+      pm.style.color='var(--negative)';
+    }
+  },50);
 }
 
 function parseLive(){
   const raw=$('rawPaste2').value.trim();
   if(!raw) return;
+  // Reset stale flag — fresh manual paste = trusted data
+  window._currentMatchStale=false;
+  window._currentMatchStaleReason='';
   const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
 
   // Minuta z "73:09" (czas meczu Sofascore) lub "Przerwa"/"HT"
@@ -2855,9 +3280,40 @@ function countFilledRequiredFields(){
 
 function decideQuickBet(p){
   if(!p) return {verdict:'red',reason:'Brak danych — wklej FootyStats / Sofascore'};
+  // STALE DATA hard block — najwyższy priorytet, override wszystkiego
+  if(p.staleData){
+    return {
+      verdict:'red',
+      reason:'⚠ DANE NIESPÓJNE: '+(p.staleReason||'API ma stary score, bukmacher zna live')+'. Wpisz aktualny wynik ręcznie lub kliknij 🔄 w karcie meczu.',
+      stale:true
+    };
+  }
   const fieldsFilled=countFilledRequiredFields();
   const totalReq=Object.keys(FIELD_LABELS).length;
   const hasOddsForOver=p.oddOver>=1.30||p.oddNextGoal>=1.30||p.oddBTTS>=1.30;
+
+  // ── PICK-BASED OVERRIDE — check Specific Picks Engine first ──
+  // If rankPicks finds a real value pick (Under, BTTS, Long-Shot etc.), surface it
+  // instead of falling back to the limited goal/Over heuristic below.
+  if(p.minute>=1 && fieldsFilled>=8 && typeof rankPicks==='function'){
+    try{
+      const picksResult=rankPicks(p);
+      const picks=(picksResult&&picksResult.picks)||picksResult||[];
+      const top=picks[0];
+      if(top && top.edge>=EDGE_VALUE){
+        const verdict = top.edge>=EDGE_STRONG ? 'green' : 'yellow';
+        const stakePct = verdict==='green' ? 0.05 : 0.02;
+        return {
+          verdict,
+          reason:top.label+' @ '+top.odd.toFixed(2)+' · model '+(top.modelP*100).toFixed(0)+'% · edge +'+top.edge.toFixed(1)+'%'+(top.reason?' — '+top.reason:''),
+          market:top.label,
+          stakePct,
+          pickFromEngine:true,
+          pick:top
+        };
+      }
+    }catch(e){ /* fall through to legacy logic */ }
+  }
 
   // Hard skips — order matters (most diagnostic first)
   if(!p.minute||p.minute<1) return {verdict:'red',reason:'Wpisz minutę meczu w polu poniżej'};
@@ -3000,10 +3456,15 @@ function computePRedCard(p){
 // ── rankPicks: build, score, sort all market opportunities ──
 function rankPicks(p){
   if(!p||!p.minute) return [];
+  // STALE DATA hard block — nie generuj picków gdy API/odds są niezgodne
+  if(p.staleData){
+    console.warn('[rankPicks] BLOCKED — stale data:',p.staleReason);
+    return {picks:[],preMatch:false,staleBlocked:true,staleReason:p.staleReason};
+  }
   const picks=[];
   const preMatch=isPreMatch(p);
-  // Edge threshold zgodny z filozofią Chris'a: Value 5%+ = typuj, Slim 2-4% = pomiń
-  const minEdge=5;
+  // Edge threshold zgodny z EDGE_VALUE constant — Value 5%+ = typuj
+  const minEdge=EDGE_VALUE;
   // Stake cap niższy w pre-match (większa wariancja bez live signals)
   const stakeCap=preMatch?0.03:0.05;
   const bankroll=p.bankroll||1000;
@@ -3027,27 +3488,23 @@ function rankPicks(p){
     picks.push({label,side,modelP,odd,edge:edgePct,kelly:kellyFrac,stake,payout,reason,group,score});
   }
 
-  // 1. TOTAL GOALS — Over X.5 (uses oddOver as the available odd)
+  // 1. TOTAL GOALS — Over 2.5 (oddOver pole zawsze = Over 2.5, label nie zmienia się dynamicznie)
+  // Higher thresholds (3.5, 4.5, 5.5, 6.5) handled w extended panel below
   if(p.oddOver>=1.30&&p.totalLambda>0){
-    // Default: use oddOver for the "next sensible line" (currentGoals + 1 or 2)
-    const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
-    const need=Math.max(0,nextLine-currentGoals);
-    const pOverPoisson=1-poissonCum(p.totalLambda,Math.floor(need));
-    // Use FootyStats prediction% when available (more reliable for pre-match U20 etc.)
-    const fpKey='over'+(nextLine===0.5?'05':nextLine===1.5?'15':nextLine===2.5?'25':nextLine===3.5?'35':'45');
+    const fixedLine=2.5;
+    const need=Math.max(0,fixedLine-currentGoals);
+    const pOverPoisson = currentGoals>=3 ? 1 : (1 - poissonCum(p.totalLambda, Math.floor(need)));
     let pOverNext=pOverPoisson;
     let modelSource='Poisson xG '+p.totalLambda.toFixed(2);
-    if(preMatch&&footyPredictions[fpKey]!=null){
-      // Pre-match: use FootyStats historical % directly (Poisson xG too conservative for U20/chaos)
-      pOverNext=footyPredictions[fpKey];
-      modelSource='FootyStats '+(footyPredictions[fpKey]*100).toFixed(0)+'% (Poisson '+(pOverPoisson*100).toFixed(0)+'% jako kontekst)';
-    } else if(footyPredictions[fpKey]!=null&&Math.abs(footyPredictions[fpKey]-pOverPoisson)>0.20){
-      // Live but big disagreement: prefer FootyStats hist 70/30
-      pOverNext=footyPredictions[fpKey]*0.7+pOverPoisson*0.3;
-      modelSource='FootyStats '+(footyPredictions[fpKey]*100).toFixed(0)+'% + Poisson '+(pOverPoisson*100).toFixed(0)+'%';
+    if(preMatch&&footyPredictions.over25!=null){
+      pOverNext=footyPredictions.over25;
+      modelSource='FootyStats '+(footyPredictions.over25*100).toFixed(0)+'% (Poisson '+(pOverPoisson*100).toFixed(0)+'% jako kontekst)';
+    } else if(footyPredictions.over25!=null&&Math.abs(footyPredictions.over25-pOverPoisson)>0.20){
+      pOverNext=footyPredictions.over25*0.7+pOverPoisson*0.3;
+      modelSource='FootyStats '+(footyPredictions.over25*100).toFixed(0)+'% + Poisson '+(pOverPoisson*100).toFixed(0)+'%';
     }
     tryPush(
-      'Over '+nextLine.toFixed(1)+' goli',
+      'Over 2.5 goli',
       'over',
       pOverNext,
       p.oddOver,
@@ -3056,14 +3513,14 @@ function rankPicks(p){
     );
   }
 
-  // Under X.5 (oddUnder)
+  // Under 2.5 (oddUnder)
   const oddUnder=n('oddUnder');
   if(oddUnder>=1.30&&p.totalLambda>0){
-    const nextLine=currentGoals<2?2.5:currentGoals<3?3.5:currentGoals<4?4.5:5.5;
-    const need=Math.max(0,nextLine-currentGoals);
-    const pUnder=poissonCum(p.totalLambda,Math.floor(need));
+    const fixedLine=2.5;
+    const need=Math.max(0,fixedLine-currentGoals);
+    const pUnder = currentGoals>=3 ? 0 : poissonCum(p.totalLambda, Math.floor(need));
     tryPush(
-      'Under '+nextLine.toFixed(1)+' goli',
+      'Under 2.5 goli',
       'under',
       pUnder,
       oddUnder,
@@ -3071,6 +3528,42 @@ function rankPicks(p){
       'goals'
     );
   }
+
+  // 1b. EXTENDED Over/Under thresholds — Long Shot panel
+  // Iterates 1.5/3.5/4.5/5.5/6.5 (skip 2.5 — already covered above as oddOver/oddUnder).
+  // High-velocity matches (totalLambda > 3.5 OR active velocity boost) get bonus tag in reason.
+  const extraThresholds=[1.5,3.5,4.5,5.5,6.5];
+  const isHighVelocity=(p.velocityInfo&&p.velocityInfo.velMult>=1.2)||p.totalLambda>=3.5;
+  extraThresholds.forEach(t=>{
+    const tag=String(t).replace('.','');
+    const oddOverField='oddOver'+tag, oddUnderField='oddUnder'+tag;
+    const oOver=n(oddOverField), oUnder=n(oddUnderField);
+    if(p.totalLambda<=0) return;
+    // pOver: P(remaining > floor(t-currentGoals))
+    const pOverT = currentGoals>=Math.ceil(t) ? 1 : (1 - poissonCum(p.totalLambda, Math.floor(Math.max(0,t-currentGoals))));
+    const pUnderT = 1 - pOverT;
+    if(oOver>=1.30){
+      const longShotTag=oOver>=3.5&&isHighVelocity?' · 🚀 long-shot w wysokokalorycznym meczu':'';
+      tryPush(
+        'Over '+t.toFixed(1)+' goli',
+        'over_t'+tag,
+        pOverT,
+        oOver,
+        'xG rem '+p.totalLambda.toFixed(2)+' · wynik '+p.homeScore+':'+p.awayScore+longShotTag,
+        'goals_extended'
+      );
+    }
+    if(oUnder>=1.30 && pUnderT>0.20){
+      tryPush(
+        'Under '+t.toFixed(1)+' goli',
+        'under_t'+tag,
+        pUnderT,
+        oUnder,
+        'xG rem '+p.totalLambda.toFixed(2)+' · niska oczekiwana liczba',
+        'goals_extended'
+      );
+    }
+  });
 
   // 2. BTTS
   if(p.oddBTTS>=1.30){
@@ -3220,6 +3713,74 @@ function applyTagsUI(){
   });
 }
 
+// ── Match State Rules (Chris's heuristics — kontekstowe modyfikatory lambd) ──
+const RULES_KEY='predator_rule_settings';
+const DEFAULT_RULE_SETTINGS={r1:true,r2:true,r3:true,r4:true};
+function loadRuleSettings(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(RULES_KEY)||'null');
+    return raw?{...DEFAULT_RULE_SETTINGS,...raw}:{...DEFAULT_RULE_SETTINGS};
+  }catch(_){ return {...DEFAULT_RULE_SETTINGS}; }
+}
+function saveRuleSettings(obj){ localStorage.setItem(RULES_KEY,JSON.stringify(obj)); }
+function toggleRule(id){
+  const s=loadRuleSettings();
+  s[id]=!s[id];
+  saveRuleSettings(s);
+  applyRulesUI();
+  if(typeof calc==='function') calc();
+}
+function applyRulesUI(){
+  const s=loadRuleSettings();
+  ['r1','r2','r3','r4'].forEach(id=>{
+    const el=document.getElementById('ruleToggle_'+id);
+    if(el) el.checked=!!s[id];
+  });
+}
+// Parse "1:1" or "1-1" into {h, a}
+function parseHalfTimeScore(){
+  const v=(document.getElementById('halfTimeScore')||{}).value||'';
+  const m=v.match(/(\d+)\s*[:\-]\s*(\d+)/);
+  return m?{h:parseInt(m[1],10),a:parseInt(m[2],10)}:null;
+}
+// Pure function — returns multipliers + applied rules log
+function applyMatchStateRules(state){
+  const {minute,hScore,aScore,h1Score,a1Score,lastGoalMinute,liveXGH,liveXGA,prevHScore,prevAScore}=state;
+  const out={hMult:1,aMult:1,applied:[]};
+  const settings=loadRuleSettings();
+
+  const totalGoals=(hScore||0)+(aScore||0);
+  const half1Goals=(h1Score||0)+(a1Score||0);
+  const liveXGTotal=(liveXGH||0)+(liveXGA||0);
+  const prevTotal=(prevHScore||0)+(prevAScore||0);
+  const scoreChangedRecently=(prevHScore!=null)&&(totalGoals>prevTotal)&&(lastGoalMinute!=null)&&((minute-lastGoalMinute)<=5);
+
+  // R1: Late 0:0 trap (mutual excl. with R2)
+  if(settings.r1 && minute>=60 && totalGoals===0 && (liveXGTotal===0 || liveXGTotal<1.0)){
+    out.hMult*=0.85; out.aMult*=0.85;
+    out.applied.push({id:'r1',label:'Późne 0:0',mult:0.85,polarity:'damp',reason:'min '+minute+"' + 0:0 + niski xG live → defensywny mecz"});
+  }
+  // R2: 0:0 → first goal opens
+  else if(settings.r2 && totalGoals===1 && lastGoalMinute!=null && lastGoalMinute>=50 && lastGoalMinute>=(minute-10)){
+    out.hMult*=1.12; out.aMult*=1.12;
+    out.applied.push({id:'r2',label:'Pierwszy gol w 2H',mult:1.12,polarity:'boost',reason:'gol w '+lastGoalMinute+"' → druga drużyna goni"});
+  }
+
+  // R3: High-scoring 1H deflation (stack z velocity)
+  if(settings.r3 && minute>=45 && half1Goals>=3){
+    out.hMult*=0.85; out.aMult*=0.85;
+    out.applied.push({id:'r3',label:'1H deflacja',mult:0.85,polarity:'damp',reason:'1H '+(h1Score||0)+':'+(a1Score||0)+' = drużyny już strzeliły'});
+  }
+
+  // R4: Late spark (score change w late phase)
+  if(settings.r4 && minute>=75 && scoreChangedRecently && Math.abs((hScore||0)-(aScore||0))<=1){
+    out.hMult*=1.25; out.aMult*=1.25;
+    out.applied.push({id:'r4',label:'Późny spark',mult:1.25,polarity:'boost',reason:'gol w '+lastGoalMinute+"' przy "+hScore+':'+aScore+' → mecz na hura'});
+  }
+
+  return out;
+}
+
 // ── Render the 3-button verdict bar (mirrors quick decision but visible) ──
 function renderVerdictBar(p,d){
   ['vbGreen','vbYellow','vbRed'].forEach(id=>$(id)?.classList.remove('active'));
@@ -3291,8 +3852,60 @@ function renderQuickDecision(){
 function renderHeroRecommendation(p,d){
   const hero=$('heroRec');
   if(!hero) return;
-  hero.classList.remove('is-positive','is-negative','is-warning');
+  hero.classList.remove('is-positive','is-negative','is-warning','is-stale');
   const conf=p&&typeof p.pAnyGoal==='number'?Math.round(p.pAnyGoal*100):null;
+
+  // ── STALE DATA dedicated UI (v8.4.2) ──
+  if(d.stale || (p&&p.staleData)){
+    hero.classList.add('is-stale','is-negative');
+    $('heroRecIcon').textContent='⚠';
+    $('heroRecEyebrow').textContent='DANE NIESPÓJNE — nie obstawiaj';
+    $('heroRecTitle').textContent='Sprawdź wynik na żywo';
+    $('heroRecSub').textContent=d.reason||p.staleReason||'API ma stary score, bukmacher zna live state.';
+    $('heroRecConf').textContent='—';
+    $('heroRecStake').style.display='none';
+    const rulesEl=$('heroRecRules');
+    if(rulesEl){ rulesEl.style.display='none'; rulesEl.innerHTML=''; }
+    $('heroRecPrimary').textContent='🔄 Odśwież dashboard';
+    $('heroRecPrimary').disabled=false;
+    $('heroRecPrimary').className='hero-rec-cta secondary';
+    $('heroRecPrimary').onclick=()=>{ if(typeof dashboardManualRefresh==='function') dashboardManualRefresh(); };
+    $('heroRecSecondary').textContent='Wpisz wynik';
+    $('heroRecSecondary').className='hero-rec-cta ghost';
+    $('heroRecSecondary').onclick=()=>{
+      const acc=document.getElementById('accInput');
+      if(acc&&!acc.classList.contains('open')) acc.classList.add('open');
+      const sb=document.querySelector('.score-bar');
+      if(sb) sb.scrollIntoView({behavior:'smooth',block:'center'});
+    };
+    return;
+  }
+  // Reset onclick handlers (always — cleared after stale flow may have replaced them)
+  // If decision has a specific pick (from rankPicks override), pass it to placeBet
+  if($('heroRecPrimary')){
+    $('heroRecPrimary').onclick=()=>{
+      const dec=window._lastDecision;
+      if(dec && dec.pick) placeBet(dec.verdict||'green', dec.pick);
+      else placeBet((dec&&dec.verdict)||'red');
+    };
+  }
+  if($('heroRecSecondary')){ $('heroRecSecondary').onclick=()=>placeBet('red'); }
+
+  // Render rule chips (shown for all verdicts — match state context)
+  const rulesEl=$('heroRecRules');
+  if(rulesEl){
+    const sr=window._lastStateRules;
+    if(sr && sr.applied && sr.applied.length){
+      rulesEl.innerHTML=sr.applied.map(r=>{
+        const pct=r.mult>1?'+'+Math.round((r.mult-1)*100)+'%':Math.round((r.mult-1)*100)+'%';
+        return '<span class="rule-chip '+r.polarity+'" title="'+r.reason.replace(/"/g,'&quot;')+'"><span class="rule-chip-id">'+r.id.toUpperCase()+'</span> '+r.label+' <span class="rule-chip-id">'+pct+'</span></span>';
+      }).join('');
+      rulesEl.style.display='flex';
+    } else {
+      rulesEl.style.display='none';
+      rulesEl.innerHTML='';
+    }
+  }
 
   if(d.verdict==='green'){
     hero.classList.add('is-positive');
@@ -3354,6 +3967,18 @@ function renderHeroRecommendation(p,d){
 // LIVE CONTEXT — 4 tiles: minute / score / edge / anomaly
 function renderLiveContext(p){
   if(!p){
+    return;
+  }
+  // STALE DATA — block all numbers when data is unreliable
+  if(p.staleData){
+    $('ctxMinute').textContent='—';
+    $('ctxMinuteMeta').textContent='dane niespójne';
+    $('ctxScore').textContent='?';
+    $('ctxScoreMeta').textContent='⚠ Wpisz aktualny wynik';
+    $('ctxEdge').textContent='—';
+    $('ctxEdgeMeta').textContent='⚠ STALE DATA';
+    $('ctxAnomaly').textContent='—';
+    $('ctxAnomalyMeta').textContent='odśwież dane';
     return;
   }
   // Minute
@@ -3463,6 +4088,18 @@ function renderSpecificPicks(){
 function placeBet(verdict,pick){
   const p=window._lastPredictions,d=window._lastDecision;
   if(!p||!d){ qdToast('Brak danych meczu','red'); return; }
+  // Stale data hard block — nie obstawiaj na podstawie niespójnych danych
+  if(p.staleData){
+    qdToast('⚠ Dane niespójne — odśwież lub wpisz wynik ręcznie','red',3000);
+    return;
+  }
+  // Double-click guard (500ms cooldown per verdict+market)
+  const dedupKey='_lastBet_'+verdict+'_'+(pick?pick.label:'');
+  const now=Date.now();
+  if(window[dedupKey] && (now-window[dedupKey])<500){
+    return;  // silent skip — likely double-click
+  }
+  window[dedupKey]=now;
   // Cool-off lockout
   if(verdict!=='red'&&isCoolOffActive()){
     const remMin=Math.ceil(getCoolOffRemaining()/60000);
@@ -3501,6 +4138,7 @@ function placeBet(verdict,pick){
       actual:null,
       predatorActive:p.predatorActive,
       predatorReason:p.predatorBest?p.predatorBest.reason:null,
+      appliedRules:p.appliedRules||[],
       bet:{
         verdict:'green',
         market:pick.label,
@@ -3516,6 +4154,16 @@ function placeBet(verdict,pick){
     };
     list.push(entry);
     saveCalibration(list);
+    // Sync to dashboard placed flag — gdy user obstawi z hero rec, dashboard pokaże "Obstawione"
+    if(window._currentApiMatchId && typeof savePlacedMatches==='function'){
+      const placed=loadPlacedMatches();
+      placed[String(window._currentApiMatchId)]={
+        ts:Date.now(),market:pick.label,stake:pick.stake,odd:pick.odd,
+        edge:pick.edge,home:p.homeTeam,away:p.awayTeam,status:'open'
+      };
+      savePlacedMatches(placed);
+      if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+    }
     qdToast('Pick zapisany: '+pick.label+' @ '+pick.odd.toFixed(2),'green',3000);
     if(typeof renderCalibration==='function') renderCalibration();
     if(typeof renderSpecificPicks==='function') renderSpecificPicks();
@@ -3547,6 +4195,7 @@ function placeBet(verdict,pick){
     actual:null,
     predatorActive:p.predatorActive,
     predatorReason:p.predatorBest?p.predatorBest.reason:null,
+    appliedRules:p.appliedRules||[],
     bet:{
       verdict,
       market:d.market||'Next Goal Any',
@@ -4034,7 +4683,10 @@ const fieldIds=['homeTeam','awayTeam','homeScore','awayScore','minute',
  'hCornSeason','aCornSeason','lHCorn','lACorn',
  'oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS',
  'bankroll','oddNextGoal','hYCSeason','aYCSeason','lHYC','lAYC','leagueAvg',
- 'lHBC','lABC','hPPG','aPPG','oddCorners','oddRedCard','oddPenalty'];
+ 'lHBC','lABC','hPPG','aPPG','oddCorners','oddRedCard','oddPenalty',
+ 'oddOver15','oddUnder15','oddOver35','oddUnder35','oddOver45','oddUnder45',
+ 'oddOver55','oddUnder55','oddOver65','oddUnder65',
+ 'halfTimeScore','lastGoalMin'];
 
 function saveFields(){
   const data={};
@@ -4113,10 +4765,7 @@ function watchCurrentMatch(){
     snappedAt:p.minute,score:p.homeScore+':'+p.awayScore,
     note:''
   });
-  // Request notification permission lazily
-  if('Notification' in window&&Notification.permission==='default'){
-    Notification.requestPermission();
-  }
+  requestNotifOnce();
   const badge=matchId?'':' (manual — bez auto-alarmu)';
   qdToast('Mecz w watch list — alarm na min '+tgt+"'"+badge,'green',2800);
   // Trigger first poll immediately so live state shows up
@@ -4168,6 +4817,17 @@ function notifyWatch(title,body){
   }
 }
 
+// Single-shot permission request — pomiń na file:// (Chrome resetuje uprawnienia per session)
+// i pomiń jeśli user już raz odrzucił.
+function requestNotifOnce(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission!=='default') return;
+  if(location.protocol==='file:') return;  // file:// = unique origin per session, prompt spam
+  if(localStorage.getItem('predator_notif_asked')==='1') return;
+  localStorage.setItem('predator_notif_asked','1');
+  try{ Notification.requestPermission(); }catch(_){}
+}
+
 // ── WATCH LIST POLLER — checks live state, fires alarm when target minute reached ──
 window._watchPollCache={data:null,ts:0};
 async function pollWatchList(force){
@@ -4182,8 +4842,14 @@ async function pollWatchList(force){
   if(fresh && !force){ data=cache.data; }
   else {
     try{
-      const r=await footyFetch('todays-matches');
-      data=r.data||[];
+      // 2 calls — date param zwraca live matches (bez param API zwraca tylko upcoming)
+      const todayUTC=new Date().toISOString().slice(0,10);
+      const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
+      const [rT,rTm]=await Promise.all([
+        footyFetch('todays-matches',{date:todayUTC}),
+        footyFetch('todays-matches',{date:tomorrowUTC})
+      ]);
+      data=[...(rT.data||[]),...(rTm.data||[])];
       window._watchPollCache={data,ts:now};
     }catch(e){
       // Network failed — keep cache or skip silently
@@ -4231,15 +4897,38 @@ renderWatchList();
 
 // ── Settings (modal) ──
 // ── FootyStats API client (via Cloudflare Worker proxy) ──
-const FOOTY_PROXY='https://red-haze-5f37mplace-agent.contactmplace.workers.dev';
-const FOOTY_AUTH='Bearer Czucio123$';
+// FOOTY_PROXY + FOOTY_AUTH are declared at top of script (line ~1703) to avoid TDZ
 
+// API rate-limit aware fetch — counts calls per hour, exponential backoff on 429
+window._apiCallLog=window._apiCallLog||[];  // timestamps of recent calls (last 1h)
+window._apiBackoffUntil=0;  // Date.now() until which we hold off
 async function footyFetch(path,params={}){
+  // Hold off if we're in backoff period
+  if(Date.now()<window._apiBackoffUntil){
+    const wait=Math.ceil((window._apiBackoffUntil-Date.now())/1000);
+    throw new Error('Rate limit cooldown — czekaj '+wait+'s');
+  }
+  // Track call
+  const now=Date.now();
+  window._apiCallLog=window._apiCallLog.filter(t=>now-t<3600000);
+  window._apiCallLog.push(now);
+  if(typeof updateApiCounter==='function') updateApiCounter();
+
   const qs=new URLSearchParams(params).toString();
   const url=FOOTY_PROXY+'/footy/'+path+(qs?'?'+qs:'');
   const r=await fetch(url,{headers:{'Authorization':FOOTY_AUTH}});
-  const j=await r.json();
+  const j=await r.json().catch(()=>({}));
+  if(r.status===429 || (j.error && /rate.?limit|too.?many/i.test(j.error||''))){
+    // 429 — exponential backoff, start at 60s
+    window._apiBackoffPower=(window._apiBackoffPower||0)+1;
+    const backoffMs=Math.min(300,60*Math.pow(2,window._apiBackoffPower-1))*1000;
+    window._apiBackoffUntil=Date.now()+backoffMs;
+    if(typeof updateApiCounter==='function') updateApiCounter();
+    throw new Error('Rate limit exceeded — cooldown '+(backoffMs/1000)+'s');
+  }
   if(!r.ok) throw new Error(j.error||'HTTP '+r.status);
+  // Reset backoff on success
+  window._apiBackoffPower=0;
   return j;
 }
 async function footyHealth(){
@@ -4406,6 +5095,40 @@ function footyMapMatch(match,homeT,awayT){
   // Track API match id so "Śledź ten mecz" can poll live status reliably
   window._currentApiMatchId = match.id || null;
 
+  // ── STALE DATA propagation (v8.4.2) ──
+  // Flag whether API match data is reliable. Used downstream by decideQuickBet + rankPicks
+  // to BLOCK picks when stale, preventing absurd recommendations like "Goście wygrają @ 7.85 +55%"
+  // when match is actually 4:0 home.
+  const _staleCheck=isStaleMatch(match);
+  window._currentMatchStale=_staleCheck.stale;
+  window._currentMatchStaleReason=_staleCheck.reason;
+  if(_staleCheck.stale){
+    console.warn('[STALE-DATA]',match.home_name,'vs',match.away_name,'—',_staleCheck.reason);
+  }
+
+  // Extract goal-minute metadata for Match State Rules
+  // FootyStats may return minutes as: 45 (number), "45" (string), "45'" (apostrophe), "45+2" (stoppage time)
+  // For stoppage time "45+2" we want 45 (1H), not 452 — take only the leading integer.
+  const parseGoalMin=v=>{
+    const s=String(v).trim();
+    const m=s.match(/^(\d{1,3})/);
+    return m?parseInt(m[1],10):NaN;
+  };
+  const homeGoalMins=(match.homeGoals||[]).map(parseGoalMin).filter(n=>!isNaN(n)&&n>0&&n<=120);
+  const awayGoalMins=(match.awayGoals||[]).map(parseGoalMin).filter(n=>!isNaN(n)&&n>0&&n<=120);
+  const allGoalMins=[...homeGoalMins,...awayGoalMins].sort((a,b)=>a-b);
+  window._lastGoalMinute=allGoalMins.length?allGoalMins[allGoalMins.length-1]:null;
+  // 1H = minutes ≤45 (stoppage time of 1H is "45+X" → 45, still in 1H bucket)
+  window._half1HomeGoals=homeGoalMins.filter(n=>n<=45).length;
+  window._half1AwayGoals=awayGoalMins.filter(n=>n<=45).length;
+  console.log('[STATE-EXTRACT] home goals:',match.homeGoals,'→ mins:',homeGoalMins,'1H:',window._half1HomeGoals);
+  console.log('[STATE-EXTRACT] away goals:',match.awayGoals,'→ mins:',awayGoalMins,'1H:',window._half1AwayGoals);
+  // Reflect into UI fields so user sees what model knows
+  const htField=document.getElementById('halfTimeScore');
+  if(htField && window._half1HomeGoals!=null) htField.value=window._half1HomeGoals+':'+window._half1AwayGoals;
+  const lgField=document.getElementById('lastGoalMin');
+  if(lgField) lgField.value=window._lastGoalMinute||'';
+
   // Match-level (live + score)
   $('homeTeam').value=match.home_name||'';
   $('awayTeam').value=match.away_name||'';
@@ -4497,6 +5220,57 @@ async function footyAutoFetch(){
 // ── Multi-match scan: skan wszystkich meczów dziś, sortuj po edge ──
 window._scanCardsCache=[];
 
+// ── STALE DATA helper (v8.4.0 — improved with status guard) ──
+// Wykrywa gdy score z API jest niezgodny z live odds bukmachera.
+// IMPORTANT: tylko mecze które AKTUALNIE są live (in_play) lub niedawno startowały — pre-match nie liczy.
+function isStaleMatch(match,reportedGoals,oddH,oddA,oddD){
+  if(typeof reportedGoals==='undefined') reportedGoals=(match.homeGoals||[]).length+(match.awayGoals||[]).length;
+  if(typeof oddH==='undefined') oddH=match.odds_ft_1||0;
+  if(typeof oddA==='undefined') oddA=match.odds_ft_2||0;
+  if(typeof oddD==='undefined') oddD=match.odds_ft_x||0;
+  const impliedH=oddH>1.01?1/oddH:0, impliedA=oddA>1.01?1/oddA:0;
+
+  // GUARD 1: tylko in_play albo świeżo wystartowane mecze
+  // Pre-match nie może być "stale" — bukmacher daje pre-match odds normalnie
+  // Finished mecze pokazują 4:0, kursy są legitne
+  const isInPlay = match.status==='in_play' || (match.date_unix && match.date_unix<=Math.floor(Date.now()/1000) && match.date_unix>Math.floor(Date.now()/1000)-8100);
+  if(!isInPlay) return {stale:false,reason:''};
+
+  // GUARD 2: musimy mieć wszystkie 3 odds 1X2
+  if(oddH<1.01 || oddA<1.01 || oddD<1.01) return {stale:false,reason:''};
+
+  // Live + score 0:0 + ekstremalny faworyt = bukmacher zna live state którego API nie pokazuje
+  if(reportedGoals===0){
+    if(impliedH>=0.70){
+      return {stale:true,reason:'Score 0:0 (live) ale Home @ '+oddH.toFixed(2)+' = '+(impliedH*100).toFixed(0)+'% — bukmacher widzi gole, API nie'};
+    }
+    if(impliedA>=0.70){
+      return {stale:true,reason:'Score 0:0 (live) ale Away @ '+oddA.toFixed(2)+' = '+(impliedA*100).toFixed(0)+'% — bukmacher widzi gole, API nie'};
+    }
+  }
+  return {stale:false,reason:''};
+}
+
+// Helper: clear all odds fields (used between match transitions to prevent cross-contamination)
+function clearAllOddsFields(){
+  ['oddHome','oddDraw','oddAway','oddOver','oddUnder','oddBTTS','oddNextGoal','oddCorners','oddRedCard','oddPenalty',
+   'oddOver15','oddUnder15','oddOver35','oddUnder35','oddOver45','oddUnder45','oddOver55','oddUnder55','oddOver65','oddUnder65']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=0; });
+}
+
+// Helper: clear all match-specific state (between matches)
+function clearMatchState(){
+  window._currentMatchStale=false;
+  window._currentMatchStaleReason='';
+  window._currentApiMatchId=null;
+  window._lastGoalMinute=null;
+  window._half1HomeGoals=null;
+  window._half1AwayGoals=null;
+  // Clear UI fields for half-time/last goal
+  const ht=document.getElementById('halfTimeScore'); if(ht) ht.value='';
+  const lg=document.getElementById('lastGoalMin'); if(lg) lg.value='';
+}
+
 function footyComputeMatchCard(match,homeT,awayT){
   const sH=(homeT&&homeT.stats)||{};
   const sA=(awayT&&awayT.stats)||{};
@@ -4513,18 +5287,37 @@ function footyComputeMatchCard(match,homeT,awayT){
   const bttsHistAvg=((sH.seasonBTTSPercentage_home||0)+(sA.seasonBTTSPercentage_away||0))/200;
   const pBTTS=bttsHistAvg>0?(bttsHistAvg*0.7+pBTTSPoisson*0.3):pBTTSPoisson;
 
+  // ── STALE DATA DETECTION (v8.4.2 — aggressive) ──
+  // Wykrywa gdy API zwraca stary score (0:0) ale bukmacher widzi inne realia (live odds).
+  const reportedGoals=(match.homeGoals||[]).length+(match.awayGoals||[]).length;
+  const oddH=match.odds_ft_1||0, oddA=match.odds_ft_2||0, oddD=match.odds_ft_x||0;
+  const impliedH=oddH>1.01?1/oddH:0, impliedA=oddA>1.01?1/oddA:0;
+  const staleCheck=isStaleMatch(match,reportedGoals,oddH,oddA,oddD);
+  const staleData=staleCheck.stale, staleReason=staleCheck.reason;
+
   const markets=[];
+  // Helper: sanity check market — odd vs model implied gap
+  function isMarketSane(modelP,odd){
+    if(!odd||odd<1.01) return false;
+    if(staleData) return false;  // Reject all markets when stale
+    const implied=1/odd;
+    // Tighter thresholds — model i bukmacher nie mogą się tak różnić w normalnych warunkach
+    if(modelP>0.25 && implied<0.15) return false;  // model 25%+ ale bukmacher <15%
+    if(modelP<0.20 && implied>0.65) return false;  // model 20%- ale bukmacher >65%
+    return true;
+  }
+
   // Goals — pick relevant line based on totalLam (auto-tier)
-  if(match.odds_ft_over25){
+  if(match.odds_ft_over25 && isMarketSane(pOver25,match.odds_ft_over25,'Over 2.5')){
     const edge=(pOver25-1/match.odds_ft_over25)*100;
     if(pOver25>=0.40&&edge>=2) markets.push({label:'Over 2.5',edge,odd:match.odds_ft_over25,modelP:pOver25,group:'goals'});
   }
-  if(match.odds_ft_under25){
+  if(match.odds_ft_under25 && isMarketSane(1-pOver25,match.odds_ft_under25,'Under 2.5')){
     const pUnder=1-pOver25;
     const edge=(pUnder-1/match.odds_ft_under25)*100;
     if(pUnder>=0.40&&edge>=2) markets.push({label:'Under 2.5',edge,odd:match.odds_ft_under25,modelP:pUnder,group:'goals'});
   }
-  if(match.odds_btts_yes&&pBTTS>=0.40){
+  if(match.odds_btts_yes && pBTTS>=0.40 && isMarketSane(pBTTS,match.odds_btts_yes,'BTTS')){
     const edge=(pBTTS-1/match.odds_btts_yes)*100;
     if(edge>=2) markets.push({label:'BTTS',edge,odd:match.odds_btts_yes,modelP:pBTTS,group:'btts'});
   }
@@ -4533,18 +5326,24 @@ function footyComputeMatchCard(match,homeT,awayT){
   const aPPG=sA.seasonPPG_away||1.5;
   const ppgTot=hPPG+aPPG+1.5;
   const pH=hPPG/ppgTot,pA=aPPG/ppgTot,pD=1.5/ppgTot;
-  if(match.odds_ft_1){
+  if(match.odds_ft_1 && isMarketSane(pH,match.odds_ft_1,'Home Win')){
     const edge=(pH-1/match.odds_ft_1)*100;
     if(pH>=0.40&&edge>=3) markets.push({label:'Home Win',edge,odd:match.odds_ft_1,modelP:pH,group:'1x2'});
   }
-  if(match.odds_ft_2){
+  if(match.odds_ft_2 && isMarketSane(pA,match.odds_ft_2,'Away Win')){
     const edge=(pA-1/match.odds_ft_2)*100;
     if(pA>=0.40&&edge>=3) markets.push({label:'Away Win',edge,odd:match.odds_ft_2,modelP:pA,group:'1x2'});
   }
 
-  if(!markets.length) return null;
+  if(!markets.length){
+    // No sane markets — but if stale data detected, return card with warning so user can refresh manually
+    if(staleData){
+      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚠ Sprawdź wynik',odd:0,modelP:0,group:'stale'},allMarkets:[],totalLam,staleData:true,staleReason};
+    }
+    return null;
+  }
   markets.sort((a,b)=>b.edge-a.edge);
-  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam};
+  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam,staleData,staleReason};
 }
 
 // Cache TTL dla league-matches: 20 min (FootyStats też ma 20-min update freq)
@@ -4578,71 +5377,109 @@ async function footyScanToday(){
   const out=$('scanTodayOut');
   const list=$('scanTodayList');
   const btn=$('scanTodayBtn');
-  btn.disabled=true;
-  out.style.display='block';
-  out.style.color='var(--text-dim)';
-  out.textContent='⏳ Ładuję listę 50 lig...';
-  list.innerHTML='';
+  if(btn) btn.disabled=true;
+  if(out){ out.style.display='block'; out.style.color='var(--text-dim)'; out.textContent='⏳ 2 calls do /todays-matches (dziś + jutro UTC)…'; }
+  if(list) list.innerHTML='';
   try{
-    // 1. Get league list
-    const leaguesResp=await footyFetch('league-list',{chosen_leagues_only:'true'});
-    const leagues=leaguesResp.data||[];
-    if(!leagues.length) throw new Error('Brak wybranych lig (FootyStats Account → Select Your Leagues)');
+    // 1. TWO calls → /todays-matches?date=YYYY-MM-DD dla dzisiaj UTC + jutra UTC
+    // Bez date param API zwraca tylko upcoming next 24h — pomija live matches!
+    // Z date param zwraca wszystkie mecze tego dnia (past/in-play/future).
+    const todayUTC=new Date().toISOString().slice(0,10);
+    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
+    const [rToday,rTomorrow]=await Promise.all([
+      footyFetch('todays-matches',{date:todayUTC}),
+      footyFetch('todays-matches',{date:tomorrowUTC})
+    ]);
+    // Merge + dedupe by match id (mecze w nocy mogą być w obu odpowiedziach)
+    const merged=[...(rToday.data||[]),...(rTomorrow.data||[])];
+    const allMatches=Array.from(new Map(merged.map(m=>[m.id,m])).values());
+    console.log('[scan] today UTC ('+todayUTC+'): '+(rToday.data||[]).length+' matches · tomorrow UTC ('+tomorrowUTC+'): '+(rTomorrow.data||[]).length+' matches · dedup: '+allMatches.length);
+    const dashStatus=document.getElementById('dashboardStatus');
+    if(dashStatus) dashStatus.textContent='⏳ Pobrano '+allMatches.length+' meczów (2 calls) · liczę edge…';
+    if(out) out.textContent='⏳ Pobrano '+allMatches.length+' meczów · liczę edge…';
 
-    // 2. Pick latest season per league
-    const targets=leagues.map(l=>{
-      const seasons=l.season||[];
-      if(!seasons.length) return null;
-      const latest=seasons.slice().sort((a,b)=>{
-        const ay=parseInt(String(a.year||'0').slice(-4))||0;
-        const by=parseInt(String(b.year||'0').slice(-4))||0;
-        return by-ay;
-      })[0];
-      return {leagueName:l.name,seasonId:latest.id};
-    }).filter(Boolean);
-
-    // 3. Fetch all leagues in parallel batches (10 concurrent)
-    const allMatches=[];
-    const batchSize=10;
-    let done=0;
-    for(let i=0;i<targets.length;i+=batchSize){
-      const batch=targets.slice(i,i+batchSize);
-      const results=await Promise.allSettled(batch.map(async t=>{
-        const matches=await footyLoadLeagueMatchesCached(t.seasonId);
-        // tag with league name
-        matches.forEach(m=>{ m._leagueName=t.leagueName; });
-        return matches;
-      }));
-      results.forEach(r=>{
-        if(r.status==='fulfilled') allMatches.push(...r.value);
-      });
-      done+=batch.length;
-      out.textContent='⏳ Skan lig: '+done+'/'+targets.length+' · zebrano '+allMatches.length+' meczów';
+    // ── DIAGNOSTYKA: zawsze loguj listę lig w odpowiedzi API ──
+    // (powtarzane też w empty path, ale tu też żeby user wiedział co Hobby tier zwraca)
+    const leagueCounts={};
+    let liveCountAll=0;
+    allMatches.forEach(m=>{
+      const lg=m.competition_name||m.league_name||m.country||'?';
+      leagueCounts[lg]=(leagueCounts[lg]||0)+1;
+      if(m.status==='in_play') liveCountAll++;
+    });
+    console.log('[scan] /todays-matches → '+allMatches.length+' meczów ('+liveCountAll+' z status=in_play). LIGI:',leagueCounts);
+    if(allMatches.length>0 && liveCountAll===0){
+      console.warn('[scan] ⚠ ZERO meczów ze status=in_play. Jeśli wiesz że są LIVE u bukmachera (np. Europa League) → te ligi NIE SĄ w Twoich 50 chosen leagues na FootyStats. Sprawdź: footystats.org/api/select-leagues');
     }
 
-    // 4. Filter: dziś + jutro + live (last 3h started, next 48h)
+    // 2. Filter: live last 3h + upcoming next 12h (catches overnight matches Warsaw-time)
     const now=Math.floor(Date.now()/1000);
+    const endOfTodayUnix=now+12*3600;  // historical name kept for diagnostic compat
     const filtered=allMatches.filter(m=>{
       if(!m.date_unix) return false;
       if(m.status==='complete') return false;
-      // Time window: started up to 3h ago OR upcoming next 48h
-      return m.date_unix>=now-10800&&m.date_unix<=now+172800;
+      // Window: live (started up to 3h ago) OR upcoming w najbliższych 12h
+      return m.date_unix>=now-10800&&m.date_unix<=endOfTodayUnix;
     }).filter(m=>m.odds_ft_over25||m.odds_btts_yes||m.odds_ft_1);
 
     if(!filtered.length){
-      out.textContent='Brak meczów w oknie 24-48h z kursami. Sprawdź ponownie później.';
-      list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Skan zakończony · 0 meczów w oknie czasowym.</div>';
-      btn.disabled=false;
+      // Diagnostyka: rozkład meczów per status/timing
+      const stats={complete:0,future:0,tooOld:0,live:0,noOdds:0,inWindow:0};
+      allMatches.forEach(m=>{
+        if(!m.date_unix) return;
+        if(m.status==='complete'){ stats.complete++; return; }
+        if(m.date_unix>endOfTodayUnix){ stats.future++; return; }
+        if(m.date_unix<now-10800){ stats.tooOld++; return; }
+        stats.inWindow++;
+        if(m.status==='in_play') stats.live++;
+        if(!(m.odds_ft_over25||m.odds_btts_yes||m.odds_ft_1)) stats.noOdds++;
+      });
+      // Dump 3 sample matches do konsoli żeby Chris mógł sprawdzić strukturę
+      console.log('[scan] /todays-matches returned',allMatches.length,'matches. Breakdown:',stats);
+      // Lista unikatowych lig w odpowiedzi — żeby user widział czy ma Europa League etc.
+      const leagueCounts={};
+      allMatches.forEach(m=>{
+        const lg=m.competition_name||m.league_name||m.country||'?';
+        leagueCounts[lg]=(leagueCounts[lg]||0)+1;
+      });
+      console.log('[scan] LIGI w odpowiedzi API (per match count):',leagueCounts);
+      console.warn('[scan] ⚠ Jeśli brakuje Europa League / Conference League / Champions League — dodaj je w ustawieniach FootyStats (Hobby: 50 chosen leagues).');
+      if(allMatches.length>0){
+        console.log('[scan] sample[0]:',{id:allMatches[0].id,home:allMatches[0].home_name,away:allMatches[0].away_name,status:allMatches[0].status,date:new Date((allMatches[0].date_unix||0)*1000).toLocaleString('pl'),hasOdds:!!(allMatches[0].odds_ft_over25||allMatches[0].odds_btts_yes||allMatches[0].odds_ft_1)});
+        if(allMatches.length>1) console.log('[scan] sample[mid]:',{id:allMatches[Math.floor(allMatches.length/2)].id,home:allMatches[Math.floor(allMatches.length/2)].home_name,away:allMatches[Math.floor(allMatches.length/2)].away_name,status:allMatches[Math.floor(allMatches.length/2)].status,date:new Date((allMatches[Math.floor(allMatches.length/2)].date_unix||0)*1000).toLocaleString('pl')});
+      }
+      let reason;
+      if(allMatches.length===0) reason='API zwrócił 0 meczów (sprawdź wybrane ligi)';
+      else if(stats.inWindow===0) reason=stats.complete+' zakończone · '+stats.tooOld+' za stare (>3h) · '+stats.future+' za >12h';
+      else if(stats.noOdds===stats.inWindow) reason=stats.inWindow+' w oknie ale wszystkie bez kursów';
+      else reason='unknown — sprawdź console';
+      window._lastScanStats={api:allMatches.length,filtered:0,cached:0,live:0,reason,breakdown:stats};
+      if(out) out.textContent='Brak meczów dziś z kursami. '+reason+'.';
+      if(list) list.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px 20px;background:var(--surface);border:1px dashed var(--border-strong);border-radius:12px;">Skan zakończony · '+reason+' (API: '+allMatches.length+' total).</div>';
+      window._scanCardsCache=[];
+      if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+      if(btn) btn.disabled=false;
       return;
     }
 
-    // 5. Compute edge per match
-    out.textContent='⏳ Obliczam edge dla '+filtered.length+' meczów...';
+    // 3. Tag matches with league name (from match data if present, else season_id fallback)
+    filtered.forEach(m=>{
+      m._leagueName=m.competition_name||m.league_name||m.country||'';
+      m._seasonId=m.season_id||m.competition_id||null;
+    });
+
+    // 4. Compute edge per match (team stats cached → minimal extra calls)
+    if(out) out.textContent='⏳ Obliczam edge dla '+filtered.length+' meczów…';
     const cards=[];
     let processed=0;
     for(const m of filtered){
       processed++;
-      if(processed%5===0) out.textContent='⏳ Edge '+processed+'/'+filtered.length+'...';
+      if(processed%5===0){
+        const msg='⏳ Liczę edge: '+processed+'/'+filtered.length+'…';
+        if(out) out.textContent=msg;
+        const dashStatus=document.getElementById('dashboardStatus');
+        if(dashStatus) dashStatus.textContent=msg;
+      }
       try{
         const [homeT,awayT]=await Promise.all([
           footyLoadTeam(m.homeID),
@@ -4655,17 +5492,23 @@ async function footyScanToday(){
       }
     }
     cards.sort((a,b)=>b.bestEdge-a.bestEdge);
+    const prevCache=window._scanCardsCache||[];
     window._scanCardsCache=cards;
-    footyRenderScanCards(cards,filtered.length);
+    if(typeof footyRenderScanCards==='function' && $('scanTodayList')) footyRenderScanCards(cards,filtered.length);
+    // Dashboard render + notification check
+    if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+    if(typeof dashboardCheckNewPicks==='function') dashboardCheckNewPicks(prevCache,cards);
     const liveCount=cards.filter(c=>isLiveMatch(c.match)).length;
-    out.style.color='var(--positive)';
-    out.textContent='✓ Skan: '+cards.length+'/'+filtered.length+' meczów z edge'+(liveCount?' · 🔴 '+liveCount+' LIVE':'')+' · '+targets.length+' lig';
-    setTimeout(()=>{out.style.display='none';},4000);
+    const valueCount=cards.filter(c=>c.bestEdge>=EDGE_VALUE).length;
+    window._lastScanStats={api:allMatches.length,filtered:filtered.length,cached:cards.length,live:liveCount,value:valueCount};
+    if(out){ out.style.color='var(--positive)'; out.textContent='✓ Skan: '+cards.length+'/'+filtered.length+' meczów z edge'+(liveCount?' · 🔴 '+liveCount+' LIVE':''); }
+    setTimeout(()=>{ if(out) out.style.display='none'; },4000);
   }catch(e){
-    out.style.color='var(--negative)';
-    out.textContent='✗ '+e.message;
+    if(out){ out.style.color='var(--negative)'; out.textContent='✗ '+e.message; }
+    const dashStatus=document.getElementById('dashboardStatus');
+    if(dashStatus){ dashStatus.style.color='var(--negative)'; dashStatus.textContent='✗ '+e.message; }
   } finally {
-    btn.disabled=false;
+    if(btn) btn.disabled=false;
   }
 }
 
@@ -4781,8 +5624,13 @@ function footyToggleAutoRefresh(){
 async function footyLoadFromScan(idx){
   const card=window._scanCardsCache[idx];
   if(!card) return;
+  // Clear stale state from previous match
+  clearAllOddsFields();
+  clearMatchState();
   // Reuse existing footyMapMatch
   footyMapMatch(card.match,card.homeT,card.awayT);
+  // Trigger calc so _lastPredictions is fresh
+  if(typeof calc==='function') calc();
   // Scroll to picks section
   setTimeout(()=>{
     const el=$('picksSection');
@@ -4791,6 +5639,530 @@ async function footyLoadFromScan(idx){
   qdToast('Załadowano '+card.match.home_name+' vs '+card.match.away_name,'green',2500);
 }
 
+// ── DASHBOARD v8.4 — live-first match list ──
+// EDGE_* + DASH_* declared at top of script (line ~1703) to avoid TDZ
+window._dashRefreshTimer=window._dashRefreshTimer||null;
+
+function loadPlacedMatches(){
+  try{ return JSON.parse(localStorage.getItem(DASH_PLACED_KEY)||'{}'); }catch(_){ return {}; }
+}
+function savePlacedMatches(map){ localStorage.setItem(DASH_PLACED_KEY,JSON.stringify(map)); }
+function loadDashPrefs(){
+  try{ return Object.assign({activeTab:'live',hidden:[]},JSON.parse(localStorage.getItem(DASH_PREFS_KEY)||'{}')); }catch(_){ return {activeTab:'live',hidden:[]}; }
+}
+function saveDashPrefs(p){ localStorage.setItem(DASH_PREFS_KEY,JSON.stringify(p)); }
+function loadNotifSeen(){
+  try{ return JSON.parse(localStorage.getItem(DASH_NOTIF_KEY)||'{}'); }catch(_){ return {}; }
+}
+function saveNotifSeen(s){ localStorage.setItem(DASH_NOTIF_KEY,JSON.stringify(s)); }
+
+function toggleMatchPlaced(matchId,state,pickInfo){
+  const map=loadPlacedMatches();
+  if(state){
+    map[matchId]={
+      ts:Date.now(),
+      market:pickInfo?.market||'manual',
+      stake:pickInfo?.stake||0,
+      odd:pickInfo?.odd||null,
+      edge:pickInfo?.edge||null,
+      home:pickInfo?.home||'',
+      away:pickInfo?.away||'',
+      status:'open'
+    };
+  } else {
+    delete map[matchId];
+  }
+  savePlacedMatches(map);
+  renderDashboardMatches();
+}
+
+function dashboardSwitchTab(tab){
+  const prefs=loadDashPrefs(); prefs.activeTab=tab; saveDashPrefs(prefs);
+  document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderDashboardMatches();
+}
+
+function dashboardEdgeBadge(edgePct){
+  if(edgePct>=EDGE_STRONG) return '<span class="badge-edge edge-strong">⚡ STRONG +'+edgePct.toFixed(0)+'%</span>';
+  if(edgePct>=EDGE_VALUE)  return '<span class="badge-edge edge-value">💡 VALUE +'+edgePct.toFixed(0)+'%</span>';
+  if(edgePct>=EDGE_SLIM)   return '<span class="badge-edge edge-slim">SLIM +'+edgePct.toFixed(0)+'%</span>';
+  return '<span class="badge-edge edge-none">brak edge</span>';
+}
+
+function dashboardLiveBadge(card){
+  const m=card.match;
+  if(isLiveMatch(m)){
+    const elapsedMin=m.date_unix?Math.max(1,Math.floor((Date.now()/1000-m.date_unix)/60)):0;
+    const minDisp=elapsedMin>90?"90+'":elapsedMin+"'";
+    return '<span class="badge-live">LIVE '+minDisp+'</span>';
+  }
+  if(m.status==='complete') return '<span class="badge-finished">Zakończony</span>';
+  return '<span class="badge-upcoming">'+(footyDayLabel(m.date_unix)||'Wkrótce')+'</span>';
+}
+
+function renderDashboardCard(card,placedEntry,cacheIdx){
+  const m=card.match;
+  const matchId=String(m.id);
+  const isLive=isLiveMatch(m);
+  const isPlaced=!!placedEntry;
+  const score=isLive||m.status==='complete'?(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length:'—';
+  const bankroll=parseInt(localStorage.getItem('predator_bankroll'))||1000;
+  const stakeSuggest=Math.round(bankroll*0.05);
+  const payout=card.bestMarket && card.bestMarket.odd>1.01?Math.round(stakeSuggest*(card.bestMarket.odd-1)):null;
+  const leagueBadge=m._leagueName?'<span class="match-card-league">'+m._leagueName+'</span>':'';
+  const placedClass=isPlaced?'placed':'';
+  const staleClass=card.staleData?'stale-data':'';
+
+  // Stale data warning header
+  const staleWarning=card.staleData
+    ?'<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>'
+    :'';
+
+  // Pick text — różne dla normalnych picks vs stale
+  const pickHtml=card.staleData
+    ?'<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>'
+    :'🎯 <span class="pick-market">'+card.bestMarket.label+' @ '+card.bestMarket.odd.toFixed(2)+'</span>'
+      +' · model '+(card.bestMarket.modelP*100).toFixed(0)+'%'
+      +(payout?' · <span class="pick-stake">'+stakeSuggest+'zł → +'+payout+'zł</span>':'')
+      +(card.allMarkets.length>1?' · <span style="color:var(--text-faint);">+'+(card.allMarkets.length-1)+' rynków</span>':'');
+
+  // Edge badge — pokazuje WARNING dla stale, nie STRONG
+  const edgeBadge=card.staleData
+    ?'<span class="badge-edge edge-stale">⚠ STALE</span>'
+    :dashboardEdgeBadge(card.bestEdge);
+
+  // Disable Obstaw + Analizuj dla stale data
+  const placedDisabled=card.staleData?'disabled':'';
+  const analyzeDisabled=card.staleData?'disabled style="opacity:0.5;cursor:not-allowed;"':'';
+
+  return '<div class="match-card '+placedClass+' '+staleClass+'" data-match-id="'+matchId+'" data-edge="'+card.bestEdge.toFixed(1)+'">'
+    +staleWarning
+    +'<div class="match-card-body">'
+      +'<div class="match-card-status">'
+        +edgeBadge
+        +dashboardLiveBadge(card)
+      +'</div>'
+      +'<div class="match-card-info">'
+        +'<div class="match-card-teams">'
+          +leagueBadge
+          +'<span>'+m.home_name+'</span>'
+          +(score!=='—'?' <span class="match-card-score">'+score+'</span> ':' vs ')
+          +'<span>'+m.away_name+'</span>'
+        +'</div>'
+        +'<div class="match-card-pick">'+pickHtml+'</div>'
+      +'</div>'
+      +'<div class="match-card-actions">'
+        +'<label class="placed-toggle" title="Zaznacz że obstawiłeś u bukmachera">'
+          +'<input type="checkbox" '+(isPlaced?'checked':'')+' '+placedDisabled+' onchange="dashboardOnPlacedToggle(\''+matchId+'\','+cacheIdx+',this.checked)">'
+          +(isPlaced?'✓ Obstawione':'Obstaw')
+        +'</label>'
+        +'<button '+analyzeDisabled+' onclick="if(!this.disabled)dashboardAnalyze(\''+matchId+'\')" '+(card.staleData?'':'class="btn-primary"')+'>Analizuj</button>'
+        +'<button onclick="dashboardRefreshCard(\''+matchId+'\')" title="Odśwież dane meczu z API (force re-fetch)">🔄</button>'
+        +'<button onclick="dashboardWatchAdd(\''+matchId+'\')" title="Dodaj do watch list">+ Watch</button>'
+        +'<button onclick="dashboardHide(\''+matchId+'\')" title="Ukryj kartę z dashboardu">✕</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+// Force re-fetch single match (bypass cache) — when stale data detected
+// Force fetch SINGLE match — 1 call do /todays-matches, znajdź ten mecz, update cache
+async function dashboardRefreshCard(matchIdOrIdx){
+  let card=null;
+  if(typeof matchIdOrIdx==='number') card=window._scanCardsCache?.[matchIdOrIdx];
+  else card=getCardByMatchId(matchIdOrIdx);
+  if(!card) return;
+  const m=card.match;
+  qdToast('🔄 Odświeżam '+m.home_name+'…','green',1500);
+  try{
+    // 2 calls → /todays-matches?date dla dziś+jutro UTC (bez date param API pomija live!)
+    const todayUTC=new Date().toISOString().slice(0,10);
+    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
+    const [rT,rTm]=await Promise.all([
+      footyFetch('todays-matches',{date:todayUTC}),
+      footyFetch('todays-matches',{date:tomorrowUTC})
+    ]);
+    const merged=[...(rT.data||[]),...(rTm.data||[])];
+    const fresh=merged.find(x=>String(x.id)===String(m.id));
+    if(!fresh){
+      // Match not in todays-matches (zakończony lub jutro) — fallback do league-matches force fetch
+      if(m._seasonId){
+        try{ sessionStorage.removeItem('footy_lm_'+m._seasonId); }catch(_){}
+        const r2=await footyFetch('league-matches',{season_id:m._seasonId,page:1});
+        const list=r2.data||[];
+        const updated=list.find(x=>String(x.id)===String(m.id));
+        if(updated){
+          const preserved={_leagueName:m._leagueName,_seasonId:m._seasonId};
+          Object.assign(m,updated,preserved);
+        }
+      }
+    } else {
+      const preserved={_leagueName:m._leagueName,_seasonId:m._seasonId};
+      Object.assign(m,fresh,preserved);
+    }
+    // Recompute card with fresh data + cached team stats
+    const newCard=footyComputeMatchCard(card.match,card.homeT,card.awayT);
+    if(newCard){
+      card.bestEdge=newCard.bestEdge;
+      card.bestMarket=newCard.bestMarket;
+      card.allMarkets=newCard.allMarkets;
+      card.staleData=newCard.staleData;
+      card.staleReason=newCard.staleReason;
+    }
+    renderDashboardMatches();
+    qdToast('✓ Zaktualizowano '+m.home_name,'green',2000);
+  }catch(e){
+    qdToast('Błąd: '+e.message,'red',3000);
+  }
+}
+
+function dashboardOnPlacedToggle(matchId,cacheIdx,state){
+  // Prefer matchId lookup (stable); fall back to index
+  let card=getCardByMatchId(matchId);
+  if(!card) card=window._scanCardsCache?.[cacheIdx];
+  if(!card){ toggleMatchPlaced(matchId,state); return; }
+  const pickInfo=state?{
+    market:card.bestMarket.label,
+    odd:card.bestMarket.odd,
+    edge:card.bestEdge,
+    stake:Math.round((parseInt(localStorage.getItem('predator_bankroll'))||1000)*0.05),
+    home:card.match.home_name,
+    away:card.match.away_name
+  }:null;
+  toggleMatchPlaced(matchId,state,pickInfo);
+  if(state) qdToast('✓ Bet zapisany — przeniesiony do "Moje bety"','green',2500);
+  else qdToast('Bet odznaczony','yellow',1500);
+}
+
+// Find card by stable matchId (resilient to array reshuffle from auto-refresh)
+function getCardByMatchId(matchId){
+  const cache=window._scanCardsCache||[];
+  return cache.find(c=>String(c.match.id)===String(matchId));
+}
+
+async function dashboardAnalyze(matchIdOrIdx){
+  // Accept either matchId string OR cache index (backward compat)
+  let card=null;
+  const cache=window._scanCardsCache||[];
+  if(typeof matchIdOrIdx==='number') card=cache[matchIdOrIdx];
+  else card=getCardByMatchId(matchIdOrIdx);
+  if(!card){ qdToast('Karta wygasła — odśwież dashboard','red',2500); return; }
+  // Clear ALL match state from previous match — prevents cross-contamination
+  clearAllOddsFields();
+  clearMatchState();
+  // Reuse existing footyMapMatch — wypełnia wszystkie pola + ustawia stale flag
+  footyMapMatch(card.match,card.homeT,card.awayT);
+  // CRITICAL: trigger calc() so _lastPredictions is fresh — without this, hero rec shows stale picks
+  if(typeof calc==='function') calc();
+  qdToast('Załadowano '+card.match.home_name+' vs '+card.match.away_name,'green',2500);
+  // Auto-expand "Pełne predykcje" accordion (collapsed by default)
+  const acc=document.getElementById('accPredictions');
+  if(acc&&!acc.classList.contains('open')) acc.classList.add('open');
+  // Scroll do hero rec żeby user widział verdykt
+  setTimeout(()=>{
+    const hero=document.getElementById('heroRec');
+    if(hero) hero.scrollIntoView({behavior:'smooth',block:'start'});
+  },300);
+}
+
+function dashboardWatchAdd(matchIdOrIdx){
+  let card=null;
+  if(typeof matchIdOrIdx==='number') card=window._scanCardsCache?.[matchIdOrIdx];
+  else card=getCardByMatchId(matchIdOrIdx);
+  if(!card) return;
+  const m=card.match;
+  const isLive=isLiveMatch(m);
+  const minute=isLive&&m.date_unix?Math.max(1,Math.floor((Date.now()/1000-m.date_unix)/60)):0;
+  addToWatchList({
+    home:m.home_name,away:m.away_name,
+    matchId:m.id,
+    targetMinute:isLive?Math.min(75,minute+15):60,
+    snappedAt:minute,score:(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length,
+    note:''
+  });
+  requestNotifOnce();
+  qdToast('🔔 Mecz w Watch list','green',2000);
+}
+
+function dashboardHide(matchId){
+  const prefs=loadDashPrefs();
+  if(!prefs.hidden.includes(matchId)) prefs.hidden.push(matchId);
+  saveDashPrefs(prefs);
+  renderDashboardMatches();
+  qdToast('Mecz ukryty','yellow',1200);
+}
+
+function renderDashboardMatches(){
+  const list=document.getElementById('dashboardList');
+  if(!list) return;
+  const cards=window._scanCardsCache||[];
+  const placed=loadPlacedMatches();
+  const prefs=loadDashPrefs();
+  const activeTab=prefs.activeTab||'live';
+
+  // Filter into 4 buckets:
+  // - liveCards / upcomingCards: edge ≥5% only (high-signal)
+  // - liveAllCards: wszystkie live z cache, bez progu edge (raw view)
+  // - placedCards: zawsze widoczne (user tracking)
+  // Stale data zawsze pomijane (no actionable info)
+  const liveCards=[], liveAllCards=[], upcomingCards=[], placedCards=[];
+  cards.forEach((c,idx)=>{
+    const id=String(c.match.id);
+    if(prefs.hidden.includes(id)) return;
+    const isPlaced=!!placed[id];
+    if(isPlaced){ placedCards.push({card:c,idx,placed:placed[id]}); return; }
+    if(c.staleData) return;
+    const live=isLiveMatch(c.match);
+    if(live) liveAllCards.push({card:c,idx,placed:placed[id]});
+    if(c.bestEdge<EDGE_VALUE) return;
+    if(live) liveCards.push({card:c,idx,placed:placed[id]});
+    else if(c.match.status!=='complete') upcomingCards.push({card:c,idx,placed:placed[id]});
+  });
+
+  // Update counts
+  document.getElementById('dashCountLive').textContent=liveCards.length;
+  document.getElementById('dashCountLiveAll').textContent=liveAllCards.length;
+  document.getElementById('dashCountUpcoming').textContent=upcomingCards.length;
+  document.getElementById('dashCountPlaced').textContent=placedCards.length;
+
+  // Smart default: gdy LIVE pusty ale Dziś ma mecze, automatycznie przełącz
+  let effectiveTab=activeTab;
+  if(activeTab==='live' && liveCards.length===0 && upcomingCards.length>0){
+    effectiveTab='upcoming';
+    document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='upcoming'));
+  }
+
+  let bucket;
+  if(effectiveTab==='live') bucket=liveCards;
+  else if(effectiveTab==='liveAll') bucket=liveAllCards;
+  else if(effectiveTab==='upcoming') bucket=upcomingCards;
+  else bucket=placedCards;
+
+  // Sort: placed at top, then chronological for upcoming, edge for live/placed
+  bucket.sort((a,b)=>{
+    const pa=a.placed?1:0, pb=b.placed?1:0;
+    if(pa!==pb) return pb-pa;
+    if(activeTab==='upcoming'){
+      // Chronological — najbliższe godzinowo na górze
+      return (a.card.match.date_unix||0)-(b.card.match.date_unix||0);
+    }
+    return b.card.bestEdge-a.card.bestEdge;
+  });
+
+  if(!bucket.length){
+    // Special case: cache pusty = brak skanu yet → CTA
+    if(!cards.length){
+      list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">📡</div><div style="font-size:15px;color:var(--text);margin-bottom:8px;font-weight:600;">Dashboard gotowy</div><div style="margin-bottom:14px;">Kliknij <strong>"↻ Pełny skan"</strong> żeby zaciągnąć dzisiejsze mecze ze wszystkich 50 lig.<br>Po pierwszym skanie auto-update co 30s aktualizuje live + obstawione.</div><button class="btn btn-accent" onclick="dashboardManualRefresh()" style="padding:10px 18px;font-size:13px;">↻ Skanuj teraz</button></div>';
+      return;
+    }
+    const emptyMsg={
+      live:{icon:'🔴',title:'Brak meczów na żywo z edge\'em',sub:'Sprawdź zakładkę "Wszystkie live" lub kliknij ↻ Pełny skan żeby odświeżyć.'},
+      liveAll:{icon:'📡',title:'Brak meczów na żywo w cache',sub:'Cache pusty lub wszystkie zakończone. Kliknij ↻ Pełny skan.'},
+      upcoming:{icon:'⏰',title:'Brak nadchodzących meczów',sub:'Brak meczów w najbliższych godzinach z value (≥5%).'},
+      placed:{icon:'✅',title:'Brak obstawionych meczów',sub:'Zaznacz "Obstaw" przy karcie meczu aby śledzić.'}
+    }[effectiveTab];
+    list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">'+emptyMsg.icon+'</div><div style="font-size:14px;color:var(--text);margin-bottom:6px;">'+emptyMsg.title+'</div><div>'+emptyMsg.sub+'</div></div>';
+    return;
+  }
+
+  // Hard cap 20 — focus na top picks, no scroll fatigue
+  const MAX_VISIBLE=20;
+  const visible=bucket.slice(0,MAX_VISIBLE);
+  const omitted=bucket.length-visible.length;
+  list.innerHTML=visible.map(b=>renderDashboardCard(b.card,b.placed,b.idx)).join('')
+    +(omitted>0?'<div style="padding:10px;text-align:center;color:var(--text-faint);font-size:11px;font-family:var(--mono);">+ '+omitted+' meczów ukrytych (top 20 z najwyższym edge)</div>':'');
+}
+
+function dashboardCheckNewPicks(prevCache,newCache){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const seen=loadNotifSeen();
+  const now=Date.now();
+  // TTL — clean entries older than 30 min (prevents stale match alerts when user reopens app)
+  Object.keys(seen).forEach(k=>{ if(now-seen[k]>30*60000) delete seen[k]; });
+
+  newCache.forEach(c=>{
+    if(c.bestEdge<DASH_NOTIF_THRESHOLD) return;
+    if(c.staleData) return;  // Don't notify on stale picks
+    if(!isLiveMatch(c.match)) return;  // Only live for notifications
+    // Time-based dedup: 1 notification per matchId per 30min (regardless of edge bucket fluctuation)
+    const key=String(c.match.id);
+    if(seen[key] && (now-seen[key])<30*60000) return;
+    seen[key]=now;
+    const title='🎯 Predator value · +'+c.bestEdge.toFixed(0)+'%';
+    const body=c.match.home_name+' vs '+c.match.away_name+'\n'+c.bestMarket.label+' @ '+c.bestMarket.odd.toFixed(2);
+    notifyWatch(title,body);
+    // Tab title flash
+    if(typeof document!=='undefined'){
+      const orig=document.title;
+      let n=0;
+      const flashId=setInterval(()=>{
+        document.title=n%2?orig:'⚡ '+title;
+        if(++n>6){ clearInterval(flashId); document.title=orig; }
+      },800);
+    }
+  });
+  saveNotifSeen(seen);
+}
+
+// FULL refresh — manual button click. Skanuje wszystkie ligi (~50 calls).
+async function dashboardManualRefresh(){
+  const btn=document.getElementById('dashRefreshBtn');
+  const status=document.getElementById('dashboardStatus');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Skanuję…'; }
+  if(status){ status.textContent='⏳ Skanuje wszystkie ligi…'; status.style.color='var(--accent)'; }
+  try{
+    await footyScanToday();
+    if(status){
+      const s=window._lastScanStats;
+      const time=new Date().toLocaleTimeString('pl');
+      let msg='✓ Skan zakończony · '+time;
+      if(s){
+        if(s.cached===0){
+          msg='⚠ Skan: 0 w cache · '+(s.reason||'API:'+s.api+' filtered:'+s.filtered)+' · '+time;
+          status.style.color='var(--warning)';
+        } else {
+          msg='✓ Skan: API '+s.api+' → okno '+s.filtered+' → cache '+s.cached+' · 🔴 '+s.live+' live · 💡 '+(s.value||0)+' z edge≥5% · '+time;
+          status.style.color='var(--positive)';
+        }
+      } else {
+        status.style.color='var(--positive)';
+      }
+      status.textContent=msg;
+    }
+    // Auto-enable auto-skan po pierwszym manual scan (UX: scan once → keep updated)
+    const autoCb=document.getElementById('dashAutoRefresh');
+    if(autoCb && !autoCb.checked && !window._autoRefreshPrompted){
+      autoCb.checked=true;
+      window._autoRefreshPrompted=true;
+      dashboardToggleAutoRefresh();
+    }
+  }catch(e){
+    qdToast('Błąd skanu: '+e.message,'red',3000);
+    if(status){ status.textContent='✗ Błąd: '+e.message; status.style.color='var(--negative)'; }
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='↻ Pełny skan'; }
+  }
+}
+
+// LIGHT refresh — auto-refresh co 30s. Tylko 1 call do /todays-matches żeby zaktualizować live + placed + watched.
+// Pre-match cards zostają z initial scan (nie ruszamy ich).
+async function dashboardLightRefresh(){
+  if(Date.now()<window._apiBackoffUntil) return;  // skip if rate limited
+  const cache=window._scanCardsCache||[];
+  if(!cache.length) return;  // nothing to refresh
+  const placed=loadPlacedMatches();
+  // Filter: only matches we care about
+  const toRefresh=cache.filter(c=>{
+    if(isLiveMatch(c.match)) return true;
+    if(placed[String(c.match.id)]) return true;  // user obstawił
+    return false;
+  });
+  if(!toRefresh.length){
+    // No live/placed — just update timestamp
+    const status=document.getElementById('dashboardStatus');
+    if(status) status.textContent='Brak meczów live · ostatni skan: '+new Date().toLocaleTimeString('pl');
+    return;
+  }
+  try{
+    // 2 calls → /todays-matches?date=YYYY-MM-DD dla dziś + jutro UTC (date param zwraca past+live+future)
+    const todayUTC=new Date().toISOString().slice(0,10);
+    const tomorrowUTC=new Date(Date.now()+86400000).toISOString().slice(0,10);
+    const [rT,rTm]=await Promise.all([
+      footyFetch('todays-matches',{date:todayUTC}),
+      footyFetch('todays-matches',{date:tomorrowUTC})
+    ]);
+    const merged=[...(rT.data||[]),...(rTm.data||[])];
+    const todaysMap=new Map(merged.map(m=>[String(m.id),m]));
+    let updated=0;
+    cache.forEach(c=>{
+      const fresh=todaysMap.get(String(c.match.id));
+      if(!fresh) return;
+      // Update live state — preserve _leagueName, _seasonId from original
+      const preserved={_leagueName:c.match._leagueName,_seasonId:c.match._seasonId};
+      Object.assign(c.match,fresh,preserved);
+      // Recompute edge with fresh data (reuse cached homeT/awayT)
+      const newCard=footyComputeMatchCard(c.match,c.homeT,c.awayT);
+      if(newCard){
+        c.bestEdge=newCard.bestEdge;
+        c.bestMarket=newCard.bestMarket;
+        c.allMarkets=newCard.allMarkets;
+        c.staleData=newCard.staleData;
+        c.staleReason=newCard.staleReason;
+      }
+      updated++;
+    });
+    if(updated>0){
+      const prevCacheCopy=cache.map(c=>({...c}));  // for new picks check
+      renderDashboardMatches();
+      dashboardCheckNewPicks(prevCacheCopy,cache);
+    }
+    const status=document.getElementById('dashboardStatus');
+    if(status) status.textContent='Live update ('+updated+' meczów) · '+new Date().toLocaleTimeString('pl');
+  }catch(e){
+    if(/rate.?limit|cooldown/i.test(e.message)){
+      const status=document.getElementById('dashboardStatus');
+      if(status){ status.textContent='⏳ '+e.message; status.style.color='var(--warning)'; }
+    } else {
+      console.warn('[dashboardLightRefresh]',e);
+    }
+  }
+}
+
+function dashboardToggleAutoRefresh(){
+  const cb=document.getElementById('dashAutoRefresh');
+  if(!cb) return;
+  if(cb.checked){
+    if(window._dashRefreshTimer) clearInterval(window._dashRefreshTimer);
+    // Use LIGHT refresh (1 call) for auto-refresh, not full scan
+    window._dashRefreshTimer=setInterval(()=>{
+      if(!document.hidden) dashboardLightRefresh();
+    },DASH_REFRESH_INTERVAL);
+    requestNotifOnce();
+    qdToast('🔔 Auto-skan włączony · co 30s (live + obstawione)','green',2500);
+  } else {
+    if(window._dashRefreshTimer){ clearInterval(window._dashRefreshTimer); window._dashRefreshTimer=null; }
+    qdToast('Auto-skan wyłączony','yellow',1500);
+  }
+}
+
+// API counter — pokazuje aktualne zużycie quota
+function updateApiCounter(){
+  const el=document.getElementById('dashApiCounter');
+  if(!el) return;
+  const calls=window._apiCallLog?.length||0;
+  const cooldown=window._apiBackoffUntil>Date.now()?Math.ceil((window._apiBackoffUntil-Date.now())/1000):0;
+  if(cooldown>0){
+    el.innerHTML='<span style="color:var(--warning);">⏳ Rate limit — '+cooldown+'s</span>';
+  } else {
+    const pct=Math.round((calls/1800)*100);
+    const color=pct>=80?'var(--negative)':(pct>=50?'var(--warning)':'var(--text-faint)');
+    el.innerHTML='<span style="color:'+color+';">📡 API: '+calls+'/1800 ('+pct+'%)</span>';
+  }
+}
+// Refresh counter every 5s
+setInterval(()=>{
+  // Cleanup old log entries (older than 1h)
+  const now=Date.now();
+  if(window._apiCallLog){
+    window._apiCallLog=window._apiCallLog.filter(t=>now-t<3600000);
+  }
+  updateApiCounter();
+}, 5000);
+
+function dashboardBoot(){
+  // Restore active tab
+  const prefs=loadDashPrefs();
+  document.querySelectorAll('.dash-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===prefs.activeTab));
+  // Initial render — show empty state with CTA, NO automatic scan
+  // User must click "Pełny skan" to start. This prevents API burn on every page reload.
+  renderDashboardMatches();
+  updateApiCounter();
+  const status=document.getElementById('dashboardStatus');
+  if(status) status.textContent='Idle — kliknij "↻ Pełny skan" aby załadować mecze';
+}
+if(document.readyState==='complete') setTimeout(dashboardBoot,400);
+else window.addEventListener('load',()=>setTimeout(dashboardBoot,400));
+
 if(document.readyState==='complete') setTimeout(footyInitLeagueDropdown,500);
 else window.addEventListener('load',()=>setTimeout(footyInitLeagueDropdown,500));
 
@@ -4798,6 +6170,7 @@ function openSettings(){
   $('setDailyLimit').value=Math.round(getDailyLimitPct()*100);
   $('setBookmaker').value=localStorage.getItem('predator_bookmaker_url')||'';
   $('setKellyMult').value=parseFloat(localStorage.getItem('predator_kelly_mult')||'0.25');
+  applyRulesUI();
   $('settingsModal').classList.add('open');
 }
 function closeSettings(){ $('settingsModal').classList.remove('open'); }
@@ -4982,12 +6355,141 @@ function clearScan(){
     e.preventDefault();drop.classList.remove('drag-over');
     if(e.dataTransfer.files.length) addScanImages(e.dataTransfer.files);
   });
-  // Paste anywhere on page
+  // Paste anywhere on page — route to odds parser if armed, otherwise to match scanner
   document.addEventListener('paste',e=>{
     const items=[...e.clipboardData.items].filter(i=>i.type.startsWith('image/'));
     if(!items.length) return;
     const files=items.map(i=>i.getAsFile()).filter(Boolean);
-    if(files.length) addScanImages(files);
+    if(!files.length) return;
+    if(window._oddsPasteArmed){
+      parseOddsScreenshot(files[0]);
+      return;
+    }
+    addScanImages(files);
+  });
+})();
+
+// ── Odds screenshot parser (Claude Vision) ──
+window._oddsPasteArmed=false;
+window._oddsPasteTimer=null;
+function armOddsPaste(){
+  window._oddsPasteArmed=true;
+  const btn=$('oddsPasteBtn');
+  const hint=$('oddsPasteHint');
+  const row=$('oddsRow');
+  if(btn){ btn.style.borderColor='var(--accent)'; btn.style.background='var(--accent-tint)'; }
+  if(row){ row.style.borderColor='var(--accent-bd)'; row.style.background='var(--accent-tint)'; }
+  if(hint){ hint.textContent='Wklej teraz (⌘V) lub przeciągnij obraz…'; hint.style.color='var(--accent)'; }
+  if(window._oddsPasteTimer) clearTimeout(window._oddsPasteTimer);
+  window._oddsPasteTimer=setTimeout(disarmOddsPaste,15000);
+}
+function disarmOddsPaste(){
+  window._oddsPasteArmed=false;
+  const btn=$('oddsPasteBtn');
+  const hint=$('oddsPasteHint');
+  const row=$('oddsRow');
+  if(btn){ btn.style.borderColor=''; btn.style.background=''; }
+  if(row){ row.style.borderColor=''; row.style.background=''; }
+  if(hint && hint.style.color==='var(--accent)'){ hint.textContent=''; hint.style.color=''; }
+}
+async function parseOddsScreenshot(file){
+  const hint=$('oddsPasteHint');
+  if(hint){ hint.textContent='⏳ Analizuje screen kursów…'; hint.style.color='var(--accent)'; }
+  disarmOddsPaste();
+  if(hint){ hint.textContent='⏳ Analizuje screen kursów…'; hint.style.color='var(--accent)'; }
+  // Reset stale flag — fresh user paste = trusted data
+  window._currentMatchStale=false;
+  window._currentMatchStaleReason='';
+  try{
+    const img=await fileToBase64(file);
+    const prompt='Jestes ekspertem od czytania screenshotow z bukmacherow (BC.game, Betway, Bet365, Fortuna, STS itp.). Na obrazku widzisz tabele kursow dla jednego meczu pilkarskiego. Twoje zadanie: wyciagnij liczby.\n\n'
+      +'TYPOWY UKLAD: sekcje typu "1X2", "Double chance", "To qualify", "Total" / "Over/Under", "BTTS", "Both teams to score", "Corners", "Cards", "Next goal".\n\n'
+      +'Zmapuj na nasze pola:\n'
+      +'- oddHome = kurs "1" (gospodarz wygrywa, pierwsza druzyna w sekcji 1X2)\n'
+      +'- oddDraw = kurs "X" / "draw" (remis)\n'
+      +'- oddAway = kurs "2" (gosc, druga druzyna w sekcji 1X2)\n'
+      +'- oddOver = kurs "Over 2.5" (totale gole, prog 2.5)\n'
+      +'- oddUnder = kurs "Under 2.5"\n'
+      +'- oddOver15, oddUnder15 = kursy "Over 1.5" / "Under 1.5"\n'
+      +'- oddOver35, oddUnder35 = kursy "Over 3.5" / "Under 3.5"\n'
+      +'- oddOver45, oddUnder45 = kursy "Over 4.5" / "Under 4.5"\n'
+      +'- oddOver55, oddUnder55 = kursy "Over 5.5" / "Under 5.5"\n'
+      +'- oddOver65, oddUnder65 = kursy "Over 6.5" / "Under 6.5"\n'
+      +'- oddBTTS = kurs "BTTS Yes" / "Both teams to score - Yes"\n'
+      +'- oddNextGoal = kurs "Next goal" / "Any goal remaining - Yes" / "Goal/No goal - Yes" (LIVE market). FALLBACK pre-match: jeśli brak dedicated next goal market, użyj "Over 0.5" z sekcji Total (oznacza "padnie ≥1 gol w meczu", co przed startem = next goal).\n'
+      +'- oddCorners = kurs "Corners Over X" — wybierz NAJBLIZSZY do 9.5 (Over 8.5/9.5/10.5/11.5)\n'
+      +'- oddRedCard = kurs "Red card - Yes" / "Cards Over 0.5 reds" / "Sending off"\n'
+      +'- oddPenalty = kurs "Penalty in match - Yes" / "Penalty awarded"\n\n'
+      +'WAZNE:\n'
+      +'1. Jesli widzisz kurs - WPISZ liczbe. Nie bad konserwatywny, nie dawaj null jesli widac kurs.\n'
+      +'2. Kursy sa zawsze liczbami w formacie X.XX (np. 1.50, 2.05, 3.65). Jezeli widzisz tylko 1X2 — wypelnij oddHome/oddDraw/oddAway, reszta null.\n'
+      +'3. Jesli sekcja "Total" pokazuje WIELE progow (Over 0.5/1.5/2.5/3.5/4.5/5.5/6.5) — wypelnij WSZYSTKIE odpowiednie pola (oddOver15, oddOver, oddOver35, oddOver45, oddOver55, oddOver65 + analogicznie under). Pole "oddOver" = Over 2.5 (default).\n'
+      +'4. Jesli widzisz dwie sekcje 1X2 (np. zwykly + EARLY PAYOUT) - bierz pierwsza/zwykla.\n\n'
+      +'ZWROC TYLKO JSON (bez markdown, bez ```json, bez komentarzy). Tylko liczby lub null, nigdy stringi.\n'
+      +'{"oddHome":3.65,"oddDraw":3.35,"oddAway":1.98,"oddOver":2.02,"oddUnder":1.73,"oddOver15":1.31,"oddUnder15":3.20,"oddOver35":3.55,"oddUnder35":1.26,"oddOver45":7.0,"oddUnder45":1.07,"oddOver55":null,"oddUnder55":null,"oddOver65":null,"oddUnder65":null,"oddBTTS":null,"oddNextGoal":null,"oddCorners":null,"oddRedCard":null,"oddPenalty":null}';
+    const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':FOOTY_AUTH},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:512,
+        stream:true,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:img.media_type,data:img.data}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    if(!resp.ok){ const err=await resp.text(); throw new Error('API '+resp.status+': '+err.slice(0,80)); }
+    const text=await readScanSSE(resp);
+    console.log('[ODDS-VISION] raw response:',text);
+    const m=text.match(/\{[\s\S]*\}/);
+    if(!m){ console.warn('[ODDS-VISION] no JSON in response. Raw text:',text); throw new Error('Brak JSON w odpowiedzi (sprawdź console)'); }
+    let data;
+    try{ data=JSON.parse(m[0]); }
+    catch(parseErr){ console.warn('[ODDS-VISION] JSON parse failed:',parseErr,'raw:',m[0]); throw new Error('JSON parse error (sprawdź console)'); }
+    console.log('[ODDS-VISION] parsed:',data);
+    let filled=0; const filledFields=[];
+    const map={oddHome:'1',oddDraw:'X',oddAway:'2',oddOver:'O2.5',oddUnder:'U2.5',oddOver15:'O1.5',oddUnder15:'U1.5',oddOver35:'O3.5',oddUnder35:'U3.5',oddOver45:'O4.5',oddUnder45:'U4.5',oddOver55:'O5.5',oddUnder55:'U5.5',oddOver65:'O6.5',oddUnder65:'U6.5',oddBTTS:'BTTS',oddNextGoal:'Goal',oddCorners:'Corners',oddRedCard:'Red',oddPenalty:'Pen'};
+    for(const id of Object.keys(map)){
+      const v=parseFloat(data[id]);
+      // Tighter validation: 1.01-50 zakres typowy dla bukmacherów (były 1-200)
+      if(!isNaN(v) && v>=1.01 && v<=50){
+        const el=$(id);
+        if(el){ el.value=v; filled++; filledFields.push(map[id]); }
+      }
+    }
+    if(filled===0){
+      const seen=Object.entries(data).filter(([_,v])=>v!=null).map(([k,v])=>k+'='+v).join(', ');
+      throw new Error('AI nie wyciągnął kursów'+(seen?' (zwrócił: '+seen+')':' — sprawdź console'));
+    }
+    // Show what's filled now + what still missing across ALL fields (incl. previously filled)
+    const allIds=Object.keys(map);
+    const allFilled=allIds.filter(id=>{ const v=parseFloat(($(id)||{}).value); return !isNaN(v)&&v>1.0; });
+    const missing=allIds.filter(id=>!allFilled.includes(id)).map(id=>map[id]);
+    if(hint){
+      const tail=missing.length?' · brakuje: '+missing.join(', ')+' (wklej kolejny screen)':' · wszystkie kursy gotowe';
+      hint.textContent='✓ +'+filled+' kursów: '+filledFields.join(', ')+tail;
+      hint.style.color=missing.length?'var(--accent-soft)':'var(--positive)';
+    }
+    if(typeof saveFields==='function') saveFields();
+    if(typeof calc==='function') calc();
+    setTimeout(()=>{ if(hint){ hint.textContent=''; hint.style.color=''; } },5000);
+  }catch(e){
+    console.error('[ODDS-VISION]',e);
+    if(hint){ hint.textContent='✗ '+e.message; hint.style.color='var(--negative)'; }
+  }
+}
+// Drag & drop on the odds button itself
+(function(){
+  const btn=document.getElementById('oddsPasteBtn');
+  if(!btn) return;
+  btn.addEventListener('dragover',e=>{e.preventDefault();btn.style.borderColor='var(--accent)';});
+  btn.addEventListener('dragleave',()=>{ if(!window._oddsPasteArmed) btn.style.borderColor=''; });
+  btn.addEventListener('drop',e=>{
+    e.preventDefault();
+    const f=e.dataTransfer.files[0];
+    if(f && f.type.startsWith('image/')) parseOddsScreenshot(f);
   });
 })();
 
@@ -5012,7 +6514,7 @@ async function runScan(){
 
     const resp=await fetch('https://red-haze-5f37mplace-agent.contactmplace.workers.dev/',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':FOOTY_AUTH},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:2048,
