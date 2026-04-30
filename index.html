@@ -812,7 +812,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7.2</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1696,7 +1696,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.7.1
+    Powered by MPlace · Match Predictor v8.7.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -4853,6 +4853,7 @@ async function pollWatchList(force){
         footyFetch('todays-matches',{date:tomorrowUTC})
       ]);
       data=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
+      data.forEach(normalizeMatch);
       window._watchPollCache={data,ts:now};
     }catch(e){
       // Network failed — keep cache or skip silently
@@ -5094,6 +5095,7 @@ function footyMatchSelected(){
 
 function footyMapMatch(match,homeT,awayT){
   const set=(id,v)=>{ if(v!=null&&v!==''&&!isNaN(v)) $(id).value=v; };
+  normalizeMatch(match);  // defensywnie — homeGoals/awayGoals jako array
 
   // Track API match id so "Śledź ten mecz" can poll live status reliably
   window._currentApiMatchId = match.id || null;
@@ -5283,6 +5285,7 @@ function clearMatchState(){
 }
 
 function footyComputeMatchCard(match,homeT,awayT){
+  normalizeMatch(match);  // defensywnie — homeGoals/awayGoals jako array
   const sH=(homeT&&homeT.stats)||{};
   const sA=(awayT&&awayT.stats)||{};
   // Quick xG model — sezonowy
@@ -5454,6 +5457,7 @@ async function footyScanToday(){
     ]);
     const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
     const allMatches=Array.from(new Map(merged.map(m=>[m.id,m])).values());
+    allMatches.forEach(normalizeMatch);  // homeGoals/awayGoals: JSON string → array
     console.log('[scan] yesterday UTC ('+yesterdayUTC+'): '+(rY.data||[]).length+' · today ('+todayUTC+'): '+(rT.data||[]).length+' · tomorrow ('+tomorrowUTC+'): '+(rTm.data||[]).length+' · dedup: '+allMatches.length);
     const dashStatus=document.getElementById('dashboardStatus');
     if(dashStatus) dashStatus.textContent='⏳ Pobrano '+allMatches.length+' meczów (2 calls) · liczę edge…';
@@ -5592,6 +5596,22 @@ function footyDayLabel(unix){
 function footyApplyDayFilter(){
   if(!window._scanCardsCache||!window._scanCardsCache.length) return;
   footyRenderScanCards(window._scanCardsCache,window._scanCardsCache._totalScanned||0);
+}
+
+// Normalize match object from API — FootyStats zwraca homeGoals/awayGoals jako JSON STRING
+// (np. "[]" lub "[\"23\",\"67\"]"), nie native array. (m.homeGoals||[]).length na stringu daje
+// długość STRINGA (2 dla "[]") zamiast 0. Bug objawiał się jako "fake" 2:2 score na wszystkich live cards.
+function normalizeMatch(m){
+  if(!m) return m;
+  if(typeof m.homeGoals==='string'){
+    try{ m.homeGoals=JSON.parse(m.homeGoals); }catch(_){ m.homeGoals=[]; }
+  }
+  if(typeof m.awayGoals==='string'){
+    try{ m.awayGoals=JSON.parse(m.awayGoals); }catch(_){ m.awayGoals=[]; }
+  }
+  if(!Array.isArray(m.homeGoals)) m.homeGoals=[];
+  if(!Array.isArray(m.awayGoals)) m.awayGoals=[];
+  return m;
 }
 
 // Detect if match is live: status in_play OR (incomplete + start <2h ago + not finished)
@@ -5773,12 +5793,10 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   const matchId=String(m.id);
   const isLive=isLiveMatch(m);
   const isPlaced=!!placedEntry;
-  // Score: dla live z 'in_play' = trustworthy. Dla live z 'incomplete' = API stale (don't show, use ?:?)
-  // Dla complete = real final score.
+  // Score: po normalizeMatch homeGoals/awayGoals to real arrays. Dla live-incomplete API score
+  // może być nieaktualny (warning na karcie disclaimuje to).
   let score;
-  if(m.status==='complete') score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
-  else if(isLive && m.status==='in_play') score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
-  else if(isLive) score='?:?';  // status='incomplete' inferred-live: API score nieaktualizowany
+  if(m.status==='complete'||isLive) score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
   else score='—';
   const bankroll=parseInt(localStorage.getItem('predator_bankroll'))||1000;
   const stakeSuggest=Math.round(bankroll*0.05);
@@ -5876,6 +5894,7 @@ async function dashboardRefreshCard(matchIdOrIdx){
       footyFetch('todays-matches',{date:tomorrowUTC})
     ]);
     const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
+    merged.forEach(normalizeMatch);
     const fresh=merged.find(x=>String(x.id)===String(m.id));
     if(!fresh){
       // Match not in todays-matches (zakończony lub jutro) — fallback do league-matches force fetch
@@ -6172,6 +6191,7 @@ async function dashboardLightRefresh(){
       footyFetch('todays-matches',{date:tomorrowUTC})
     ]);
     const merged=[...(rY.data||[]),...(rT.data||[]),...(rTm.data||[])];
+    merged.forEach(normalizeMatch);
     const todaysMap=new Map(merged.map(m=>[String(m.id),m]));
     let updated=0;
     cache.forEach(c=>{

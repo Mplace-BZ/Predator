@@ -20,6 +20,20 @@ async function fetchFooty(path,params={}){
   return r.json();
 }
 
+// Replikacja normalizeMatch — FootyStats zwraca homeGoals/awayGoals jako JSON STRING
+function normalizeMatch(m){
+  if(!m) return m;
+  if(typeof m.homeGoals==='string'){
+    try{ m.homeGoals=JSON.parse(m.homeGoals); }catch(_){ m.homeGoals=[]; }
+  }
+  if(typeof m.awayGoals==='string'){
+    try{ m.awayGoals=JSON.parse(m.awayGoals); }catch(_){ m.awayGoals=[]; }
+  }
+  if(!Array.isArray(m.homeGoals)) m.homeGoals=[];
+  if(!Array.isArray(m.awayGoals)) m.awayGoals=[];
+  return m;
+}
+
 function isLiveMatch(m){
   if(m.status==='in_play') return true;
   if(m.status==='complete') return false;
@@ -40,8 +54,9 @@ function poisson(lam,k){ return Math.exp(-lam)*Math.pow(lam,k)/factorial(k); }
 function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
 function poissonCum(lam,k){ let s=0; for(let i=0;i<=k;i++) s+=poisson(lam,i); return s; }
 
-// ── REPLIKACJA logiki footyComputeMatchCard z index.html v8.6 ──
+// ── REPLIKACJA logiki footyComputeMatchCard z index.html v8.7.2 ──
 function computeMatchCard(match,homeStats,awayStats){
+  normalizeMatch(match);  // homeGoals/awayGoals: JSON string → array
   const sH=homeStats||{}, sA=awayStats||{};
   const hXG=sH.xg_for_avg_home||sH.xg_for_avg_overall||0;
   const aXG=sA.xg_for_avg_away||sA.xg_for_avg_overall||0;
@@ -275,6 +290,51 @@ async function test_prematch_not_flagged_live(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TEST 8 (v8.7.2): homeGoals JSON string parsing fix
+// FootyStats zwraca homeGoals jako "[]" (string) nie [] (array). Bez fixa
+// (m.homeGoals||[]).length na stringu daje 2 (długość stringa) zamiast 0.
+// ──────────────────────────────────────────────────────────────────────
+async function test_homegoals_string_parsing(){
+  header('TEST 8: homeGoals JSON string parsing (regression dla v8.7.2 fix)');
+  // Synthesize match z stringiem homeGoals (jak FootyStats zwraca)
+  const fakeEmpty={id:1,homeGoals:'[]',awayGoals:'[]',home_name:'A',away_name:'B'};
+  const fakeWithGoals={id:2,homeGoals:'["23","67"]',awayGoals:'["41"]',home_name:'C',away_name:'D'};
+  // Without normalize (BUG):
+  const buggyEmpty=fakeEmpty.homeGoals.length;  // = 2 (string length of "[]")
+  const buggyWith=fakeWithGoals.homeGoals.length;  // = 13 (string length)
+  // With normalize:
+  normalizeMatch(fakeEmpty);
+  normalizeMatch(fakeWithGoals);
+  const fixedEmpty=fakeEmpty.homeGoals.length;  // = 0 (empty array)
+  const fixedWith=fakeWithGoals.homeGoals.length;  // = 2 (2 goals scored)
+  console.log('  BUG (bez normalize):  empty="[]" → length',buggyEmpty,'(string len)');
+  console.log('  BUG:                  with-goals → length',buggyWith,'(string len)');
+  console.log('  FIX (po normalize):   empty=[] → length',fixedEmpty);
+  console.log('  FIX:                  with-goals=["23","67"] → length',fixedWith);
+  assert(fixedEmpty===0,'normalizeMatch parsuje "[]" → []');
+  assert(fixedWith===2,'normalizeMatch parsuje "[\\"23\\",\\"67\\"]" → ["23","67"]');
+  assert(buggyEmpty===2 && buggyWith>2,'bez normalize string.length zwraca długość JSON stringa (bug)');
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// TEST 9: weryfikuj że API faktycznie zwraca homeGoals jako string
+// ──────────────────────────────────────────────────────────────────────
+async function test_api_returns_string(){
+  header('TEST 9: weryfikacja że FootyStats API zwraca homeGoals jako JSON string');
+  const todayUTC=new Date().toISOString().slice(0,10);
+  const r=await fetchFooty('todays-matches',{date:todayUTC});
+  const matches=r.data||[];
+  if(matches.length===0){ console.log('  (brak matches — pomijam)'); return; }
+  const sample=matches[0];
+  const goalsType=typeof sample.homeGoals;
+  console.log('  sample match:',sample.home_name,'vs',sample.away_name);
+  console.log('  raw homeGoals:',JSON.stringify(sample.homeGoals));
+  console.log('  typeof:',goalsType);
+  assert(goalsType==='string','API zwraca homeGoals jako JSON string (zgodnie z dokumentacją bugiem)');
+  console.log('  → wymaga normalizeMatch przed użyciem .length');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // TEST 7 (v8.7): detect "API live data unreliable" — live + status=incomplete
 // ──────────────────────────────────────────────────────────────────────
 async function test_stale_live_detection(){
@@ -316,6 +376,8 @@ async function test_stale_live_detection(){
     await test_live_placeholder();
     await test_prematch_not_flagged_live();
     await test_stale_live_detection();
+    await test_homegoals_string_parsing();
+    await test_api_returns_string();
   }catch(e){
     console.error('TEST CRASH:',e);
     failed++;
