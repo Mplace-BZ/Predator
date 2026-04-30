@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.9</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.9.1</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1632,10 +1632,15 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn btn-accent" id="bktRunBtn" onclick="runBacktest()" disabled>▶ Run backtest</button>
+        <button class="btn btn-accent" id="bktRunBtn" onclick="runBacktest()" disabled>▶ Run backtest (1 liga)</button>
+        <button class="btn" id="bktSweepBtn" onclick="runAllLeaguesBacktest()" style="background:var(--surface-2);border:1px solid var(--accent-bd);color:var(--accent);">🌐 Sweep wszystkich lig</button>
+        <button class="btn btn-sm" id="bktAbortBtn" onclick="window._bktAbort=true" style="display:none;background:rgba(239,68,68,0.15);border:1px solid var(--negative);color:var(--negative);">✕ Stop</button>
         <button class="btn btn-sm" id="bktExportBtn" onclick="exportBacktestJSON()" disabled>💾 Export do JSON</button>
         <span id="bktStatus" style="font-size:12px;color:var(--text-dim);font-family:var(--mono);"></span>
       </div>
+
+      <!-- Multi-league ranking table (only shown after sweep) -->
+      <div id="bktSweepRanking" style="display:none;margin-bottom:18px;"></div>
 
       <!-- Summary cards (4) -->
       <div id="bktSummary" style="display:none;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;"></div>
@@ -1750,7 +1755,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.9
+    Powered by MPlace · Match Predictor v8.9.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6919,6 +6924,226 @@ function exportBacktestJSON(){
   a.download='predator_backtest_'+(data.leagueName||'').replace(/[^a-z0-9]+/gi,'_').toLowerCase()+'_'+Date.now()+'.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// MULTI-LEAGUE SWEEP — backtest across all 50 chosen leagues, ranking by ROI
+// ──────────────────────────────────────────────────────────────────────
+window._bktAbort=false;
+
+async function runAllLeaguesBacktest(){
+  const minEdge=parseFloat(document.getElementById('bktMinEdge').value)||5;
+  const minOdd=parseFloat(document.getElementById('bktMinOdd').value)||1.50;
+  const stake=parseFloat(document.getElementById('bktStake').value)||50;
+  const status=document.getElementById('bktStatus');
+  const sweepBtn=document.getElementById('bktSweepBtn');
+  const runBtn=document.getElementById('bktRunBtn');
+  const abortBtn=document.getElementById('bktAbortBtn');
+  const rankDiv=document.getElementById('bktSweepRanking');
+  // Hide single-league results
+  document.getElementById('bktSummary').style.display='none';
+  document.getElementById('bktMarketTable').style.display='none';
+  document.getElementById('bktEdgeBuckets').style.display='none';
+  document.getElementById('bktCalibration').style.display='none';
+  document.getElementById('bktTopPicks').style.display='none';
+  rankDiv.style.display='block';
+  rankDiv.innerHTML='<div style="font-size:13px;color:var(--text-dim);padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">⏳ Pobieram listę lig…</div>';
+  sweepBtn.disabled=true; runBtn.disabled=true;
+  abortBtn.style.display='inline-block';
+  window._bktAbort=false;
+
+  try{
+    const lr=await footyFetch('league-list',{chosen_leagues_only:'true'});
+    const leagues=lr.data||[];
+    status.textContent='✓ '+leagues.length+' lig do testowania';
+
+    // Per league: pick most recent COMPLETED season (year < current year)
+    // i.e. weź pierwszy season z najwyższym year, próbuj go (jeśli incomplete fallback do drugiego)
+    const tasks=[];
+    for(const lg of leagues){
+      const sorted=(lg.season||[]).slice().sort((a,b)=>{
+        const ay=parseInt(String(a.year||'0').slice(-4))||0;
+        const by=parseInt(String(b.year||'0').slice(-4))||0;
+        return by-ay;
+      });
+      // Skip first (current/in-progress), take 2nd most recent (=last completed)
+      const target=sorted[1]||sorted[0];
+      if(target) tasks.push({league:lg,season:target});
+    }
+
+    const results=[];
+    let processed=0;
+    for(const t of tasks){
+      if(window._bktAbort){ status.textContent='✕ Anulowane'; break; }
+      processed++;
+      status.textContent='⏳ '+processed+'/'+tasks.length+' · '+t.league.name+' '+t.season.year+'…';
+      try{
+        const res=await runSingleLeagueBacktest(t.season.id,minEdge,minOdd,stake);
+        if(res){
+          res.leagueName=t.league.name;
+          res.seasonYear=t.season.year;
+          res.seasonId=t.season.id;
+          results.push(res);
+          // Live update ranking after each completed
+          renderSweepRanking(results,tasks.length,processed);
+        }
+      }catch(e){
+        console.warn('[sweep] '+t.league.name+' fail:',e.message);
+        results.push({leagueName:t.league.name,seasonYear:t.season.year,error:e.message});
+        renderSweepRanking(results,tasks.length,processed);
+      }
+      // Small throttle żeby nie przekroczyć FootyStats 1800/h limit
+      await new Promise(r=>setTimeout(r,500));
+    }
+
+    window._bktLastResults={sweep:true,results,minEdge,minOdd,stake,timestamp:Date.now()};
+    document.getElementById('bktExportBtn').disabled=false;
+    const totalROI=results.filter(r=>!r.error).reduce((sum,r)=>sum+(r.totalPnL||0),0);
+    const totalStake=results.filter(r=>!r.error).reduce((sum,r)=>sum+(r.totalStake||0),0);
+    const overallROI=totalStake?(totalROI/totalStake*100):0;
+    status.style.color=overallROI>=0?'var(--positive)':'var(--negative)';
+    status.textContent='✓ '+results.filter(r=>!r.error).length+'/'+tasks.length+' lig · ogólny ROI '+(overallROI>=0?'+':'')+overallROI.toFixed(1)+'% · P&L '+(totalROI>=0?'+':'')+Math.round(totalROI)+'zł';
+  }catch(e){
+    status.style.color='var(--negative)';
+    status.textContent='✗ '+e.message;
+  } finally {
+    sweepBtn.disabled=false; runBtn.disabled=!document.getElementById('bktLeagueSel').value;
+    abortBtn.style.display='none';
+  }
+}
+
+// Single league backtest — extracted helper. Wraca {totalPicks, hits, totalPnL, totalStake, perMarket, picks}
+async function runSingleLeagueBacktest(seasonId,minEdge,minOdd,stake){
+  const r=await footyFetch('league-matches',{season_id:seasonId,page:1});
+  const all=(r.data||[]).map(normalizeMatch);
+  const completed=all.filter(m=>
+    m.status==='complete'
+    && m.odds_ft_over25>1.01 && m.odds_ft_under25>1.01
+    && m.odds_btts_yes>1.01
+    && m.odds_ft_1>1.01 && m.odds_ft_2>1.01 && m.odds_ft_x>1.01
+  );
+  if(!completed.length) return null;
+
+  // Pre-fetch unique team stats (cached aggressively — wiele lig może dzielić teamy choć rzadko)
+  const teams=[...new Set(completed.flatMap(m=>[m.homeID,m.awayID]).filter(Boolean))];
+  const teamCache={};
+  for(const tid of teams){
+    if(window._bktAbort) return null;
+    if(window._footyTeams && window._footyTeams['fs_'+tid]){
+      teamCache[tid]=window._footyTeams['fs_'+tid];
+      continue;
+    }
+    const ck='fs_team_'+tid;
+    try{
+      const cached=sessionStorage.getItem(ck);
+      if(cached){
+        const o=JSON.parse(cached);
+        if(Date.now()-o.t<24*3600*1000){ teamCache[tid]=o.data; window._footyTeams['fs_'+tid]=o.data; continue; }
+      }
+      const tr=await footyFetch('team',{team_id:tid});
+      const td=tr.data&&tr.data[0];
+      if(td){ teamCache[tid]=td; window._footyTeams['fs_'+tid]=td;
+        try{ sessionStorage.setItem(ck,JSON.stringify({t:Date.now(),data:td})); }catch(_){}
+      }
+    }catch(_){}
+  }
+
+  // Run model
+  const stats={totalPicks:0,hits:0,totalStake:0,totalPnL:0,perMarket:{},completed:completed.length};
+  for(const m of completed){
+    const homeT=teamCache[m.homeID], awayT=teamCache[m.awayID];
+    if(!homeT||!awayT) continue;
+    const preMatch={...m,homeGoals:[],awayGoals:[],status:'incomplete'};
+    const card=footyComputeMatchCard(preMatch,homeT,awayT);
+    if(!card||!card.bestMarket||card.bestEdge<minEdge||card.bestMarket.odd<minOdd) continue;
+    const homeG=(m.homeGoals||[]).length, awayG=(m.awayGoals||[]).length, total=homeG+awayG;
+    const mk=card.bestMarket;
+    let hit=false;
+    if(mk.label==='Over 2.5') hit=total>=3;
+    else if(mk.label==='Under 2.5') hit=total<=2;
+    else if(mk.label==='BTTS') hit=homeG>=1&&awayG>=1;
+    else if(mk.label==='Home Win') hit=homeG>awayG;
+    else if(mk.label==='Away Win') hit=awayG>homeG;
+    else continue;
+    const pnl=hit?stake*(mk.odd-1):-stake;
+    stats.totalPicks++; if(hit)stats.hits++; stats.totalStake+=stake; stats.totalPnL+=pnl;
+    if(!stats.perMarket[mk.label]) stats.perMarket[mk.label]={picks:0,hits:0,pnl:0};
+    stats.perMarket[mk.label].picks++; if(hit)stats.perMarket[mk.label].hits++; stats.perMarket[mk.label].pnl+=pnl;
+  }
+  return stats;
+}
+
+function renderSweepRanking(results,total,processed){
+  const div=document.getElementById('bktSweepRanking');
+  // Sort by ROI desc, errors at bottom
+  const sorted=results.slice().sort((a,b)=>{
+    if(a.error&&!b.error) return 1;
+    if(!a.error&&b.error) return -1;
+    if(a.error&&b.error) return 0;
+    const ra=a.totalStake?(a.totalPnL/a.totalStake):0;
+    const rb=b.totalStake?(b.totalPnL/b.totalStake):0;
+    return rb-ra;
+  });
+  let html='<h4 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🌐 Sweep ligi · '+processed+'/'+total+' przerobione</h4>';
+  html+='<div class="hint" style="margin-bottom:8px;">Ranking po ROI%. Klik ligę → szczegóły dla pojedynczego sezonu. Najlepsze ligi na górze, najgorsze na dole.</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono);">';
+  html+='<thead><tr style="border-bottom:1px solid var(--border);">'
+    +'<th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-weight:500;">Liga · sezon</th>'
+    +'<th style="text-align:right;padding:6px 8px;color:var(--text-dim);font-weight:500;">Picks</th>'
+    +'<th style="text-align:right;padding:6px 8px;color:var(--text-dim);font-weight:500;">Hit %</th>'
+    +'<th style="text-align:right;padding:6px 8px;color:var(--text-dim);font-weight:500;">P&L</th>'
+    +'<th style="text-align:right;padding:6px 8px;color:var(--text-dim);font-weight:500;">ROI %</th>'
+    +'<th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-weight:500;">Best market</th>'
+  +'</tr></thead><tbody>';
+  for(const r of sorted){
+    if(r.error){
+      html+='<tr style="border-bottom:1px solid var(--border);opacity:0.4;">'
+        +'<td style="padding:6px 8px;color:var(--text);">'+r.leagueName+' '+r.seasonYear+'</td>'
+        +'<td colspan="5" style="padding:6px 8px;color:var(--negative);">✗ '+r.error+'</td>'
+      +'</tr>';
+      continue;
+    }
+    const hr=r.totalPicks?(r.hits/r.totalPicks*100):0;
+    const roi=r.totalStake?(r.totalPnL/r.totalStake*100):0;
+    const pnlColor=r.totalPnL>=0?'var(--positive)':'var(--negative)';
+    const roiColor=roi>=0?'var(--positive)':'var(--negative)';
+    // Best market by P&L
+    const bm=Object.entries(r.perMarket).sort((a,b)=>b[1].pnl-a[1].pnl)[0];
+    const bmLabel=bm?(bm[0]+' '+(bm[1].pnl>=0?'+':'')+Math.round(bm[1].pnl)+'zł'):'—';
+    const bmColor=bm&&bm[1].pnl>=0?'var(--positive)':'var(--text-dim)';
+    html+='<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="bktDrillDown('+r.seasonId+',\''+r.leagueName.replace(/'/g,"\\'")+' '+r.seasonYear+'\')">'
+      +'<td style="padding:6px 8px;color:var(--text);">'+r.leagueName+' '+r.seasonYear+'</td>'
+      +'<td style="text-align:right;padding:6px 8px;color:var(--text);">'+r.totalPicks+'</td>'
+      +'<td style="text-align:right;padding:6px 8px;color:'+(hr>=50?'var(--positive)':'var(--warning)')+';">'+hr.toFixed(1)+'%</td>'
+      +'<td style="text-align:right;padding:6px 8px;color:'+pnlColor+';">'+(r.totalPnL>=0?'+':'')+Math.round(r.totalPnL)+'zł</td>'
+      +'<td style="text-align:right;padding:6px 8px;color:'+roiColor+';font-weight:600;">'+(roi>=0?'+':'')+roi.toFixed(1)+'%</td>'
+      +'<td style="padding:6px 8px;color:'+bmColor+';">'+bmLabel+'</td>'
+    +'</tr>';
+  }
+  html+='</tbody></table>';
+  // Aggregate footer
+  const ok=sorted.filter(r=>!r.error);
+  if(ok.length){
+    const totPicks=ok.reduce((s,r)=>s+r.totalPicks,0);
+    const totHits=ok.reduce((s,r)=>s+r.hits,0);
+    const totPnL=ok.reduce((s,r)=>s+r.totalPnL,0);
+    const totStake=ok.reduce((s,r)=>s+r.totalStake,0);
+    const aggHit=totPicks?(totHits/totPicks*100):0;
+    const aggROI=totStake?(totPnL/totStake*100):0;
+    html+='<div style="margin-top:12px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);">'
+      +'<b>RAZEM</b>: '+ok.length+' lig · '+totPicks+' picks · hit '+aggHit.toFixed(1)+'% · P&L <span style="color:'+(totPnL>=0?'var(--positive)':'var(--negative)')+';font-weight:600;">'+(totPnL>=0?'+':'')+Math.round(totPnL)+'zł</span> · ROI <span style="color:'+(aggROI>=0?'var(--positive)':'var(--negative)')+';font-weight:600;">'+(aggROI>=0?'+':'')+aggROI.toFixed(1)+'%</span>'
+    +'</div>';
+  }
+  div.innerHTML=html;
+}
+
+// Click on league in ranking → run single backtest dla tej ligi (detailed view)
+function bktDrillDown(seasonId,leagueName){
+  document.getElementById('bktLeagueSel').value=seasonId;
+  bktUpdateButton();
+  // Scroll to backtest section + run
+  document.getElementById('accBacktest')?.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(()=>runBacktest(),300);
 }
 
 function openSettings(){
