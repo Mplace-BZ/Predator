@@ -368,6 +368,7 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .match-card.placed .placed-toggle{background:var(--accent-tint);border-color:var(--accent);color:var(--accent);font-weight:600;}
 .match-card.stale-data{border-left:3px solid var(--warning);background:linear-gradient(90deg,rgba(255,179,71,0.08) 0%,var(--surface-2) 30%);}
 .match-card-stale-warning{padding:8px 12px;background:rgba(255,179,71,0.15);border-bottom:1px solid rgba(255,179,71,0.30);color:var(--warning);font-size:11px;font-weight:600;font-family:var(--sans);border-radius:11px 11px 0 0;}
+.match-card-stale-warning.info{background:rgba(74,222,128,0.08);border-bottom:1px solid rgba(74,222,128,0.20);color:var(--text-dim);font-weight:500;}
 .match-card-body{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;}
 .match-card.stale-data .match-card-body{padding-top:10px;}
 .badge-edge.edge-stale{background:rgba(255,179,71,0.15);border:1px solid var(--warning);color:var(--warning);}
@@ -812,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7.3</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1696,7 +1697,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.7.2
+    Powered by MPlace · Match Predictor v8.7.3
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -5238,18 +5239,10 @@ function isStaleMatch(match,reportedGoals,oddH,oddA,oddD){
   const now=Math.floor(Date.now()/1000);
   const isLive = match.status==='in_play' || (match.status!=='complete' && match.date_unix && match.date_unix<=now && match.date_unix>now-8100);
 
-  // GUARD 1: tylko live mecze mogą być stale
+  // GUARD 1: tylko live mecze mogą być stale (pre-match z 0:0 to normalne)
   if(!isLive) return {stale:false,reason:''};
 
-  // PRIMARY CHECK (v8.7): live + status='incomplete' = FootyStats Hobby nie aktualizuje live data.
-  // Verified curl: dla 4 trwających Europa League meczów wszystkie mają status='incomplete' i score
-  // bądź 0:0 (pre-match cache w /league-matches) bądź pre-match-stale (2:2 w /todays-matches),
-  // podczas gdy bukmacher pokazuje rzeczywiście 1:1, 0:0, 1:1, 0:0.
-  if(match.status==='incomplete' && match.date_unix && match.date_unix<now-300){
-    return {stale:true,reason:'API status=incomplete dla live meczu — FootyStats Hobby nie aktualizuje live (sprawdź wynik u bukmachera, kliknij Analizuj i wpisz ręcznie)'};
-  }
-
-  // GUARD 2: dla pozostałych checks musimy mieć wszystkie 3 odds 1X2
+  // GUARD 2: dla checków musimy mieć wszystkie 3 odds 1X2
   if(oddH<1.01 || oddA<1.01 || oddD<1.01) return {stale:false,reason:''};
 
   // Live (status=in_play) + score 0:0 + ekstremalny faworyt = bukmacher zna live state którego API nie pokazuje
@@ -5394,18 +5387,24 @@ function footyComputeMatchCard(match,homeT,awayT){
     }
   }
 
+  // FLAG: live + status='incomplete' = FootyStats Hobby nie tracks live (verified curl).
+  // To NIE blokuje markets — zamiast tego info banner na karcie. User dostaje real edges
+  // jeśli API jest aktualne (np. score rzeczywiście 0:0), albo widzi warning + klika 🔄/Analizuj
+  // jeśli różni się od bukmachera.
+  const apiLiveUnreliable = isLive && match.status==='incomplete' && match.date_unix && match.date_unix<now-300;
+
   if(!markets.length){
     if(staleData){
-      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚠ Sprawdź wynik',odd:0,modelP:0,group:'stale'},allMarkets:[],totalLam,staleData:true,staleReason};
+      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚠ Sprawdź wynik',odd:0,modelP:0,group:'stale'},allMarkets:[],totalLam,staleData:true,staleReason,apiLiveUnreliable};
     }
     // LIVE bez aktywnych rynków (wszystkie linie hit) — pokaż jako placeholder w liveAll
     if(isLive){
-      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚽ LIVE '+homeG+':'+awayG+' min '+minute+' — kliknij Analizuj',odd:0,modelP:0,group:'live-info'},allMarkets:[],totalLam,staleData:false,staleReason:'',isLiveOnly:true};
+      return {match,homeT,awayT,bestEdge:0,bestMarket:{label:'⚽ LIVE '+homeG+':'+awayG+' min '+minute+' — kliknij Analizuj',odd:0,modelP:0,group:'live-info'},allMarkets:[],totalLam,staleData:false,staleReason:'',isLiveOnly:true,apiLiveUnreliable};
     }
     return null;
   }
   markets.sort((a,b)=>b.edge-a.edge);
-  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam,staleData,staleReason};
+  return {match,homeT,awayT,bestEdge:markets[0].edge,bestMarket:markets[0],allMarkets:markets,totalLam,staleData,staleReason,apiLiveUnreliable};
 }
 
 // Cache TTL dla league-matches: 20 min (FootyStats też ma 20-min update freq)
@@ -5805,22 +5804,17 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   const placedClass=isPlaced?'placed':'';
   const staleClass=card.staleData?'stale-data':'';
 
-  // Stale subtypes: live-unreliable (API nie aktualizuje live) vs ambiguous-odds (0:0 + faworyt)
-  const isStaleLiveUnreliable=card.staleData && card.staleReason && /API status=incomplete/.test(card.staleReason);
+  // Banner header: stale (extreme odds discrepancy) lub apiLiveUnreliable (Hobby tier)
+  let staleWarning='';
+  if(card.staleData){
+    staleWarning='<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>';
+  } else if(card.apiLiveUnreliable){
+    staleWarning='<div class="match-card-stale-warning info">ℹ API live = score z FootyStats może nie być aktualny (Hobby tier). Klik 🔄 jeśli różni się od bukmachera.</div>';
+  }
 
-  // Stale data warning header — różny tekst per typ
-  const staleWarning=card.staleData
-    ?(isStaleLiveUnreliable
-      ?'<div class="match-card-stale-warning">⚠ '+card.staleReason+'</div>'
-      :'<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>')
-    :'';
-
-  // Pick text — różne wersje per stan: stale-live / stale-ambiguous / live-info / normal
+  // Pick text — markets pokazane normalnie (apiLiveUnreliable nie blokuje markets)
   let pickHtml;
-  if(isStaleLiveUnreliable){
-    pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ LIVE — sprawdź wynik u bukmachera</span>'
-      +' <span style="color:var(--text-faint);">· FootyStats Hobby nie ma live data. Klik Analizuj i wpisz aktualny score.</span>';
-  } else if(card.staleData){
+  if(card.staleData){
     pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>';
   } else if(card.isLiveOnly){
     pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
@@ -5832,16 +5826,15 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
       +(card.allMarkets.length>1?' · <span style="color:var(--text-faint);">+'+(card.allMarkets.length-1)+' rynków</span>':'');
   }
 
-  // Edge badge — STALE / LIVE-info / normalny
+  // Edge badge — STALE (full block) / LIVE-info / normalny edge
   let edgeBadge;
-  if(isStaleLiveUnreliable) edgeBadge='<span class="badge-edge edge-live-info">🔴 LIVE</span>';
-  else if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
+  if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
   else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
   else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
-  // Disable Obstaw dla stale (nie chcemy zapisywać betu na stale data)
-  // Ale Analizuj zawsze enable — user może wpisać aktualny wynik ręcznie
-  const placedDisabled=card.staleData?'disabled':'';
+  // Disable Obstaw dla stale ALBO apiLiveUnreliable (nie chcemy zapisywać betu z niepewnego score)
+  // Analizuj zawsze enable — user wpisze aktualny stan ręcznie jeśli apiLiveUnreliable
+  const placedDisabled=(card.staleData||card.apiLiveUnreliable)?'disabled':'';
   const analyzeDisabled='';
 
   return '<div class="match-card '+placedClass+' '+staleClass+'" data-match-id="'+matchId+'" data-edge="'+card.bestEdge.toFixed(1)+'">'
