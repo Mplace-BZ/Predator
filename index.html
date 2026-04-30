@@ -6510,26 +6510,31 @@ function dashboardToggleAutoRefresh(){
   }
 }
 
-// API counter — pokazuje aktualne zużycie quota
+// v8.8: API counter — pokazuje api-football daily quota (z Pro 7500/day) zamiast FootyStats hourly.
+// Daily quota current/limit przychodzi w response headers (x-ratelimit-requests-remaining/limit),
+// parsed do window._afQuotaDay przez afFetch. Dodatkowo per-minute counter z _afQuotaMin.
 function updateApiCounter(){
   const el=document.getElementById('dashApiCounter');
   if(!el) return;
-  const calls=window._apiCallLog?.length||0;
-  const cooldown=window._apiBackoffUntil>Date.now()?Math.ceil((window._apiBackoffUntil-Date.now())/1000):0;
+  const cooldown=window._afBackoffUntil>Date.now()?Math.ceil((window._afBackoffUntil-Date.now())/1000):0;
   if(cooldown>0){
     el.innerHTML='<span style="color:var(--warning);">⏳ Rate limit — '+cooldown+'s</span>';
-  } else {
-    const pct=Math.round((calls/1800)*100);
-    const color=pct>=80?'var(--negative)':(pct>=50?'var(--warning)':'var(--text-faint)');
-    el.innerHTML='<span style="color:'+color+';">📡 API: '+calls+'/1800 ('+pct+'%)</span>';
+    return;
   }
+  const q=window._afQuotaDay||{current:null,limit:7500};
+  const current=q.current!=null?q.current:(window._afCallLog?.length||0);
+  const limit=q.limit||7500;
+  const pct=Math.round((current/limit)*100);
+  const color=pct>=80?'var(--negative)':(pct>=50?'var(--warning)':'var(--text-faint)');
+  const minQ=window._afQuotaMin;
+  const minSuffix=minQ&&minQ.current!=null?' · min:'+minQ.current+'/'+minQ.limit:'';
+  el.innerHTML='<span style="color:'+color+';">📡 API: '+current+'/'+limit+' ('+pct+'%)'+minSuffix+'</span>';
 }
 // Refresh counter every 5s
 setInterval(()=>{
-  // Cleanup old log entries (older than 1h)
   const now=Date.now();
-  if(window._apiCallLog){
-    window._apiCallLog=window._apiCallLog.filter(t=>now-t<3600000);
+  if(window._afCallLog){
+    window._afCallLog=window._afCallLog.filter(t=>now-t<3600000);
   }
   updateApiCounter();
 }, 5000);
