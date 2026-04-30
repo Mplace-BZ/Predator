@@ -50,7 +50,40 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v8.8 (api-football MIGRATION — drop FootyStats, real-time live data)
+## Aktualna wersja: v8.9 (BACKTEST MODULE — historical model validation)
+
+## v8.9 — Backtest module (FootyStats jako historical research source)
+**Trigger:** Chris pytał "po co nam FootyStats jeśli api-football daje live?". Odpowiedź: FootyStats ma DWA killer features których api-football nie ma — sezonowy xG (bias-adjusted, vs goals.avg high-variance) ORAZ kompletny dataset historyczny (xG + odds + outcomes w jednym call /league-matches). Backtest module wykorzystuje ten dataset jako twardy walidator modelu.
+
+**UI** (nowy accordion "📊 Walidacja modelu (backtest)" w details):
+- Liga + sezon dropdown (FootyStats `/league-list?chosen_leagues_only=true`, top 3 sezony per liga)
+- Filtry: min edge%, min kurs, stake/bet
+- Run button → progress bar → results
+
+**Co liczy:**
+- Pobiera cały sezon (1 call `/league-matches?season_id=X` zwraca ~380-540 meczów z xG + odds + final scores)
+- Pre-fetch unique team stats (cache 24h w sessionStorage — ~30-50 calls per liga)
+- Per match: force PRE-MATCH state (clear goals, status='incomplete'), run `footyComputeMatchCard`, get bestPick
+- Compare prediction vs actual outcome (homeGoals/awayGoals length)
+- Akumuluj: total picks, hits, P&L, max drawdown, per-market breakdown, edge bucket performance, calibration
+
+**Output (5 sekcji):**
+1. **Summary cards (4):** Total picks · Hit rate · P&L (sezon) · ROI · Max DD
+2. **Per-market table:** Over 2.5 / Under 2.5 / BTTS / Home Win / Away Win — picks, hit%, P&L, ROI per market
+3. **Edge buckets:** STRONG (≥15%) · VALUE (5-15%) · SLIM (<5%) — czy model bije lepiej w high-edge picks
+4. **Calibration:** model "predicted P 60-70%" vs actual hit rate per bucket. Diff <10% = dobry model
+5. **Sample picks:** Top 5 wins + Top 5 losses (debug + intuition)
+
+**JSON export** — po backtest klik "💾 Export do JSON" zapisuje `{stats, picks, params}` na dysk. Pozwala anulować FootyStats subskrypcję i mieć dane offline forever (static dataset).
+
+**E2E test verified** (MLS 2025, 533 zakończonych meczów):
+- 330 picks · hit rate 42.4% · **ROI -7.4%** · max DD -1447zł
+- Per market: Away Win +621zł (39.5% hit, jedyny zyskowny) / Under 2.5 -703zł / BTTS -569zł / Home Win -294zł / Over 2.5 -274zł
+- Wniosek: model NIE uniwersalny w MLS. Tylko Away Win signal działa. To jest WARTOŚĆ backtest — twardo wskazuje co działa.
+
+**Quota:** 1 call `/league-matches` + ~30-50 team calls per backtest = ~2-3% FootyStats Hobby godzinowego limitu. Multi-liga test (np. 5 lig × 35 calls) = ~175 calls = 10% h. Bezpieczne.
+
+**Filozofia:** "wydaje mi się że Predator dobrze typuje" → "Predator w MLS 2025 traci -7.4% ROI". Backtest zamienia wrażenie w liczbę. Bez tego model jest opinion-based, z tym jest evidence-based.
 
 ## v8.8 — api-football migration (FootyStats Hobby → api-football PRO)
 **Trigger:** v8.6/v8.7/v8.7.3/v8.7.4 iteracje phantom edges. Root cause = FootyStats Hobby tier
