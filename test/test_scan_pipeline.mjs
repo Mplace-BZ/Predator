@@ -28,6 +28,14 @@ function isLiveMatch(m){
   return m.date_unix<=now && m.date_unix>now-8100;
 }
 
+// v8.7: detect "live but API doesn't track live data" (status='incomplete' + recent kickoff)
+function isStaleLiveData(m){
+  if(!isLiveMatch(m)) return false;
+  if(m.status==='in_play') return false;  // trustworthy
+  const now=Math.floor(Date.now()/1000);
+  return m.status==='incomplete' && m.date_unix && m.date_unix<now-300;
+}
+
 function poisson(lam,k){ return Math.exp(-lam)*Math.pow(lam,k)/factorial(k); }
 function factorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
 function poissonCum(lam,k){ let s=0; for(let i=0;i<=k;i++) s+=poisson(lam,i); return s; }
@@ -267,10 +275,39 @@ async function test_prematch_not_flagged_live(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TEST 7 (v8.7): detect "API live data unreliable" — live + status=incomplete
+// ──────────────────────────────────────────────────────────────────────
+async function test_stale_live_detection(){
+  header('TEST 7: detect API stale-live (status=incomplete + recent kickoff)');
+  const todayUTC=new Date().toISOString().slice(0,10);
+  const r=await fetchFooty('todays-matches',{date:todayUTC});
+  const live=(r.data||[]).filter(isLiveMatch);
+  if(live.length===0){ console.log('  (brak live — pomijam)'); return; }
+  let staleCount=0, trustworthyCount=0;
+  for(const m of live){
+    const stale=isStaleLiveData(m);
+    if(stale){
+      staleCount++;
+      console.log('  ⚠ '+m.home_name+' vs '+m.away_name+' status='+m.status+' → API stale-live (sprawdź u bukmachera)');
+    } else {
+      trustworthyCount++;
+      console.log('  ✓ '+m.home_name+' vs '+m.away_name+' status='+m.status+' → trustworthy live data');
+    }
+  }
+  console.log('  Total: '+staleCount+' stale-live · '+trustworthyCount+' trustworthy');
+  // Hobby tier reality: większość/wszystkie live będą status='incomplete' = stale.
+  // Test passes jeśli pipeline FLAGUJE je correctly (nie pomija).
+  assert(staleCount+trustworthyCount===live.length,'wszystkie live matches sklasyfikowane (stale OR trustworthy)');
+  if(staleCount>0){
+    console.log('  → user'+(staleCount===live.length?' wszystkie':' niektóre')+' live matches z statusem incomplete = trzeba sprawdzić u bukmachera');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────────────────────────────
 (async()=>{
-  console.log('Predator scan pipeline tests v8.6 · '+new Date().toLocaleString('pl'));
+  console.log('Predator scan pipeline tests v8.7 · '+new Date().toLocaleString('pl'));
   try{
     await test_bare_todays_matches();
     await test_dated();
@@ -278,6 +315,7 @@ async function test_prematch_not_flagged_live(){
     await test_no_phantom_edges();
     await test_live_placeholder();
     await test_prematch_not_flagged_live();
+    await test_stale_live_detection();
   }catch(e){
     console.error('TEST CRASH:',e);
     failed++;

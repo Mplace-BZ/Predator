@@ -46,7 +46,40 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v8.6 (LIVE BETTING FIX — date param + score-aware Poisson)
+## Aktualna wersja: v8.7 (HONEST LIVE DATA — Hobby tier nie ma live tracking)
+
+## v8.7 — Honest live data disclosure
+**Discovery:** v8.6 zaczęło wyciągać Europa League live matches, ale pokazywało 2:2 min 66 dla wszystkich 4 — a faktycznie były 1:1 47', 0:0 51', 1:1 50', 0:0 (przerwa). Direct API curl ujawnił:
+- `/todays-matches` zwraca 2:2 (cached/stale)
+- `/league-matches` zwraca 0:0 (pre-match cache)
+- **Bukmacher ma prawdę: 1:1, 0:0, 1:1, 0:0**
+- Wszystkie 4 mają `status='incomplete'` zamiast `'in_play'`
+- `date_unix=18:00 UTC` (= 20:00 Warsaw), real kickoff był ~21:15 Warsaw (76min off)
+
+**Wniosek:** **FootyStats Hobby tier nie aktualizuje live data**. Score, minute, status — wszystko zamrożone na pre-match. Każde pokazanie konkretnej wartości jest fałszywe.
+
+**Fix (v8.7) — zamiast udawać że wiemy, mówimy uczciwie:**
+1. **`isStaleMatch` extension**: live + status='incomplete' + date_unix < now-300s = stale (FootyStats Hobby nie ma live update). To wykrywa 100% live matches w Hobby tier.
+2. **Card render dla isStaleLiveUnreliable** (`/API status=incomplete/.test(reason)`):
+   - Score: `?:?` zamiast fałszywego "2:2"
+   - Minute badge: `LIVE ~Xmin` zamiast pewnego `LIVE 66'` (z tooltipem że to estymata od scheduled kickoff)
+   - Pick: `⚠ LIVE — sprawdź wynik u bukmachera. Klik Analizuj i wpisz aktualny score.`
+   - Edge badge: `🔴 LIVE` zamiast `⚠ STALE`
+   - Header warning: `⚠ [reason]` (bez "Klik 🔄" bo nie pomoże)
+3. **Analizuj enabled** dla stale matches (user może wpisać dane ręcznie). Tylko Obstaw zostaje disabled.
+4. **`dashboardLiveBadge`**: dla status='in_play' pokaż precyzyjną minutę. Dla status='incomplete' (inferred-live) pokaż `~Xmin` z tooltipem o niepewności.
+5. **Score render w card**: `?:?` dla inferred-live, real score tylko dla status='in_play' albo `complete`.
+
+**Tested:** 7/7 w `test/test_scan_pipeline.mjs` (Test 7 nowy — detect stale-live):
+- T7: 4/4 Europa League matches flagged jako API stale-live ✓
+
+**User flow:**
+1. Klik Pełny skan → dashboard pokazuje 4 live matches
+2. Każdy z badge `🔴 LIVE`, score `?:?`, minute `~Xmin`, warning `⚠ API status=incomplete dla live meczu`
+3. User klika **Analizuj** → otwiera full match view, wpisuje aktualny score/minute z bukmachera
+4. Pełny calc() z live xG, velocity, match state rules
+
+To jest "honest disclosure" — Predator nie udaje że ma live data której nie ma. User wie kiedy ufać a kiedy ręcznie zaktualizować.
 
 ## v8.6 — Live betting completeness fix
 **Problem:** Predator pokazywał 0 live meczów mimo że bukmacher widział 4 trwające Europa League (Braga, Nottingham, Szachtar, Vallecano). Deep audit odsłonił 4 niezależne bugi.

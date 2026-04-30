@@ -812,7 +812,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.6</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.7</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1696,7 +1696,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.6
+    Powered by MPlace · Match Predictor v8.7
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -5233,16 +5233,24 @@ function isStaleMatch(match,reportedGoals,oddH,oddA,oddD){
   if(typeof oddD==='undefined') oddD=match.odds_ft_x||0;
   const impliedH=oddH>1.01?1/oddH:0, impliedA=oddA>1.01?1/oddA:0;
 
-  // GUARD 1: tylko in_play albo świeżo wystartowane mecze
-  // Pre-match nie może być "stale" — bukmacher daje pre-match odds normalnie
-  // Finished mecze pokazują 4:0, kursy są legitne
-  const isInPlay = match.status==='in_play' || (match.date_unix && match.date_unix<=Math.floor(Date.now()/1000) && match.date_unix>Math.floor(Date.now()/1000)-8100);
-  if(!isInPlay) return {stale:false,reason:''};
+  const now=Math.floor(Date.now()/1000);
+  const isLive = match.status==='in_play' || (match.status!=='complete' && match.date_unix && match.date_unix<=now && match.date_unix>now-8100);
 
-  // GUARD 2: musimy mieć wszystkie 3 odds 1X2
+  // GUARD 1: tylko live mecze mogą być stale
+  if(!isLive) return {stale:false,reason:''};
+
+  // PRIMARY CHECK (v8.7): live + status='incomplete' = FootyStats Hobby nie aktualizuje live data.
+  // Verified curl: dla 4 trwających Europa League meczów wszystkie mają status='incomplete' i score
+  // bądź 0:0 (pre-match cache w /league-matches) bądź pre-match-stale (2:2 w /todays-matches),
+  // podczas gdy bukmacher pokazuje rzeczywiście 1:1, 0:0, 1:1, 0:0.
+  if(match.status==='incomplete' && match.date_unix && match.date_unix<now-300){
+    return {stale:true,reason:'API status=incomplete dla live meczu — FootyStats Hobby nie aktualizuje live (sprawdź wynik u bukmachera, kliknij Analizuj i wpisz ręcznie)'};
+  }
+
+  // GUARD 2: dla pozostałych checks musimy mieć wszystkie 3 odds 1X2
   if(oddH<1.01 || oddA<1.01 || oddD<1.01) return {stale:false,reason:''};
 
-  // Live + score 0:0 + ekstremalny faworyt = bukmacher zna live state którego API nie pokazuje
+  // Live (status=in_play) + score 0:0 + ekstremalny faworyt = bukmacher zna live state którego API nie pokazuje
   if(reportedGoals===0){
     if(impliedH>=0.70){
       return {stale:true,reason:'Score 0:0 (live) ale Home @ '+oddH.toFixed(2)+' = '+(impliedH*100).toFixed(0)+'% — bukmacher widzi gole, API nie'};
@@ -5745,9 +5753,16 @@ function dashboardEdgeBadge(edgePct){
 function dashboardLiveBadge(card){
   const m=card.match;
   if(isLiveMatch(m)){
+    // Dla matches gdzie API nie aktualizuje live (status='incomplete') minute jest unreliable
+    // — date_unix może być pre-match scheduled time, nie real kickoff. Pokaż "~Xmin" zamiast pewnego "X'".
     const elapsedMin=m.date_unix?Math.max(1,Math.floor((Date.now()/1000-m.date_unix)/60)):0;
-    const minDisp=elapsedMin>90?"90+'":elapsedMin+"'";
-    return '<span class="badge-live">LIVE '+minDisp+'</span>';
+    if(m.status==='in_play'){
+      // Tylko in_play = trustworthy minute (API tracks live)
+      const minDisp=elapsedMin>90?"90+'":elapsedMin+"'";
+      return '<span class="badge-live">LIVE '+minDisp+'</span>';
+    }
+    // status='incomplete' but live-inferred → unreliable minute, pokaż jako estymata
+    return '<span class="badge-live" title="Minute estymowane od scheduled kickoff — może być nieaktualne, sprawdź u bukmachera">LIVE ~'+elapsedMin+'min</span>';
   }
   if(m.status==='complete') return '<span class="badge-finished">Zakończony</span>';
   return '<span class="badge-upcoming">'+(footyDayLabel(m.date_unix)||'Wkrótce')+'</span>';
@@ -5758,7 +5773,13 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   const matchId=String(m.id);
   const isLive=isLiveMatch(m);
   const isPlaced=!!placedEntry;
-  const score=isLive||m.status==='complete'?(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length:'—';
+  // Score: dla live z 'in_play' = trustworthy. Dla live z 'incomplete' = API stale (don't show, use ?:?)
+  // Dla complete = real final score.
+  let score;
+  if(m.status==='complete') score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+  else if(isLive && m.status==='in_play') score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
+  else if(isLive) score='?:?';  // status='incomplete' inferred-live: API score nieaktualizowany
+  else score='—';
   const bankroll=parseInt(localStorage.getItem('predator_bankroll'))||1000;
   const stakeSuggest=Math.round(bankroll*0.05);
   const payout=card.bestMarket && card.bestMarket.odd>1.01?Math.round(stakeSuggest*(card.bestMarket.odd-1)):null;
@@ -5766,14 +5787,22 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   const placedClass=isPlaced?'placed':'';
   const staleClass=card.staleData?'stale-data':'';
 
-  // Stale data warning header
+  // Stale subtypes: live-unreliable (API nie aktualizuje live) vs ambiguous-odds (0:0 + faworyt)
+  const isStaleLiveUnreliable=card.staleData && card.staleReason && /API status=incomplete/.test(card.staleReason);
+
+  // Stale data warning header — różny tekst per typ
   const staleWarning=card.staleData
-    ?'<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>'
+    ?(isStaleLiveUnreliable
+      ?'<div class="match-card-stale-warning">⚠ '+card.staleReason+'</div>'
+      :'<div class="match-card-stale-warning">⚠ DANE NIESPÓJNE — '+card.staleReason+'. Klik 🔄 aby odświeżyć.</div>')
     :'';
 
-  // Pick text — różne wersje per stan: stale / live-info / normal
+  // Pick text — różne wersje per stan: stale-live / stale-ambiguous / live-info / normal
   let pickHtml;
-  if(card.staleData){
+  if(isStaleLiveUnreliable){
+    pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ LIVE — sprawdź wynik u bukmachera</span>'
+      +' <span style="color:var(--text-faint);">· FootyStats Hobby nie ma live data. Klik Analizuj i wpisz aktualny score.</span>';
+  } else if(card.staleData){
     pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — bukmacher zna live state ktorego API nie pokazuje. Sprawdź wynik na żywo.</span>';
   } else if(card.isLiveOnly){
     pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
@@ -5787,13 +5816,15 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
 
   // Edge badge — STALE / LIVE-info / normalny
   let edgeBadge;
-  if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
+  if(isStaleLiveUnreliable) edgeBadge='<span class="badge-edge edge-live-info">🔴 LIVE</span>';
+  else if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
   else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
   else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
-  // Disable Obstaw + Analizuj dla stale data
+  // Disable Obstaw dla stale (nie chcemy zapisywać betu na stale data)
+  // Ale Analizuj zawsze enable — user może wpisać aktualny wynik ręcznie
   const placedDisabled=card.staleData?'disabled':'';
-  const analyzeDisabled=card.staleData?'disabled style="opacity:0.5;cursor:not-allowed;"':'';
+  const analyzeDisabled='';
 
   return '<div class="match-card '+placedClass+' '+staleClass+'" data-match-id="'+matchId+'" data-edge="'+card.bestEdge.toFixed(1)+'">'
     +staleWarning
