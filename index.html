@@ -116,6 +116,10 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .brand-mark{display:flex;align-items:center;gap:10px;}
 .brand-mark .brand-name{font-size:16px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
 .brand-mark .brand-suffix{font-size:14px;font-weight:500;color:var(--text-dim);}
+/* v9.1.4: Pixel art football canvas — hide na mobile żeby header się nie łamał */
+@media (max-width: 768px){
+  #headerPixelArt{display:none !important;}
+}
 
 /* ───────────────────────── Hero recommendation ───────────────────────── */
 .hero-rec{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;transition:border-color .2s;}
@@ -813,8 +817,12 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.3</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.4</span>
     </div>
+    <div class="spacer"></div>
+    <!-- v9.1.4: Pixel art football animation — 8-bit/Minecraft style, oldschool gamification -->
+    <canvas id="headerPixelArt" width="200" height="36" title="Pixel art football — Predator vs Defender"
+      style="image-rendering:pixelated;image-rendering:crisp-edges;height:36px;width:200px;border-radius:6px;border:1px solid var(--border);background:linear-gradient(180deg,#0a1428 0%,#0e1a30 60%,#1a3a1a 60%,#0d2210 100%);flex-shrink:0;"></canvas>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
       <div id="tlDot" style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0;"></div>
@@ -1907,7 +1915,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1.3
+    Powered by MPlace · Match Predictor v9.1.4
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -7217,6 +7225,228 @@ else window.addEventListener('load',()=>setTimeout(dashboardBoot,400));
 
 if(document.readyState==='complete') setTimeout(footyInitLeagueDropdown,500);
 else window.addEventListener('load',()=>setTimeout(footyInitLeagueDropdown,500));
+
+// ──────────────────────────────────────────────────────────────────────
+// v9.1.4: Pixel art football animation w headerze
+// Oldschool 8-bit / Minecraft style. Predator (orange) vs Defender (blue).
+// Piłka lata parabolicznie, gracze biegają (2-frame leg cycle), trawa pixelated.
+// ──────────────────────────────────────────────────────────────────────
+function initHeaderPixelArt(){
+  const canvas=document.getElementById('headerPixelArt');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  const W=200, H=36;
+  // Player positions (anchored to ground at y=28)
+  const P1_X=22, P2_X=170, GROUND_Y=28;
+  // Player colors
+  const COLOR_P1='#FF5A1F';   // Predator orange (attacker)
+  const COLOR_P2='#4A9EFF';   // Defender blue
+  const COLOR_SKIN='#F5C896', COLOR_DARK='#1A1A1A', COLOR_BALL='#F5F5F5', COLOR_BALL_SHADOW='#888888';
+  // Grass tones
+  const COLOR_GRASS_DARK='#0d2210', COLOR_GRASS_LIGHT='#1a4520';
+  // Sky / pitch markings
+  const COLOR_LINE='rgba(255,255,255,0.10)';
+
+  let frame=0;
+  // Ball state — paraboliczne loty między playerami
+  let ballX=P1_X+8, ballY=GROUND_Y-2, ballVX=2.2, ballVY=-3.0;
+  let lastKick=0;  // frame count last kick
+  // Player animation states (stationary, leg cycle)
+  let p1KickPulse=0, p2KickPulse=0;  // visual pulse when kicking
+
+  function drawPlayer(x,y,jersey,facing,kickPulse){
+    // y = top of head. Total sprite ~14 pixels tall.
+    const f=facing;  // +1 = facing right, -1 = facing left
+    // Head 4×4
+    ctx.fillStyle=COLOR_SKIN;
+    ctx.fillRect(x+1,y,4,4);
+    // Hair pixel (top of head)
+    ctx.fillStyle=COLOR_DARK;
+    ctx.fillRect(x+1,y,4,1);
+    // Eye
+    ctx.fillStyle=COLOR_DARK;
+    if(f>0) ctx.fillRect(x+3,y+2,1,1);
+    else ctx.fillRect(x+2,y+2,1,1);
+    // Body — jersey 6×5
+    ctx.fillStyle=jersey;
+    ctx.fillRect(x,y+4,6,5);
+    // Jersey number stripe (visual interest)
+    ctx.fillStyle=COLOR_DARK;
+    ctx.fillRect(x+2,y+5,2,1);
+    // Arms (out the side)
+    ctx.fillStyle=jersey;
+    ctx.fillRect(x-1,y+5,1,3);
+    ctx.fillRect(x+6,y+5,1,3);
+    // Hands
+    ctx.fillStyle=COLOR_SKIN;
+    ctx.fillRect(x-1,y+8,1,1);
+    ctx.fillRect(x+6,y+8,1,1);
+    // Shorts 6×2
+    ctx.fillStyle=COLOR_DARK;
+    ctx.fillRect(x,y+9,6,2);
+    // Legs — animated 2-frame run cycle
+    const legFrame=Math.floor(frame/6)%2;
+    const kickActive=kickPulse>0;
+    ctx.fillStyle=COLOR_SKIN;
+    if(kickActive){
+      // Kicking pose — one leg forward
+      if(f>0){
+        ctx.fillRect(x+1,y+11,2,3);
+        ctx.fillRect(x+5,y+10,2,3);  // kicking leg forward
+      } else {
+        ctx.fillRect(x-1,y+10,2,3);  // kicking leg forward
+        ctx.fillRect(x+3,y+11,2,3);
+      }
+    } else if(legFrame===0){
+      ctx.fillRect(x+1,y+11,2,3);
+      ctx.fillRect(x+3,y+11,2,3);
+    } else {
+      ctx.fillRect(x,y+11,2,3);
+      ctx.fillRect(x+4,y+11,2,3);
+    }
+    // Boots
+    ctx.fillStyle=COLOR_DARK;
+    ctx.fillRect(x+1,y+13,2,1);
+    ctx.fillRect(x+3,y+13,2,1);
+  }
+
+  function drawBall(x,y){
+    // 4×4 pixel ball z classic football pattern
+    const ix=Math.round(x), iy=Math.round(y);
+    // Shadow on ground
+    if(iy<GROUND_Y-2){
+      const shadowDist=GROUND_Y-iy-2;
+      const shadowAlpha=Math.max(0.15,0.5-shadowDist*0.04);
+      ctx.fillStyle='rgba(0,0,0,'+shadowAlpha.toFixed(2)+')';
+      ctx.fillRect(ix-1,GROUND_Y-1,4,1);
+    }
+    // White base
+    ctx.fillStyle=COLOR_BALL;
+    ctx.fillRect(ix,iy-1,3,3);
+    ctx.fillRect(ix-1,iy,1,2);
+    ctx.fillRect(ix+3,iy,1,2);
+    // Black hexagon pattern center
+    ctx.fillStyle=COLOR_DARK;
+    ctx.fillRect(ix+1,iy,1,1);
+  }
+
+  function drawGround(){
+    // Grass with horizontal stripes (alternating shades — pitch lines effect)
+    const stripeSpan=20;
+    for(let sx=0;sx<W;sx+=stripeSpan){
+      ctx.fillStyle=Math.floor(sx/stripeSpan)%2===0?COLOR_GRASS_DARK:COLOR_GRASS_LIGHT;
+      ctx.fillRect(sx,GROUND_Y,stripeSpan,H-GROUND_Y);
+    }
+    // Grass top blade highlight
+    ctx.fillStyle=COLOR_GRASS_LIGHT;
+    for(let x=0;x<W;x+=3){
+      ctx.fillRect(x,GROUND_Y-1,2,1);
+    }
+    // Center line on grass
+    ctx.fillStyle='rgba(255,255,255,0.20)';
+    ctx.fillRect(W/2-1,GROUND_Y,2,H-GROUND_Y);
+  }
+
+  function drawSky(){
+    // Subtle starfield (twinkle effect)
+    const starSeed=Math.floor(frame/60);
+    ctx.fillStyle='rgba(255,255,255,0.30)';
+    for(let i=0;i<8;i++){
+      const sx=((i*37+starSeed*3)%W);
+      const sy=((i*7+3)%(GROUND_Y-4));
+      if(((i+starSeed)%4)!==0) ctx.fillRect(sx,sy,1,1);
+    }
+  }
+
+  function update(){
+    frame++;
+    // Decay kick pulses
+    if(p1KickPulse>0) p1KickPulse--;
+    if(p2KickPulse>0) p2KickPulse--;
+    // Ball physics
+    ballX+=ballVX;
+    ballY+=ballVY;
+    ballVY+=0.16;  // gravity
+    // Ground collision (bounce or settle)
+    if(ballY>=GROUND_Y-2){
+      ballY=GROUND_Y-2;
+      ballVY=-Math.abs(ballVY)*0.6;
+      ballVX*=0.92;
+      if(Math.abs(ballVY)<0.5 && Math.abs(ballVX)<0.5){
+        // Re-kick from nearest player
+        if(ballX<W/2){
+          ballVX=2.4; ballVY=-3.2; p1KickPulse=8;
+        } else {
+          ballVX=-2.4; ballVY=-3.2; p2KickPulse=8;
+        }
+        lastKick=frame;
+      }
+    }
+    // Player kick collision
+    if(ballX>=P2_X-2 && ballVX>0){
+      // Reaches Player 2 area — defender kicks back
+      ballX=P2_X-2;
+      ballVX=-(2.0+Math.random()*0.8);
+      ballVY=-(2.5+Math.random()*1.5);
+      p2KickPulse=8;
+      lastKick=frame;
+    }
+    if(ballX<=P1_X+8 && ballVX<0){
+      // Reaches Player 1 area — attacker kicks
+      ballX=P1_X+8;
+      ballVX=(2.0+Math.random()*0.8);
+      ballVY=-(2.5+Math.random()*1.5);
+      p1KickPulse=8;
+      lastKick=frame;
+    }
+    // Safety: cap ball Y so nigdy nie wychodzi poza canvas
+    if(ballY<2) ballY=2;
+  }
+
+  function render(){
+    // Clear z gradient bg (handled by CSS bg, ale clear pomocniczy)
+    ctx.clearRect(0,0,W,H);
+    // Sky stars
+    drawSky();
+    // Ground
+    drawGround();
+    // Players
+    drawPlayer(P1_X-3,GROUND_Y-14,COLOR_P1,1,p1KickPulse);
+    drawPlayer(P2_X-3,GROUND_Y-14,COLOR_P2,-1,p2KickPulse);
+    // Ball
+    drawBall(ballX,ballY);
+  }
+
+  let animId=null;
+  function loop(){
+    update();
+    render();
+    animId=requestAnimationFrame(loop);
+  }
+  // Start animation; throttle to ~30fps for retro feel + battery save
+  let lastFrame=0;
+  function throttledLoop(t){
+    if(t-lastFrame>=33){  // 30 fps
+      lastFrame=t;
+      update();
+      render();
+    }
+    animId=requestAnimationFrame(throttledLoop);
+  }
+  // Pause when tab hidden (battery save)
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){
+      if(animId){ cancelAnimationFrame(animId); animId=null; }
+    } else {
+      if(!animId) animId=requestAnimationFrame(throttledLoop);
+    }
+  });
+  animId=requestAnimationFrame(throttledLoop);
+}
+if(document.readyState==='complete') setTimeout(initHeaderPixelArt,200);
+else window.addEventListener('load',()=>setTimeout(initHeaderPixelArt,200));
 
 // ──────────────────────────────────────────────────────────────────────
 // BACKTEST MODULE v8.9 — historical model validation przez FootyStats
