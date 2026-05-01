@@ -820,7 +820,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3.3</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3.4</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1919,7 +1919,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.3.3
+    Powered by MPlace · Match Predator v9.3.4
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -7046,13 +7046,18 @@ function renderDashboardMatches(){
   else if(effectiveTab==='upcoming') bucket=upcomingCards;
   else bucket=placedCards;
 
-  // Sort: placed at top, then chronological for upcoming, edge for live/placed
+  // Sort: chronological for upcoming, PI desc dla lategoal mode (liveAll/placed/live),
+  // edge desc dla whitelist mode. v9.3.4: w lategoal mode user chce widzieć highest PI first
+  // (Moje bety + Wszystkie live).
   bucket.sort((a,b)=>{
-    const pa=a.placed?1:0, pb=b.placed?1:0;
-    if(pa!==pb) return pb-pa;
     if(activeTab==='upcoming'){
-      // Chronological — najbliższe godzinowo na górze
       return (a.card.match.date_unix||0)-(b.card.match.date_unix||0);
+    }
+    if(lateGoalMode){
+      // PI desc — pull from _lateGoal.pi (passing) lub _subThresholdPI (sub) lub _computedPI (any live)
+      const piA=a.card._lateGoal?.pi||a.card._subThresholdPI||a.card._computedPI||0;
+      const piB=b.card._lateGoal?.pi||b.card._subThresholdPI||b.card._computedPI||0;
+      return piB-piA;
     }
     return b.card.bestEdge-a.card.bestEdge;
   });
