@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.2</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1907,7 +1907,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1.1
+    Powered by MPlace · Match Predictor v9.1.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6291,8 +6291,11 @@ const WHITELIST_DEFAULTS_LATEGOAL_LEAGUES=[
   {name:'Spain La Liga',_af_leagueId:140,baseline:0.655,backtestROI:10.6,priority:1},
   {name:'France Ligue 1',_af_leagueId:61,baseline:0.667,backtestROI:6.0,priority:2},
   {name:'Germany Bundesliga',_af_leagueId:78,baseline:0.714,backtestROI:4.2,priority:2},
-  {name:'Brazil Serie A',_af_leagueId:71,baseline:0.645,backtestROI:3.8,priority:3}
-  // Świadomie pominięte: Eredivisie (-9.8% paradoks), Premier League (-1.5% słaba calibration)
+  {name:'Brazil Serie A',_af_leagueId:71,baseline:0.645,backtestROI:3.8,priority:3},
+  // v9.1.2: Premier League dodana na user request — research -1.5% ROI w sezonach 22-24,
+  // ale Chris obstawia te mecze. Tier 3 — niski priority, transparent ROI w UI.
+  {name:'England Premier League',_af_leagueId:39,baseline:0.725,backtestROI:-1.5,priority:3}
+  // Świadomie pominięte: Eredivisie (-9.8% paradoks)
 ];
 
 // Pressure Index v1.0 — wzór 0-100 (calibrated na 7401 historical meczach).
@@ -7843,14 +7846,17 @@ function wlRenderLeaguesList(w){
     const sortedLg=lgLeagues.slice().sort((a,b)=>(b.backtestROI||0)-(a.backtestROI||0));
     div.innerHTML='<div style="font-size:11px;color:var(--negative);margin-bottom:8px;font-weight:600;">🔥 Late Goal preferred ligi (research-backed ROI 22-24/25):</div>'
       +sortedLg.map((l,i)=>{
-        const roiColor=l.backtestROI>=10?'var(--positive)':l.backtestROI>=5?'var(--accent)':'var(--warning)';
+        // Sign-aware ROI color: negative=red, 0-5%=warning, 5-10%=accent, ≥10%=positive
+        const roi=l.backtestROI||0;
+        const roiColor=roi<0?'var(--negative)':roi>=10?'var(--positive)':roi>=5?'var(--accent)':'var(--warning)';
+        const roiSign=roi>=0?'+':'';
         const priorityBadge=l.priority===1?'T1':l.priority===2?'T2':'T3';
         const priorityColor=l.priority===1?'var(--positive)':l.priority===2?'var(--accent)':'var(--text-dim)';
         return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);">'
           +'<span style="color:'+priorityColor+';font-weight:600;">'+priorityBadge+'</span>'
           +'<span style="color:var(--text);flex:1;">'+l.name+'</span>'
           +'<span style="color:var(--text-faint);font-size:11px;">baseline '+(l.baseline*100).toFixed(0)+'%</span>'
-          +'<span style="color:'+roiColor+';font-weight:600;">+'+l.backtestROI.toFixed(1)+'% ROI</span>'
+          +'<span style="color:'+roiColor+';font-weight:600;">'+roiSign+roi.toFixed(1)+'% ROI</span>'
           +'<button onclick="wlRemoveLateGoalLeague('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
         +'</div>';
       }).join('')
