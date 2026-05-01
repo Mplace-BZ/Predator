@@ -820,7 +820,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.2.1</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — 3v3 + ref + goalies + 2 goals + ball -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — pixel art football"
@@ -1916,7 +1916,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.2
+    Powered by MPlace · Match Predator v9.2.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6866,10 +6866,14 @@ function renderDashboardMatches(){
   const whitelist=loadWhitelistPrefs();
   const lateGoalMode=whitelist.enabled && whitelist.mode==='lategoal';
 
+  // v9.2.1: mode-aware bypass dla "Wszystkie live" tab
+  // - Whitelist mode: bypass (user chce widzieć wszystkie live nawet poza strategy)
+  // - Late Goal mode: NO bypass (user chce TYLKO PI candidates, nie szum z Under 2.5 picks)
+  const liveAllBypassesWhitelist = !lateGoalMode;
+
   // Filter into 4 buckets:
   // - liveCards / upcomingCards: edge ≥5%, whitelist-filtered (high-signal action picks)
-  // - liveAllCards: WSZYSTKIE live z cache niezależnie od whitelist (informational view)
-  //   v9.1.5: bypass whitelist tu — user chce zobaczyć ALL live nawet poza strategy
+  // - liveAllCards: live z cache (mode-aware: bypass w whitelist, filter w lategoal)
   // - placedCards: zawsze widoczne (user tracking)
   const liveCards=[], liveAllCards=[], upcomingCards=[], placedCards=[];
   let totalChecked=0, whitelistFiltered=0, allLiveCount=0;
@@ -6882,8 +6886,8 @@ function renderDashboardMatches(){
     if(c.staleData) return;
     const live=isLiveMatch(c.match);
 
-    // v9.1.5: liveAllCards FIRST — wszystkie live, bez whitelist filter (raw view)
-    if(live){
+    // v9.1.5: liveAllCards FIRST — bypass whitelist (whitelist mode) lub filter (lategoal mode)
+    if(live && liveAllBypassesWhitelist){
       liveAllCards.push({card:c,idx,placed:placed[id]});
       allLiveCount++;
     }
@@ -6907,7 +6911,12 @@ function renderDashboardMatches(){
     // v9.1: w late goal mode pomijamy edge filter (PI is the gate, edge irrelevant)
     if(!lateGoalMode && c.bestEdge<EDGE_VALUE) return;
     if(live) liveCards.push({card:c,idx,placed:placed[id]});
-    else if(c.match.status!=='complete' && !lateGoalMode) upcomingCards.push({card:c,idx,placed:placed[id]});
+    // v9.2.1: w lategoal mode liveAllCards = whitelist-filtered live (te same co liveCards w lategoal)
+    if(live && !liveAllBypassesWhitelist){
+      liveAllCards.push({card:c,idx,placed:placed[id]});
+      allLiveCount++;
+    }
+    if(!live && c.match.status!=='complete' && !lateGoalMode) upcomingCards.push({card:c,idx,placed:placed[id]});
   });
   // Expose whitelist stats dla dashboard header info
   window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount};
@@ -7343,11 +7352,13 @@ function initHeaderPixelArt(){
   const kickPulses=players.map(()=>0);
 
   let frame=0;
-  let ballX=W/2, ballY=GROUND_Y-3, ballVX=0, ballVY=0;
-  let ballOwner=-1;  // index gracza który ostatnio kopnął, -1 = nikt
+  // v9.2.1: ball z initial velocity od pierwszej klatki (no setTimeout dependency)
+  let ballX=210, ballY=GROUND_Y-3, ballVX=2.5, ballVY=-3.0;
+  let ballOwner=5;  // FWD B index — leci do nich
   let scoreA=0, scoreB=0;
   let goalCelebrating=0;  // frames remaining w goal celebration
   let goalCelebrateTeam=null;  // 'A' | 'B' — kto zdobył
+  let goalRestartTimer=0;  // v9.2.1: frame-based restart (no setTimeout)
 
   function drawPlayer(p,kickPulse,isBall){
     const x=p.x, y=p.y, f=p.side;
@@ -7387,8 +7398,8 @@ function initHeaderPixelArt(){
     // Shorts
     ctx.fillStyle=p.role==='GK'?COLOR_WHITE:COLOR_DARK;
     ctx.fillRect(x,y+9,6,2);
-    // Legs — 2-frame run cycle (slightly faster dla GK i ref)
-    const legFrame=Math.floor((frame+x)/5)%2;  // x offset = different timing per player
+    // Legs — 2-frame run cycle (faster dla visible motion, x offset = different timing per player)
+    const legFrame=Math.floor((frame*2+x)/4)%2;
     const kickActive=kickPulse>0;
     ctx.fillStyle=COLOR_SKIN;
     if(kickActive){
@@ -7569,40 +7580,40 @@ function initHeaderPixelArt(){
     ballY+=ballVY;
     ballVY+=0.16;  // gravity
 
+    // v9.2.1: Frame-based goal restart (no setTimeout — works pod paused tab)
+    if(goalRestartTimer>0){
+      goalRestartTimer--;
+      if(goalRestartTimer===0){
+        // Reset ball to center, kicker z opposite team
+        ballX=W/2; ballY=GROUND_Y-3;
+        ballVX=0; ballVY=0;
+        const restartTeam=goalCelebrateTeam==='A'?'B':'A';
+        const kickerPool=players.map((p,i)=>({p,i})).filter(({p})=>p.team===restartTeam&&p.role!=='GK');
+        if(kickerPool.length){
+          const kicker=kickerPool[Math.floor(Math.random()*kickerPool.length)];
+          kickBallTo(kicker.i,pickTarget(kicker.i));
+        }
+        goalCelebrateTeam=null;
+      }
+    }
+
     // Goal detection — piłka wlatuje w bramkę
     const inGoalLeft = ballX<22 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
     const inGoalRight = ballX>W-22 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
-    if(inGoalLeft && goalCelebrating===0){
-      // Team B scores
+    if(inGoalLeft && goalCelebrating===0 && goalRestartTimer===0){
       scoreB++;
       goalCelebrating=60;
       goalCelebrateTeam='B';
-      // Reset ball to center after 60 frames
-      setTimeout(()=>{
-        ballX=W/2; ballY=GROUND_Y-3;
-        ballVX=0; ballVY=0;
-        // Random kick from team A (re-start)
-        const aPlayers=players.map((p,i)=>({p,i})).filter(({p})=>p.team==='A'&&p.role!=='GK');
-        if(aPlayers.length){
-          const kicker=aPlayers[Math.floor(Math.random()*aPlayers.length)];
-          kickBallTo(kicker.i,pickTarget(kicker.i));
-        }
-      },2000);
+      goalRestartTimer=90;  // 90 frames = ~3s @ 30fps
+      ballVX=0; ballVY=0;  // freeze ball during celebration
       return;
     }
-    if(inGoalRight && goalCelebrating===0){
+    if(inGoalRight && goalCelebrating===0 && goalRestartTimer===0){
       scoreA++;
       goalCelebrating=60;
       goalCelebrateTeam='A';
-      setTimeout(()=>{
-        ballX=W/2; ballY=GROUND_Y-3;
-        ballVX=0; ballVY=0;
-        const bPlayers=players.map((p,i)=>({p,i})).filter(({p})=>p.team==='B'&&p.role!=='GK');
-        if(bPlayers.length){
-          const kicker=bPlayers[Math.floor(Math.random()*bPlayers.length)];
-          kickBallTo(kicker.i,pickTarget(kicker.i));
-        }
-      },2000);
+      goalRestartTimer=90;
+      ballVX=0; ballVY=0;
       return;
     }
 
@@ -7689,11 +7700,8 @@ function initHeaderPixelArt(){
     drawGoalCelebration();
   }
 
-  // Initial kick — start mecz
-  setTimeout(()=>{
-    const kickerIdx=players.findIndex(p=>p.team==='A'&&p.role==='MID');
-    if(kickerIdx>=0) kickBallTo(kickerIdx,pickTarget(kickerIdx));
-  },500);
+  // v9.2.1: Initial state ustawione już w let (ballX=210, ballVX=2.5, ballVY=-3.0)
+  // — animacja startuje od pierwszej klatki, bez setTimeout dependency
 
   let animId=null;
   let lastFrame=0;
