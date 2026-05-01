@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- v9.4.1: cache control — wymuszone reload by każdy user dostał najnowszą wersję filtrów -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="predator-version" content="9.4.1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Match Predator — Live Football Hunter</title>
+<title>Match Predator v9.4.1 — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -820,7 +825,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.1</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1939,7 +1944,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.4
+    Powered by MPlace · Match Predator v9.4.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6318,13 +6323,48 @@ function getEffectiveTopLeagueIds(prefs){
   return ids;
 }
 
+// v9.4.1: Belt-and-suspenders NAME-based blacklist patterns. Aplikowane PRZED ID lookup.
+// Łapie edge cases gdzie api-football zwraca dziwne ID dla youth/women/B/play-off konkurencji.
+// Wszystkie patterny case-insensitive.
+const TOP_LEAGUES_NAME_BLACKLIST=[
+  /\bU\d+\b/i,                    // U20, U21, U19, U17, U23
+  /\bwomen\b/i,                   // Women's leagues
+  /\bfemenil\b/i,                 // Liga MX Femenil
+  /\bf[ée]minine?\b/i,            // Coupe de France Féminine etc.
+  /\breserves?\b/i,               // Reserve leagues
+  /\bplay.?off/i,                 // "Play Off", "Play-Off", "PlayOff", "Play Offy"
+  /\bplay.?in\b/i,                // Play-in tournaments
+  /\bdevelopment\b/i,             // Premier League 2 / Development League
+  /\bintermediate\b/i,             // NI Premier Intermediate League
+  /\bregional\b/i,                 // Regionalliga (German tier 4)
+  /\bspadek\b/i,                   // Polish "Spadek" (relegation playoffs)
+  /\bamateur\b/i,                  // Amateur leagues
+  /\bacademy\b/i,                  // Academy leagues
+  /\b3\.?\s?liga\b/i,              // 3 Liga, III Liga (Polish/German tier 3)
+  /\b4\.?\s?liga\b/i,              // 4 Liga
+  /\bA[34]\b/,                     // Paulista A3, A4 (Brazilian regional)
+  /\bdeild\b/i,                    // Iceland 1./2. Deild
+  /\bsegunda\s+divisi[óo]n\s+b\b/i,// Spain Segunda B
+  /\b(\bii\b|\bb)\s*team\b/i       // Reserve B teams
+];
+
 // Hard filter: czy mecz jest w top ligach? Apliowany w renderDashboardMatches.
 // Returns true = pokaż, false = ukryj.
 function isMatchInTopLeagues(match,prefs){
   if(!prefs || !prefs.topLeaguesOnly) return true;  // toggle off = pokaż wszystko
   const id=match._af_leagueId;
-  if(!id) return false;  // brak ID = ukryj (nie wiemy co to)
-  return getEffectiveTopLeagueIds(prefs).has(Number(id));
+  const name=match._leagueName||'';
+  // v9.4.1: name-based blacklist FIRST (belt-and-suspenders)
+  // EXCEPTION: jeśli ID jawnie w defaults LUB user's custom, pomiń name check (override).
+  const ids=getEffectiveTopLeagueIds(prefs);
+  const explicitlyAllowed=id && ids.has(Number(id));
+  if(!explicitlyAllowed && name){
+    for(const re of TOP_LEAGUES_NAME_BLACKLIST){
+      if(re.test(name)) return false;
+    }
+  }
+  if(!id) return false;  // brak ID + nie matched name blacklist = ukryj (nie wiemy)
+  return ids.has(Number(id));
 }
 function loadNotifSeen(){
   try{ return JSON.parse(localStorage.getItem(DASH_NOTIF_KEY)||'{}'); }catch(_){ return {}; }
@@ -7042,6 +7082,20 @@ function renderDashboardMatches(){
   // Expose whitelist stats dla dashboard header info
   window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount,topLeaguesFiltered:topLeaguesFiltered,topLeaguesOnly:!!prefs.topLeaguesOnly};
 
+  // v9.4.1: diagnostyka — Chris widzi w console co dokładnie zostało odfiltrowane
+  if(prefs.topLeaguesOnly){
+    const blockedLeagues={};
+    cards.forEach(c=>{
+      if(!isMatchInTopLeagues(c.match,prefs)){
+        const key=(c.match._leagueName||'?')+' (id '+(c.match._af_leagueId||'?')+')';
+        blockedLeagues[key]=(blockedLeagues[key]||0)+1;
+      }
+    });
+    if(Object.keys(blockedLeagues).length){
+      console.log('[v9.4 top-leagues filter] Blocked '+topLeaguesFiltered+' meczów:',blockedLeagues);
+    }
+  }
+
   // v9.3.2: w lategoal mode pokaż PI badge na każdej karcie live (informational), nie tylko
   // przy passing threshold. User chce widzieć PI każdego live meczu i sam decydować.
   if(lateGoalMode){
@@ -7071,6 +7125,8 @@ function renderDashboardMatches(){
         if(c.staleData) return false;
         if(placed[String(m.id)]) return false;
         if(!isLiveMatch(m)) return false;
+        // v9.4.1: respect TOP LEAGUES global filter — fallback nie może przepuszczać krzaków
+        if(!isMatchInTopLeagues(m,prefs)) return false;
         // Skip out-of-window matches (poza 50-75 minute) — to nie są candidates
         const minute=m._af_elapsed||0;
         if(minute<(lg.windowMinFrom||50) || minute>(lg.windowMinTo||75)+15) return false;  // +15min grace dla "blisko window"

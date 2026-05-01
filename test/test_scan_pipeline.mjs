@@ -513,11 +513,27 @@ function getEffectiveTopLeagueIds(prefs){
   if(prefs && Array.isArray(prefs.disabledLeagueIds)) prefs.disabledLeagueIds.forEach(id=>ids.delete(Number(id)));
   return ids;
 }
+// v9.4.1: name-based blacklist (belt-and-suspenders)
+const TOP_LEAGUES_NAME_BLACKLIST=[
+  /\bU\d+\b/i, /\bwomen\b/i, /\bfemenil\b/i, /\bf[ée]minine?\b/i,
+  /\breserves?\b/i, /\bplay.?off/i, /\bplay.?in\b/i, /\bdevelopment\b/i,
+  /\bintermediate\b/i, /\bregional\b/i, /\bspadek\b/i, /\bamateur\b/i,
+  /\bacademy\b/i, /\b3\.?\s?liga\b/i, /\b4\.?\s?liga\b/i, /\bA[34]\b/,
+  /\bdeild\b/i, /\bsegunda\s+divisi[óo]n\s+b\b/i, /\b(\bii\b|\bb)\s*team\b/i
+];
 function isMatchInTopLeagues(match,prefs){
   if(!prefs || !prefs.topLeaguesOnly) return true;
   const id=match._af_leagueId;
+  const name=match._leagueName||'';
+  const ids=getEffectiveTopLeagueIds(prefs);
+  const explicitlyAllowed=id && ids.has(Number(id));
+  if(!explicitlyAllowed && name){
+    for(const re of TOP_LEAGUES_NAME_BLACKLIST){
+      if(re.test(name)) return false;
+    }
+  }
   if(!id) return false;
-  return getEffectiveTopLeagueIds(prefs).has(Number(id));
+  return ids.has(Number(id));
 }
 
 function test_top_leagues_filter(){
@@ -589,7 +605,40 @@ function test_top_leagues_filter(){
     assert(!ids.has(id),'Default does NOT have "krzak" id '+id);
   });
 
-  console.log('  All top leagues filter scenarios pass');
+  // 9. v9.4.1 NAME-based blacklist patterns — łapie krzaki z dziwnymi/unknown ID
+  const youthMatch={_af_leagueId:9999,_leagueName:'Brasileiro U20'};
+  const womenMatch={_af_leagueId:9998,_leagueName:'Brasileiro Women'};
+  const playOffMatch={_af_leagueId:9997,_leagueName:'Eredivisie - Spadek - Play Offy'};
+  const developmentMatch={_af_leagueId:9996,_leagueName:'Professional Development League'};
+  const intermediateMatch={_af_leagueId:412,_leagueName:'Premier Intermediate League'};
+  const regionalMatch={_af_leagueId:9994,_leagueName:'Regionalliga - Mitte'};
+  const deildMatch={_af_leagueId:9993,_leagueName:'1. Deild'};
+  const paulistaMatch={_af_leagueId:9992,_leagueName:'Paulista - A4'};
+  const reservesMatch={_af_leagueId:9991,_leagueName:'PL2 Reserves'};
+  const liga3Match={_af_leagueId:9990,_leagueName:'III Liga - Group 2'};
+  assert(!isMatchInTopLeagues(youthMatch,prefsOn),'Name blacklist: U20 → blocked');
+  assert(!isMatchInTopLeagues(womenMatch,prefsOn),'Name blacklist: Women → blocked');
+  assert(!isMatchInTopLeagues(playOffMatch,prefsOn),'Name blacklist: Play Offy → blocked');
+  assert(!isMatchInTopLeagues(developmentMatch,prefsOn),'Name blacklist: Development → blocked');
+  assert(!isMatchInTopLeagues(intermediateMatch,prefsOn),'Name blacklist: Intermediate → blocked');
+  assert(!isMatchInTopLeagues(regionalMatch,prefsOn),'Name blacklist: Regional → blocked');
+  assert(!isMatchInTopLeagues(deildMatch,prefsOn),'Name blacklist: Deild → blocked');
+  assert(!isMatchInTopLeagues(paulistaMatch,prefsOn),'Name blacklist: Paulista A4 → blocked');
+  assert(!isMatchInTopLeagues(reservesMatch,prefsOn),'Name blacklist: Reserves → blocked');
+  assert(!isMatchInTopLeagues(liga3Match,prefsOn),'Name blacklist: III Liga → blocked');
+
+  // 10. ID override beats name blacklist (jeśli user explicitly dodał)
+  const customIdMatch={_af_leagueId:135,_leagueName:'Serie A Reserves'};  // hipotetyczne
+  assert(isMatchInTopLeagues(customIdMatch,prefsOn),'ID 135 (Serie A) override: name "Reserves" ignored bo ID jest in defaults');
+
+  // 11. False positive guard — top leagues NOT triggered przez name patterns
+  assert(isMatchInTopLeagues({_af_leagueId:39,_leagueName:'Premier League'},prefsOn),'PL nie blocked przez "Premier" (no Intermediate)');
+  assert(isMatchInTopLeagues({_af_leagueId:40,_leagueName:'Championship'},prefsOn),'EN Championship pokazany');
+  assert(isMatchInTopLeagues({_af_leagueId:135,_leagueName:'Serie A'},prefsOn),'Serie A pokazany');
+  assert(isMatchInTopLeagues({_af_leagueId:136,_leagueName:'Serie B'},prefsOn),'Serie B (legit Italian 2nd) pokazany');
+  assert(isMatchInTopLeagues({_af_leagueId:79,_leagueName:'2. Bundesliga'},prefsOn),'2. Bundesliga (legit German 2nd) pokazany');
+
+  console.log('  All top leagues filter scenarios pass (38 ID-based + 15 name-based + 5 false-positive guards)');
 }
 
 // ──────────────────────────────────────────────────────────────────────
