@@ -7,9 +7,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="predator-version" content="9.4.1">
+<meta name="predator-version" content="9.4.2">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Match Predator v9.4.1 — Live Football Hunter</title>
+<title>Match Predator v9.4.2 — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -825,7 +825,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.2</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1944,7 +1944,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.4.1
+    Powered by MPlace · Match Predator v9.4.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6348,6 +6348,44 @@ const TOP_LEAGUES_NAME_BLACKLIST=[
   /\b(\bii\b|\bb)\s*team\b/i       // Reserve B teams
 ];
 
+// v9.4.2: Console debug helper — Chris wpisuje `_debugTopLeagues()` w DevTools
+// i widzi pełną tabelę: każdy mecz w cache, league id+name, czy passed filter, dlaczego.
+window._debugTopLeagues=function(){
+  const cards=window._scanCardsCache||[];
+  const prefs=loadDashPrefs();
+  if(!prefs.topLeaguesOnly){ console.log('Filter OFF — wszystkie '+cards.length+' meczów pokazane'); return; }
+  const ids=getEffectiveTopLeagueIds(prefs);
+  const groups={passed:[],blockedById:[],blockedByName:[],blockedNoId:[]};
+  cards.forEach(c=>{
+    const m=c.match;
+    const id=m._af_leagueId;
+    const name=m._leagueName||'';
+    const liveFlag=m.status==='in_play'?'🔴':(m.status==='complete'?'⚪':'⏰');
+    const entry={live:liveFlag,id:id,league:name,match:m.home_name+' vs '+m.away_name};
+    if(id && ids.has(Number(id))){ groups.passed.push(entry); return; }
+    let nameHit=null;
+    if(name){
+      for(const re of TOP_LEAGUES_NAME_BLACKLIST){
+        if(re.test(name)){ nameHit=re.toString(); break; }
+      }
+    }
+    if(nameHit){ entry.blockedBy=nameHit; groups.blockedByName.push(entry); return; }
+    if(!id){ groups.blockedNoId.push(entry); return; }
+    groups.blockedById.push(entry);
+  });
+  console.log('=== TOP LEAGUES FILTER DEBUG ===');
+  console.log('Total cards: '+cards.length+' · Live: '+cards.filter(c=>c.match.status==='in_play').length);
+  console.log('PASSED ('+groups.passed.length+'):');
+  console.table(groups.passed.slice(0,30));
+  console.log('BLOCKED BY ID ('+groups.blockedById.length+') — ID nie w defaults/custom:');
+  console.table(groups.blockedById.slice(0,30));
+  console.log('BLOCKED BY NAME PATTERN ('+groups.blockedByName.length+'):');
+  console.table(groups.blockedByName.slice(0,30));
+  console.log('BLOCKED — brak ID i name nie matchował patterns ('+groups.blockedNoId.length+'):');
+  console.table(groups.blockedNoId.slice(0,30));
+  return groups;
+};
+
 // Hard filter: czy mecz jest w top ligach? Apliowany w renderDashboardMatches.
 // Returns true = pokaż, false = ukryj.
 function isMatchInTopLeagues(match,prefs){
@@ -7218,17 +7256,82 @@ function renderDashboardMatches(){
       list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">📡</div><div style="font-size:15px;color:var(--text);margin-bottom:8px;font-weight:600;">Dashboard gotowy</div><div style="margin-bottom:14px;">Kliknij <strong>"↻ Pełny skan"</strong> żeby zaciągnąć dzisiejsze mecze ze wszystkich 50 lig.<br>Po pierwszym skanie auto-update co 30s aktualizuje live + obstawione.</div><button class="btn btn-accent" onclick="dashboardManualRefresh()" style="padding:10px 18px;font-size:13px;">↻ Skanuj teraz</button></div>';
       return;
     }
-    // v9.4: TOP LEAGUES filtered out everything — informacyjny empty state
+    // v9.4.2: TOP LEAGUES filter empty state — pokazuje konkretną informację:
+    // - Ile top ligi live teraz (vs ile krzaków)
+    // - Top 5 najczęściej filtrowanych lig (Chris widzi co odpadło)
+    // - Najbliższe top ligi nadchodzące (preview)
     if(prefs.topLeaguesOnly && (window._wlStats?.topLeaguesFiltered||0)>0 && (effectiveTab==='live'||effectiveTab==='liveAll'||effectiveTab==='upcoming')){
       const filt=window._wlStats.topLeaguesFiltered;
-      list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">🌍</div>'
-        +'<div style="font-size:14px;color:var(--text);margin-bottom:6px;font-weight:600;">Top ligi filter aktywny — '+filt+' meczów odfiltrowanych</div>'
-        +'<div style="margin-bottom:12px;font-size:13px;color:var(--text-dim);">Z meczów w cache <b>'+filt+'</b> jest poza top ligami (NI Premier Intermediate, Scottish Championship, Polish III liga, U-divisions, lower-tier women, etc.). Top ligi to ~30 elite competitions (UCL/UEL, top 5 European, Eredivisie, Primeira, Süper Lig, Ekstraklasa, MLS, Brazil Serie A, Argentina).<br><br>'
-        +'<span style="font-size:12px;color:var(--text-faint);">Możesz wyłączyć filter lub edytować listę w ustawieniach.</span></div>'
-        +'<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'
-        +'<button class="btn btn-sm" onclick="openSettings()" style="background:var(--accent);color:var(--bg);">⚙ Edytuj top ligi</button>'
-        +'<button class="btn btn-sm" onclick="(function(){const p=loadDashPrefs();p.topLeaguesOnly=false;saveDashPrefs(p);renderDashboardMatches();})()" style="background:var(--surface-2);">🌐 Wyłącz filter (pokaż wszystko)</button>'
+      const liveCount=cards.filter(c=>isLiveMatch(c.match)).length;
+      const liveTopCount=cards.filter(c=>isLiveMatch(c.match)&&isMatchInTopLeagues(c.match,prefs)).length;
+      // Breakdown: top 5 najczęściej filtrowanych lig
+      const blockedLeagues={};
+      cards.forEach(c=>{
+        if(!isMatchInTopLeagues(c.match,prefs)){
+          const key=c.match._leagueName||'(brak nazwy)';
+          blockedLeagues[key]=(blockedLeagues[key]||0)+1;
+        }
+      });
+      const top5Blocked=Object.entries(blockedLeagues).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      // Top ligi nadchodzące w najbliższych godzinach
+      const now=Math.floor(Date.now()/1000);
+      const upcomingTop=cards.filter(c=>{
+        const m=c.match;
+        if(m.status==='complete') return false;
+        if(isLiveMatch(m)) return false;
+        if(!isMatchInTopLeagues(m,prefs)) return false;
+        if(!m.date_unix) return false;
+        return m.date_unix>=now-300 && m.date_unix<=now+12*3600;
+      }).sort((a,b)=>(a.match.date_unix||0)-(b.match.date_unix||0)).slice(0,5);
+
+      const tabLabel={live:'🔴 LIVE picks',liveAll:'📡 Wszystkie live',upcoming:'⏰ Dziś'}[effectiveTab];
+      let html='<div class="dashboard-empty"><div class="dashboard-empty-icon">🌍</div>';
+
+      if(effectiveTab==='live'||effectiveTab==='liveAll'){
+        html+='<div style="font-size:15px;color:var(--text);margin-bottom:8px;font-weight:600;">'+tabLabel+' — brak top ligi na żywo teraz</div>'
+          +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:14px;line-height:1.6;">'
+          +'Live w cache: <b style="color:var(--text);">'+liveCount+'</b> meczów · z tego top ligi: <b style="color:'+(liveTopCount===0?'var(--negative)':'var(--positive)')+';">'+liveTopCount+'</b><br>'
+          +'<span style="font-size:11px;color:var(--text-faint);">21:30-22:00 to często martwy slot — top 5 European już skończone, Brazil/Argentina nie zaczęły. Sprawdź za 30-60 min.</span></div>';
+      } else {
+        html+='<div style="font-size:15px;color:var(--text);margin-bottom:8px;font-weight:600;">'+tabLabel+' — brak top ligi w najbliższych 12h</div>'
+          +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Cache zawiera '+filt+' meczów poza top ligami.</div>';
+      }
+
+      // Breakdown panel
+      if(top5Blocked.length){
+        html+='<div style="background:var(--surface-2);padding:12px;border-radius:8px;margin:0 auto 14px;max-width:480px;text-align:left;">'
+          +'<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Co zostało odfiltrowane (top 5):</div>';
+        top5Blocked.forEach(([name,count])=>{
+          html+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:var(--text-dim);"><span>'+name+'</span><span style="color:var(--text-faint);font-family:var(--mono);">'+count+'×</span></div>';
+        });
+        html+='</div>';
+      }
+
+      // Upcoming top preview
+      if(upcomingTop.length && effectiveTab!=='upcoming'){
+        html+='<div style="background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.20);padding:12px;border-radius:8px;margin:0 auto 14px;max-width:480px;text-align:left;">'
+          +'<div style="font-size:11px;font-weight:600;color:var(--positive);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">⏰ Top ligi nadchodzące:</div>';
+        upcomingTop.forEach(c=>{
+          const m=c.match;
+          const t=new Date(m.date_unix*1000);
+          const hh=String(t.getHours()).padStart(2,'0'), mm=String(t.getMinutes()).padStart(2,'0');
+          html+='<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:var(--text);">'
+            +'<span><b style="color:var(--accent);font-family:var(--mono);">'+hh+':'+mm+'</b> · '+m.home_name+' vs '+m.away_name+'</span>'
+            +'<span style="color:var(--text-faint);font-size:10px;">'+(m._leagueName||'')+'</span>'
+            +'</div>';
+        });
+        html+='</div>';
+      }
+
+      html+='<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">';
+      if(upcomingTop.length && effectiveTab!=='upcoming'){
+        html+='<button class="btn btn-sm" onclick="dashboardSwitchTab(\'upcoming\')" style="background:var(--accent);color:var(--bg);">⏰ Pokaż '+upcomingTop.length+' nadchodzących</button>';
+      }
+      html+='<button class="btn btn-sm" onclick="dashboardManualRefresh()" style="background:var(--surface-2);">↻ Pełny skan</button>'
+        +'<button class="btn btn-sm" onclick="openSettings()" style="background:var(--surface-2);">⚙ Edytuj top ligi</button>'
+        +'<button class="btn btn-sm" onclick="(function(){const p=loadDashPrefs();p.topLeaguesOnly=false;saveDashPrefs(p);renderDashboardMatches();})()" style="background:var(--surface-2);">🌐 Wyłącz filter</button>'
         +'</div></div>';
+      list.innerHTML=html;
       return;
     }
     // v9.2.2: Late Goal Hunter mode — informacyjny empty state z PI status
