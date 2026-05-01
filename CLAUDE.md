@@ -1,12 +1,12 @@
-# Predator — Live Match Predictor
+# Predator — Live Match Predator
 
 ## Co to jest
 Single-page aplikacja do przewidywania wyników meczów piłkarskich w czasie rzeczywistym.
 Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwyższych kursów.
 
 ## Brand identity (v7.0)
-**Match Predictor** to apka MPlace. Tonalnie: Linear / Vercel dashboard, NIE casino panel.
-- Logo: pomarańczowy płomień MPlace (inline SVG) + "Match Predictor" tekstowo
+**Match Predator** to apka MPlace. Tonalnie: Linear / Vercel dashboard, NIE casino panel.
+- Logo: pomarańczowy płomień MPlace (inline SVG) + "Match Predator" tekstowo
 - Akcent: `#FF5A1F` (jeden), drugi: `#FFB347` (accent-soft)
 - Stany semantyczne: positive `#4ADE80`, negative `#EF4444`, warning `#FFB347` — **TYLKO** dla werdyktów
 - Reguła kolorów: max 3 akcenty na ekranie, kolor = znaczenie, nie dekoracja
@@ -17,14 +17,14 @@ Model Poissona z xG, używana głównie w ostatnich 15 minutach meczu dla najwy�
 - Dark mode only, WCAG AA na text (kontrast text-dim podkręcony do 4.5:1)
 
 ## Layout v7.0 (3-section hierarchy)
-1. **HEADER** — minimalny: flame logo + "Match Predictor" + traffic light (Czekam / Obserwuj / Graj / Nie graj)
+1. **HEADER** — minimalny: flame logo + "Match Predator" + traffic light (Czekam / Obserwuj / Graj / Nie graj)
 2. **HERO RECOMMENDATION** — full-width karta, ikona + verdict title + reason; pewność modelu (64px) + CTA "Zapisz bet". Zmienia kolor border per stan (positive/warning/negative).
 3. **LIVE CONTEXT** — 4 tile grid (mobile 2x2): Minuta, Wynik, Najlepszy edge, Siła sygnału. Liczby 36px białe. Akcent tylko na ikonie label.
 4. **DETAILS** — 3 collapsible accordions (open by default for input/predictions, closed for raw data):
    - "Wklej dane meczu" — Match Scanner + paste (FootyStats/Sofascore) + score bar + red card
    - "Pełne predykcje modelu" — hero tiles + goal timing + results panel + edge% + corners + cards + value bets + calibration
    - "Edytuj dane meczu" — wszystkie inputy sezonu/live/corners/cards
-5. **FOOTER** — "Powered by MPlace · Match Predictor v7.0" + flame icon
+5. **FOOTER** — "Powered by MPlace · Match Predator v7.0" + flame icon
 
 ## Microcopy translation (v7.0)
 Wszystkie etykiety user-facing przerobione na PL human-friendly:

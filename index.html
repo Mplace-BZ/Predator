@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Live Match Predictor</title>
+<title>Match Predator — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -116,9 +116,12 @@ h3.h3,.h3{font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.25
 .brand-mark{display:flex;align-items:center;gap:10px;}
 .brand-mark .brand-name{font-size:16px;font-weight:700;letter-spacing:-0.01em;color:var(--text);}
 .brand-mark .brand-suffix{font-size:14px;font-weight:500;color:var(--text-dim);}
-/* v9.1.4: Pixel art football canvas — hide na mobile żeby header się nie łamał */
+/* v9.2: Pixel art football canvas — full-width header animation */
 @media (max-width: 768px){
   #headerPixelArt{display:none !important;}
+}
+@media (min-width: 769px) and (max-width: 1100px){
+  #headerPixelArt{max-width:400px !important;}
 }
 
 /* ───────────────────────── Hero recommendation ───────────────────────── */
@@ -816,14 +819,12 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <svg class="brand-flame" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
-      <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.5</span>
+      <span class="brand-name">Match Predator</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.2</span>
     </div>
-    <div class="spacer"></div>
-    <!-- v9.1.4: Pixel art football animation — 8-bit/Minecraft style, oldschool gamification -->
-    <canvas id="headerPixelArt" width="200" height="36" title="Pixel art football — Predator vs Defender"
-      style="image-rendering:pixelated;image-rendering:crisp-edges;height:36px;width:200px;border-radius:6px;border:1px solid var(--border);background:linear-gradient(180deg,#0a1428 0%,#0e1a30 60%,#1a3a1a 60%,#0d2210 100%);flex-shrink:0;"></canvas>
-    <div class="spacer"></div>
+    <!-- v9.2: Full-width pixel art football match — 3v3 + ref + goalies + 2 goals + ball -->
+    <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — pixel art football"
+      style="image-rendering:pixelated;image-rendering:crisp-edges;height:56px;flex:1;min-width:240px;max-width:720px;border-radius:8px;border:1px solid var(--border);background:linear-gradient(180deg,#0a1428 0%,#0e1a30 55%,#1a3a1a 55%,#0d2210 100%);"></canvas>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
       <div id="tlDot" style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0;"></div>
       <div id="tlLabel" style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:var(--text-dim);text-transform:uppercase;">Czekam</div>
@@ -1915,7 +1916,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1.5
+    Powered by MPlace · Match Predator v9.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -7300,9 +7301,10 @@ if(document.readyState==='complete') setTimeout(footyInitLeagueDropdown,500);
 else window.addEventListener('load',()=>setTimeout(footyInitLeagueDropdown,500));
 
 // ──────────────────────────────────────────────────────────────────────
-// v9.1.4: Pixel art football animation w headerze
-// Oldschool 8-bit / Minecraft style. Predator (orange) vs Defender (blue).
-// Piłka lata parabolicznie, gracze biegają (2-frame leg cycle), trawa pixelated.
+// v9.2: Full-width pixel art football MATCH w headerze
+// Pełen mecz: 3v3 outfield + 2 goalies + sędzia + 2 bramki + piłka.
+// Multi-target passing (piłka leci do losowego gracza), goalie saves,
+// gole z celebrcja, score counter (renderowany w canvasie).
 // ──────────────────────────────────────────────────────────────────────
 function initHeaderPixelArt(){
   const canvas=document.getElementById('headerPixelArt');
@@ -7310,45 +7312,71 @@ function initHeaderPixelArt(){
   const ctx=canvas.getContext('2d');
   ctx.imageSmoothingEnabled=false;
 
-  const W=200, H=36;
-  // Player positions (anchored to ground at y=28)
-  const P1_X=22, P2_X=170, GROUND_Y=28;
-  // Player colors
-  const COLOR_P1='#FF5A1F';   // Predator orange (attacker)
-  const COLOR_P2='#4A9EFF';   // Defender blue
-  const COLOR_SKIN='#F5C896', COLOR_DARK='#1A1A1A', COLOR_BALL='#F5F5F5', COLOR_BALL_SHADOW='#888888';
-  // Grass tones
+  const W=640, H=56;
+  const GROUND_Y=44;
+  const COLOR_TEAM_A='#FF5A1F';   // Predator orange (lewa drużyna)
+  const COLOR_TEAM_B='#4A9EFF';   // Niebieska defenwa (prawa drużyna)
+  const COLOR_REF='#1A1A1A';      // Sędzia czarny
+  const COLOR_SKIN='#F5C896', COLOR_DARK='#1A1A1A', COLOR_WHITE='#F5F5F5';
   const COLOR_GRASS_DARK='#0d2210', COLOR_GRASS_LIGHT='#1a4520';
-  // Sky / pitch markings
-  const COLOR_LINE='rgba(255,255,255,0.10)';
+  const COLOR_GOAL_FRAME='#E0E0E0';
+  const COLOR_GOAL_NET='rgba(255,255,255,0.20)';
+
+  // Player positions — outfield + goalies + ref
+  // Lewa bramka @ x=4 do x=18, prawa @ x=W-18 do W-4
+  // GK przed bramką (na x=22 lewy, x=W-28 prawy)
+  const players=[
+    // Team A (orange) — 3 outfield + 1 goalie
+    {team:'A',x:22,y:GROUND_Y-14,role:'GK',side:1},      // Bramkarz lewy (przed bramką)
+    {team:'A',x:120,y:GROUND_Y-14,role:'DEF',side:1},
+    {team:'A',x:210,y:GROUND_Y-14,role:'MID',side:1},
+    {team:'A',x:280,y:GROUND_Y-14,role:'FWD',side:1},
+    // Sędzia (środek)
+    {team:'REF',x:W/2-3,y:GROUND_Y-14,role:'REF',side:1},
+    // Team B (blue) — 3 outfield + 1 goalie
+    {team:'B',x:360,y:GROUND_Y-14,role:'FWD',side:-1},
+    {team:'B',x:430,y:GROUND_Y-14,role:'MID',side:-1},
+    {team:'B',x:520,y:GROUND_Y-14,role:'DEF',side:-1},
+    {team:'B',x:W-28,y:GROUND_Y-14,role:'GK',side:-1}    // Bramkarz prawy (przed bramką)
+  ];
+  // Player kick pulse states (per index)
+  const kickPulses=players.map(()=>0);
 
   let frame=0;
-  // Ball state — paraboliczne loty między playerami
-  let ballX=P1_X+8, ballY=GROUND_Y-2, ballVX=2.2, ballVY=-3.0;
-  let lastKick=0;  // frame count last kick
-  // Player animation states (stationary, leg cycle)
-  let p1KickPulse=0, p2KickPulse=0;  // visual pulse when kicking
+  let ballX=W/2, ballY=GROUND_Y-3, ballVX=0, ballVY=0;
+  let ballOwner=-1;  // index gracza który ostatnio kopnął, -1 = nikt
+  let scoreA=0, scoreB=0;
+  let goalCelebrating=0;  // frames remaining w goal celebration
+  let goalCelebrateTeam=null;  // 'A' | 'B' — kto zdobył
 
-  function drawPlayer(x,y,jersey,facing,kickPulse){
-    // y = top of head. Total sprite ~14 pixels tall.
-    const f=facing;  // +1 = facing right, -1 = facing left
-    // Head 4×4
+  function drawPlayer(p,kickPulse,isBall){
+    const x=p.x, y=p.y, f=p.side;
+    const jersey = p.team==='A'?COLOR_TEAM_A:p.team==='B'?COLOR_TEAM_B:COLOR_REF;
+    // Sędzia: white-on-black stripes
+    const isRef = p.team==='REF';
+    // Head
     ctx.fillStyle=COLOR_SKIN;
     ctx.fillRect(x+1,y,4,4);
-    // Hair pixel (top of head)
+    // Hair
     ctx.fillStyle=COLOR_DARK;
     ctx.fillRect(x+1,y,4,1);
     // Eye
-    ctx.fillStyle=COLOR_DARK;
     if(f>0) ctx.fillRect(x+3,y+2,1,1);
     else ctx.fillRect(x+2,y+2,1,1);
     // Body — jersey 6×5
     ctx.fillStyle=jersey;
     ctx.fillRect(x,y+4,6,5);
-    // Jersey number stripe (visual interest)
-    ctx.fillStyle=COLOR_DARK;
-    ctx.fillRect(x+2,y+5,2,1);
-    // Arms (out the side)
+    if(isRef){
+      // Ref white stripes
+      ctx.fillStyle=COLOR_WHITE;
+      ctx.fillRect(x,y+5,6,1);
+      ctx.fillRect(x,y+7,6,1);
+    } else {
+      // Jersey number stripe
+      ctx.fillStyle=COLOR_DARK;
+      ctx.fillRect(x+2,y+5,2,1);
+    }
+    // Arms
     ctx.fillStyle=jersey;
     ctx.fillRect(x-1,y+5,1,3);
     ctx.fillRect(x+6,y+5,1,3);
@@ -7356,20 +7384,19 @@ function initHeaderPixelArt(){
     ctx.fillStyle=COLOR_SKIN;
     ctx.fillRect(x-1,y+8,1,1);
     ctx.fillRect(x+6,y+8,1,1);
-    // Shorts 6×2
-    ctx.fillStyle=COLOR_DARK;
+    // Shorts
+    ctx.fillStyle=p.role==='GK'?COLOR_WHITE:COLOR_DARK;
     ctx.fillRect(x,y+9,6,2);
-    // Legs — animated 2-frame run cycle
-    const legFrame=Math.floor(frame/6)%2;
+    // Legs — 2-frame run cycle (slightly faster dla GK i ref)
+    const legFrame=Math.floor((frame+x)/5)%2;  // x offset = different timing per player
     const kickActive=kickPulse>0;
     ctx.fillStyle=COLOR_SKIN;
     if(kickActive){
-      // Kicking pose — one leg forward
       if(f>0){
         ctx.fillRect(x+1,y+11,2,3);
-        ctx.fillRect(x+5,y+10,2,3);  // kicking leg forward
+        ctx.fillRect(x+5,y+10,2,3);
       } else {
-        ctx.fillRect(x-1,y+10,2,3);  // kicking leg forward
+        ctx.fillRect(x-1,y+10,2,3);
         ctx.fillRect(x+3,y+11,2,3);
       }
     } else if(legFrame===0){
@@ -7383,122 +7410,292 @@ function initHeaderPixelArt(){
     ctx.fillStyle=COLOR_DARK;
     ctx.fillRect(x+1,y+13,2,1);
     ctx.fillRect(x+3,y+13,2,1);
+    // Highlight gracza który ma piłkę
+    if(isBall){
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.fillRect(x-2,y-1,9,16);
+    }
+  }
+
+  function drawGoal(x,side){
+    // Goal frame: 4 wide × 14 tall (3 vertical posts + crossbar + net)
+    // side: 1 = lewa bramka (slupek po prawej), -1 = prawa bramka (slupek po lewej)
+    const goalW=14, goalH=20;
+    const top=GROUND_Y-goalH;
+    // Net (siatka — kropki)
+    ctx.fillStyle=COLOR_GOAL_NET;
+    for(let nx=x;nx<x+goalW;nx+=2){
+      for(let ny=top+2;ny<GROUND_Y;ny+=3){
+        ctx.fillRect(nx,ny,1,1);
+      }
+    }
+    // Posts
+    ctx.fillStyle=COLOR_GOAL_FRAME;
+    if(side===1){
+      // Lewa bramka — słupek po prawej (wewnątrz boiska), tył po lewej
+      ctx.fillRect(x,top,1,goalH);          // tył
+      ctx.fillRect(x+goalW-1,top,1,goalH);  // słupek
+      ctx.fillRect(x,top,goalW,1);           // poprzeczka
+    } else {
+      // Prawa bramka — słupek po lewej (wewnątrz boiska), tył po prawej
+      ctx.fillRect(x,top,1,goalH);          // słupek
+      ctx.fillRect(x+goalW-1,top,1,goalH);  // tył
+      ctx.fillRect(x,top,goalW,1);           // poprzeczka
+    }
   }
 
   function drawBall(x,y){
-    // 4×4 pixel ball z classic football pattern
     const ix=Math.round(x), iy=Math.round(y);
-    // Shadow on ground
+    // Shadow
     if(iy<GROUND_Y-2){
-      const shadowDist=GROUND_Y-iy-2;
-      const shadowAlpha=Math.max(0.15,0.5-shadowDist*0.04);
-      ctx.fillStyle='rgba(0,0,0,'+shadowAlpha.toFixed(2)+')';
+      const dist=GROUND_Y-iy-2;
+      const a=Math.max(0.15,0.5-dist*0.025);
+      ctx.fillStyle='rgba(0,0,0,'+a.toFixed(2)+')';
       ctx.fillRect(ix-1,GROUND_Y-1,4,1);
     }
-    // White base
-    ctx.fillStyle=COLOR_BALL;
+    // White base 4x4
+    ctx.fillStyle=COLOR_WHITE;
     ctx.fillRect(ix,iy-1,3,3);
     ctx.fillRect(ix-1,iy,1,2);
     ctx.fillRect(ix+3,iy,1,2);
-    // Black hexagon pattern center
+    // Black hexagon pattern
     ctx.fillStyle=COLOR_DARK;
     ctx.fillRect(ix+1,iy,1,1);
   }
 
   function drawGround(){
-    // Grass with horizontal stripes (alternating shades — pitch lines effect)
-    const stripeSpan=20;
+    // Grass alternating stripes
+    const stripeSpan=32;
     for(let sx=0;sx<W;sx+=stripeSpan){
       ctx.fillStyle=Math.floor(sx/stripeSpan)%2===0?COLOR_GRASS_DARK:COLOR_GRASS_LIGHT;
       ctx.fillRect(sx,GROUND_Y,stripeSpan,H-GROUND_Y);
     }
-    // Grass top blade highlight
+    // Grass blade highlight
     ctx.fillStyle=COLOR_GRASS_LIGHT;
-    for(let x=0;x<W;x+=3){
+    for(let x=0;x<W;x+=4){
       ctx.fillRect(x,GROUND_Y-1,2,1);
     }
-    // Center line on grass
+    // Center circle (na trawie)
+    ctx.strokeStyle='rgba(255,255,255,0.25)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.arc(W/2,GROUND_Y+(H-GROUND_Y)/2,5,0,Math.PI*2);
+    ctx.stroke();
+    // Center line
     ctx.fillStyle='rgba(255,255,255,0.20)';
-    ctx.fillRect(W/2-1,GROUND_Y,2,H-GROUND_Y);
+    ctx.fillRect(W/2-1,GROUND_Y,1,H-GROUND_Y);
   }
 
   function drawSky(){
-    // Subtle starfield (twinkle effect)
-    const starSeed=Math.floor(frame/60);
+    const seed=Math.floor(frame/60);
     ctx.fillStyle='rgba(255,255,255,0.30)';
-    for(let i=0;i<8;i++){
-      const sx=((i*37+starSeed*3)%W);
-      const sy=((i*7+3)%(GROUND_Y-4));
-      if(((i+starSeed)%4)!==0) ctx.fillRect(sx,sy,1,1);
+    // Random twinkle stars
+    for(let i=0;i<25;i++){
+      const sx=((i*47+seed*5)%W);
+      const sy=((i*13+5)%(GROUND_Y-4));
+      if(((i+seed)%4)!==0) ctx.fillRect(sx,sy,1,1);
     }
+  }
+
+  function drawScoreboard(){
+    // Score "A 0:0 B" w środku górnej części canvasu
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='center';
+    ctx.fillStyle=COLOR_TEAM_A;
+    ctx.fillText('A',W/2-18,11);
+    ctx.fillStyle='#FFFFFF';
+    ctx.fillText(scoreA+':'+scoreB,W/2,11);
+    ctx.fillStyle=COLOR_TEAM_B;
+    ctx.fillText('B',W/2+18,11);
+  }
+
+  function drawGoalCelebration(){
+    if(goalCelebrating<=0) return;
+    const team=goalCelebrateTeam;
+    const color=team==='A'?COLOR_TEAM_A:COLOR_TEAM_B;
+    // Flash text "GOL!" w środku
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='center';
+    ctx.fillStyle=color;
+    const opacity=Math.min(1,goalCelebrating/30);
+    ctx.globalAlpha=opacity;
+    ctx.fillText('⚽ GOL! ⚽',W/2,28);
+    ctx.globalAlpha=1;
+  }
+
+  // Pick a target player z opposite team (for passing/shooting)
+  function pickTarget(fromIdx){
+    const from=players[fromIdx];
+    if(!from || from.team==='REF') return null;
+    // Sometimes pass to teammate (60%), sometimes shoot at opposite goalie (40%)
+    const r=Math.random();
+    if(r<0.6){
+      // Same-team teammate (not GK)
+      const teammates=players.map((p,i)=>({p,i})).filter(({p,i})=>p.team===from.team&&i!==fromIdx&&p.role!=='GK');
+      if(teammates.length){
+        return teammates[Math.floor(Math.random()*teammates.length)].i;
+      }
+    }
+    // Shoot at opposite goal
+    const oppTeam=from.team==='A'?'B':'A';
+    const oppGK=players.findIndex(p=>p.team===oppTeam&&p.role==='GK');
+    return oppGK;
+  }
+
+  function kickBallTo(fromIdx,toIdx){
+    if(toIdx<0||toIdx>=players.length) return;
+    const from=players[fromIdx], to=players[toIdx];
+    const dx=to.x-from.x;
+    const dy=(to.y+5)-from.y;  // aim at body height
+    // Time of flight: ~30-50 frames (parabolic)
+    const t=Math.max(20,Math.min(50,Math.abs(dx)/4));
+    ballVX=dx/t;
+    ballVY=dy/t-0.5*0.16*t;  // gravity adjustment
+    kickPulses[fromIdx]=8;
+    ballOwner=toIdx;
   }
 
   function update(){
     frame++;
     // Decay kick pulses
-    if(p1KickPulse>0) p1KickPulse--;
-    if(p2KickPulse>0) p2KickPulse--;
+    for(let i=0;i<kickPulses.length;i++){
+      if(kickPulses[i]>0) kickPulses[i]--;
+    }
+    // Goal celebration decay
+    if(goalCelebrating>0) goalCelebrating--;
+
     // Ball physics
     ballX+=ballVX;
     ballY+=ballVY;
     ballVY+=0.16;  // gravity
-    // Ground collision (bounce or settle)
+
+    // Goal detection — piłka wlatuje w bramkę
+    const inGoalLeft = ballX<22 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
+    const inGoalRight = ballX>W-22 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
+    if(inGoalLeft && goalCelebrating===0){
+      // Team B scores
+      scoreB++;
+      goalCelebrating=60;
+      goalCelebrateTeam='B';
+      // Reset ball to center after 60 frames
+      setTimeout(()=>{
+        ballX=W/2; ballY=GROUND_Y-3;
+        ballVX=0; ballVY=0;
+        // Random kick from team A (re-start)
+        const aPlayers=players.map((p,i)=>({p,i})).filter(({p})=>p.team==='A'&&p.role!=='GK');
+        if(aPlayers.length){
+          const kicker=aPlayers[Math.floor(Math.random()*aPlayers.length)];
+          kickBallTo(kicker.i,pickTarget(kicker.i));
+        }
+      },2000);
+      return;
+    }
+    if(inGoalRight && goalCelebrating===0){
+      scoreA++;
+      goalCelebrating=60;
+      goalCelebrateTeam='A';
+      setTimeout(()=>{
+        ballX=W/2; ballY=GROUND_Y-3;
+        ballVX=0; ballVY=0;
+        const bPlayers=players.map((p,i)=>({p,i})).filter(({p})=>p.team==='B'&&p.role!=='GK');
+        if(bPlayers.length){
+          const kicker=bPlayers[Math.floor(Math.random()*bPlayers.length)];
+          kickBallTo(kicker.i,pickTarget(kicker.i));
+        }
+      },2000);
+      return;
+    }
+
+    // Ground bounce
     if(ballY>=GROUND_Y-2){
       ballY=GROUND_Y-2;
-      ballVY=-Math.abs(ballVY)*0.6;
-      ballVX*=0.92;
-      if(Math.abs(ballVY)<0.5 && Math.abs(ballVX)<0.5){
-        // Re-kick from nearest player
-        if(ballX<W/2){
-          ballVX=2.4; ballVY=-3.2; p1KickPulse=8;
-        } else {
-          ballVX=-2.4; ballVY=-3.2; p2KickPulse=8;
+      ballVY=-Math.abs(ballVY)*0.5;
+      ballVX*=0.85;
+      // Settle → re-pick passing
+      if(Math.abs(ballVY)<0.4 && Math.abs(ballVX)<0.4){
+        // Find nearest player to ball
+        let nearestIdx=-1, nearestDist=999;
+        players.forEach((p,i)=>{
+          const d=Math.abs(p.x-ballX);
+          if(d<nearestDist){ nearestDist=d; nearestIdx=i; }
+        });
+        if(nearestIdx>=0){
+          // Snap ball to that player + immediate kick
+          ballX=players[nearestIdx].x+3;
+          ballY=GROUND_Y-3;
+          kickBallTo(nearestIdx,pickTarget(nearestIdx));
         }
-        lastKick=frame;
       }
     }
-    // Player kick collision
-    if(ballX>=P2_X-2 && ballVX>0){
-      // Reaches Player 2 area — defender kicks back
-      ballX=P2_X-2;
-      ballVX=-(2.0+Math.random()*0.8);
-      ballVY=-(2.5+Math.random()*1.5);
-      p2KickPulse=8;
-      lastKick=frame;
+
+    // Player intercept — gdy piłka jest blisko ball owner
+    if(ballOwner>=0){
+      const owner=players[ballOwner];
+      const dx=Math.abs(ballX-owner.x);
+      const dy=Math.abs(ballY-(owner.y+5));
+      if(dx<5 && dy<8 && (Math.abs(ballVX)>0.5||Math.abs(ballVY)>0.5)){
+        if(owner.role==='GK'){
+          // Goalie save — 85% chance, 15% chance miss (gol!)
+          if(Math.random()<0.85){
+            // SAVE — catch + kick to teammate
+            ballX=owner.x+3;
+            ballY=GROUND_Y-3;
+            const teammates=players.map((p,i)=>({p,i})).filter(({p,i})=>p.team===owner.team&&i!==ballOwner&&p.role!=='REF');
+            if(teammates.length){
+              const kicker=teammates[Math.floor(Math.random()*teammates.length)];
+              kickBallTo(ballOwner,kicker.i);
+            }
+            kickPulses[ballOwner]=8;  // GK kick visual
+          } else {
+            // MISS — piłka dalej leci do bramki (ballOwner reset, no intercept)
+            ballOwner=-1;
+            // Lekkie wsparcie żeby na pewno wleciała
+            if(owner.team==='A'){ ballVX=Math.min(ballVX,-1.0); }
+            else { ballVX=Math.max(ballVX,1.0); }
+          }
+        } else {
+          // Outfield player — always kick
+          ballX=owner.x+3;
+          ballY=GROUND_Y-3;
+          kickBallTo(ballOwner,pickTarget(ballOwner));
+        }
+      }
     }
-    if(ballX<=P1_X+8 && ballVX<0){
-      // Reaches Player 1 area — attacker kicks
-      ballX=P1_X+8;
-      ballVX=(2.0+Math.random()*0.8);
-      ballVY=-(2.5+Math.random()*1.5);
-      p1KickPulse=8;
-      lastKick=frame;
-    }
-    // Safety: cap ball Y so nigdy nie wychodzi poza canvas
+
+    // Out of bounds (top) — keep ball in canvas
     if(ballY<2) ballY=2;
+    // Lewa/prawa krawędź — odbija ALE w bramce (ballY<GROUND_Y) goal trigger above
+    if(ballX<2) ballX=2;
+    if(ballX>W-2) ballX=W-2;
   }
 
   function render(){
-    // Clear z gradient bg (handled by CSS bg, ale clear pomocniczy)
     ctx.clearRect(0,0,W,H);
-    // Sky stars
     drawSky();
-    // Ground
     drawGround();
-    // Players
-    drawPlayer(P1_X-3,GROUND_Y-14,COLOR_P1,1,p1KickPulse);
-    drawPlayer(P2_X-3,GROUND_Y-14,COLOR_P2,-1,p2KickPulse);
+    // Goals
+    drawGoal(8,1);
+    drawGoal(W-22,-1);
+    // Scoreboard
+    drawScoreboard();
+    // Players (sędzia z tyłu, potem outfield, GK na końcu)
+    players.forEach((p,i)=>{
+      const isOwner=ballOwner===i&&Math.abs(ballX-p.x)<6&&Math.abs(ballY-(p.y+5))<8;
+      drawPlayer(p,kickPulses[i],isOwner);
+    });
     // Ball
     drawBall(ballX,ballY);
+    // Goal celebration overlay
+    drawGoalCelebration();
   }
 
+  // Initial kick — start mecz
+  setTimeout(()=>{
+    const kickerIdx=players.findIndex(p=>p.team==='A'&&p.role==='MID');
+    if(kickerIdx>=0) kickBallTo(kickerIdx,pickTarget(kickerIdx));
+  },500);
+
   let animId=null;
-  function loop(){
-    update();
-    render();
-    animId=requestAnimationFrame(loop);
-  }
-  // Start animation; throttle to ~30fps for retro feel + battery save
   let lastFrame=0;
   function throttledLoop(t){
     if(t-lastFrame>=33){  // 30 fps
@@ -7508,7 +7705,6 @@ function initHeaderPixelArt(){
     }
     animId=requestAnimationFrame(throttledLoop);
   }
-  // Pause when tab hidden (battery save)
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
       if(animId){ cancelAnimationFrame(animId); animId=null; }
