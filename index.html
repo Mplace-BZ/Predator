@@ -7,9 +7,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="predator-version" content="9.4.3">
+<meta name="predator-version" content="9.4.4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Match Predator v9.4.3 — Live Football Hunter</title>
+<title>Match Predator v9.4.4 — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -825,7 +825,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.3</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.4</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1944,7 +1944,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.4.3
+    Powered by MPlace · Match Predator v9.4.4
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -7938,14 +7938,23 @@ function initHeaderPixelArt(){
   function drawGoalCelebration(){
     if(goalCelebrating<=0) return;
     const team=goalCelebrateTeam;
-    const color=team==='A'?COLOR_TEAM_A:COLOR_TEAM_B;
-    // Flash text "GOL!" w środku
+    const isWin=team==='A_WIN'||team==='B_WIN';
+    const baseTeam=isWin?team.charAt(0):team;
+    const color=baseTeam==='A'?COLOR_TEAM_A:COLOR_TEAM_B;
     ctx.font='bold 14px monospace';
     ctx.textAlign='center';
     ctx.fillStyle=color;
     const opacity=Math.min(1,goalCelebrating/30);
     ctx.globalAlpha=opacity;
-    ctx.fillText('⚽ GOL! ⚽',W/2,28);
+    if(isWin){
+      const winName=baseTeam==='A'?TEAM_A_NAME:TEAM_B_NAME;
+      ctx.fillText('🏆 '+winName+' WINS 5! 🏆',W/2,22);
+      ctx.font='9px monospace';
+      ctx.fillStyle='#FFFFFF';
+      ctx.fillText('Reset za chwilę...',W/2,38);
+    } else {
+      ctx.fillText('⚽ GOL! ⚽',W/2,28);
+    }
     ctx.globalAlpha=1;
   }
 
@@ -8002,7 +8011,13 @@ function initHeaderPixelArt(){
         // Reset ball to center, kicker z opposite team
         ballX=W/2; ballY=GROUND_Y-3;
         ballVX=0; ballVY=0;
-        const restartTeam=goalCelebrateTeam==='A'?'B':'A';
+        // v9.4.4: po wygranej (first to 5) reset score
+        const wasWin=goalCelebrateTeam==='A_WIN'||goalCelebrateTeam==='B_WIN';
+        if(wasWin){ scoreA=0; scoreB=0; }
+        // Restart team: po normalnym golu = przeciwnik kicked, po WIN = random
+        let restartTeam;
+        if(wasWin) restartTeam=Math.random()<0.5?'A':'B';
+        else restartTeam=goalCelebrateTeam==='A'?'B':'A';
         const kickerPool=players.map((p,i)=>({p,i})).filter(({p})=>p.team===restartTeam&&p.role!=='GK');
         if(kickerPool.length){
           const kicker=kickerPool[Math.floor(Math.random()*kickerPool.length)];
@@ -8013,17 +8028,18 @@ function initHeaderPixelArt(){
     }
 
     // Goal detection — piłka wlatuje w bramkę
-    // v9.3.3: symetryczne zone widths. Wcześniej lewa miała 22px (x<22) a prawa 19px (x>618
-    // po clamp do W-2=638) → scoreB (lewa bramka) rosło szybciej = "prawa strona zawsze wygrywa"
-    // (right text w "LIV X:Y MCI" displayie). Teraz oba bramki = 14px wide (matches drawGoal goalW=14).
+    // v9.4.4: symmetric goal zones [8,22) i (W-22, W-8] — both 14 wide.
+    // Win cap: first to 5 → reset.
     const inGoalLeft = ballX<22 && ballX>=8 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
     const inGoalRight = ballX>W-22 && ballX<=W-8 && ballY>GROUND_Y-18 && ballY<GROUND_Y;
     if(inGoalLeft && goalCelebrating===0 && goalRestartTimer===0){
       scoreB++;
       goalCelebrating=60;
       goalCelebrateTeam='B';
-      goalRestartTimer=90;  // 90 frames = ~3s @ 30fps
-      ballVX=0; ballVY=0;  // freeze ball during celebration
+      goalRestartTimer=90;
+      ballVX=0; ballVY=0;
+      // v9.4.4: first to 5 = winner, reset score after extra celebration
+      if(scoreB>=5){ goalCelebrating=120; goalRestartTimer=180; goalCelebrateTeam='B_WIN'; }
       return;
     }
     if(inGoalRight && goalCelebrating===0 && goalRestartTimer===0){
@@ -8032,6 +8048,7 @@ function initHeaderPixelArt(){
       goalCelebrateTeam='A';
       goalRestartTimer=90;
       ballVX=0; ballVY=0;
+      if(scoreA>=5){ goalCelebrating=120; goalRestartTimer=180; goalCelebrateTeam='A_WIN'; }
       return;
     }
 
@@ -8042,14 +8059,15 @@ function initHeaderPixelArt(){
       ballVX*=0.85;
       // Settle → re-pick passing
       if(Math.abs(ballVY)<0.4 && Math.abs(ballVX)<0.4){
-        // Find nearest player to ball
+        // v9.4.4: skip REF (sędzia nie kopie piłki — wcześniej REF najbliżej środka
+        // pickował ball, pickTarget zwracał null, kickBallTo dawał NaN velocity, ball stuck).
         let nearestIdx=-1, nearestDist=999;
         players.forEach((p,i)=>{
+          if(p.team==='REF') return;
           const d=Math.abs(p.x-ballX);
           if(d<nearestDist){ nearestDist=d; nearestIdx=i; }
         });
         if(nearestIdx>=0){
-          // Snap ball to that player + immediate kick
           ballX=players[nearestIdx].x+3;
           ballY=GROUND_Y-3;
           kickBallTo(nearestIdx,pickTarget(nearestIdx));
@@ -8060,7 +8078,12 @@ function initHeaderPixelArt(){
     // Player intercept — gdy piłka jest blisko ball owner
     if(ballOwner>=0){
       const owner=players[ballOwner];
-      const dx=Math.abs(ballX-owner.x);
+      // v9.4.4: GK save zone uses GOAL LINE (not sprite x), żeby symetrycznie
+      // overlapować z goal zone. A GK line=22 (right post left goal).
+      // B GK line=W-22=618 (left post right goal). Sprite is rendered at owner.x
+      // ale save logic uses defensive line.
+      const refX=owner.role==='GK'?(owner.team==='A'?22:W-22):owner.x;
+      const dx=Math.abs(ballX-refX);
       const dy=Math.abs(ballY-(owner.y+5));
       if(dx<5 && dy<8 && (Math.abs(ballVX)>0.5||Math.abs(ballVY)>0.5)){
         if(owner.role==='GK'){
