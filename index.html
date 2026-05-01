@@ -820,7 +820,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3.2</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1919,7 +1919,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.3.1
+    Powered by MPlace · Match Predator v9.3.2
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6882,10 +6882,10 @@ function renderDashboardMatches(){
   const whitelist=loadWhitelistPrefs();
   const lateGoalMode=whitelist.enabled && whitelist.mode==='lategoal';
 
-  // v9.2.1: mode-aware bypass dla "Wszystkie live" tab
-  // - Whitelist mode: bypass (user chce widzieć wszystkie live nawet poza strategy)
-  // - Late Goal mode: NO bypass (user chce TYLKO PI candidates, nie szum z Under 2.5 picks)
-  const liveAllBypassesWhitelist = !lateGoalMode;
+  // v9.3.2: "Wszystkie live" ZAWSZE bypass — niezależnie od mode. User wprost zażądał
+  // (revert v9.2.1 design): "chcę widzieć wszystkie ważne mecze, sam zdecyduję kiedy obstawiać".
+  // PI badge na karcie zostaje jako info — Late Goal Hunter rekomendacje pokazują się w 🔴 LIVE tab.
+  const liveAllBypassesWhitelist = true;
 
   // v9.2.2: w lategoal mode compute PI dla WSZYSTKICH live żeby pokazać sub-threshold
   // candidates jako "blisko anomalii" (helpful UX zamiast pustego dashboardu)
@@ -6947,6 +6947,16 @@ function renderDashboardMatches(){
   });
   // Expose whitelist stats dla dashboard header info
   window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount};
+
+  // v9.3.2: w lategoal mode pokaż PI badge na każdej karcie live (informational), nie tylko
+  // przy passing threshold. User chce widzieć PI każdego live meczu i sam decydować.
+  if(lateGoalMode){
+    liveAllCards.forEach(({card})=>{
+      if(!card._lateGoal && card._subThresholdPI==null && card._computedPI!=null){
+        card._subThresholdPI=card._computedPI;
+      }
+    });
+  }
 
   // v9.2.2: Late Goal sub-threshold fallback — gdy 0 passing PI≥80 candidates,
   // pokaż top 5 najbliższych anomalii (PI<80 ale sortowane desc po PI). User widzi
@@ -7054,8 +7064,10 @@ function renderDashboardMatches(){
       return;
     }
     // v9.2.2: Late Goal Hunter mode — informacyjny empty state z PI status
+    // v9.3.2: tylko dla 🔴 LIVE tab (action picks). Wszystkie live tab teraz bypass —
+    // pusty znaczy "0 live w cache", nie "0 spełnia kryteria".
     const lateGoalCtx=window._wlStats||{};
-    if(lateGoalMode && (effectiveTab==='live'||effectiveTab==='liveAll')){
+    if(lateGoalMode && effectiveTab==='live'){
       const totalLive=cards.filter(c=>isLiveMatch(c.match)).length;
       const threshold=whitelist.lateGoal?.threshold||80;
       list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">🔥</div>'
