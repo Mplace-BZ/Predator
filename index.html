@@ -817,7 +817,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.5</span>
     </div>
     <div class="spacer"></div>
     <!-- v9.1.4: Pixel art football animation — 8-bit/Minecraft style, oldschool gamification -->
@@ -1915,7 +1915,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1.4
+    Powered by MPlace · Match Predictor v9.1.5
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6637,6 +6637,11 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
       +'<span style="color:var(--text-faint);font-size:11px;">· P(gol 60-90\') ≈ '+(lg.estimatedRate*100).toFixed(0)+'%</span>'
       +'<span style="color:var(--accent);font-family:var(--mono);">'+lgStake+'zł → +'+estPayout+'zł</span>'
       +'</span>';
+  } else if(card._newlyDiscovered){
+    // v9.1.5: nowo wykryty live (z auto-refresh discovery, no team stats yet)
+    pickHtml='<span style="color:var(--accent);font-weight:600;">🆕 Wykryty live · </span>'
+      +'<span style="color:var(--text);">'+card.bestMarket.label+'</span>'
+      +' <span style="color:var(--text-faint);font-size:11px;">· kliknij <b>Analizuj</b> dla pełnego edge calc</span>';
   } else if(card.isLiveOnly){
     pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
       +' <span style="color:var(--text-faint);">· wszystkie standardowe linie hit, użyj live edge calc</span>';
@@ -6655,6 +6660,7 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
     const cls=lg.pi>=90?'edge-strong':'edge-value';
     edgeBadge='<span class="badge-edge '+cls+'" style="font-family:var(--mono);">🔥 PI '+lg.pi+'</span>';
   }
+  else if(card._newlyDiscovered) edgeBadge='<span class="badge-edge edge-value" style="font-family:var(--mono);">🆕 LIVE</span>';
   else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
   else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
@@ -6772,6 +6778,36 @@ async function dashboardAnalyze(matchIdOrIdx){
   if(typeof matchIdOrIdx==='number') card=cache[matchIdOrIdx];
   else card=getCardByMatchId(matchIdOrIdx);
   if(!card){ qdToast('Karta wygasła — odśwież dashboard','red',2500); return; }
+
+  // v9.1.5: dla newly-discovered cards (bez team stats) — fetch on-demand
+  if(card._newlyDiscovered || !card.homeT?.stats?.xg_for_avg_overall){
+    qdToast('⏳ Pobieram stats dla '+card.match.home_name+' vs '+card.match.away_name,'green',1500);
+    try{
+      const m=card.match;
+      const [homeStats,awayStats,oddsObj]=await Promise.all([
+        afLoadTeamStats(m.homeID,m._af_leagueId,m._af_season).catch(()=>null),
+        afLoadTeamStats(m.awayID,m._af_leagueId,m._af_season).catch(()=>null),
+        afLoadOdds(m.id).catch(()=>null)
+      ]);
+      if(oddsObj) Object.assign(m,oddsObj);
+      card.homeT=homeStats?afTeamStatsToFlat(homeStats):{stats:{}};
+      card.awayT=awayStats?afTeamStatsToFlat(awayStats):{stats:{}};
+      const newCard=footyComputeMatchCard(m,card.homeT,card.awayT);
+      if(newCard){
+        card.bestEdge=newCard.bestEdge;
+        card.bestMarket=newCard.bestMarket;
+        card.allMarkets=newCard.allMarkets;
+        card.totalLam=newCard.totalLam;
+        card.isLiveOnly=newCard.isLiveOnly;
+      }
+      card._newlyDiscovered=false;  // upgraded to full card
+      renderDashboardMatches();  // refresh dashboard z fresh edge
+    }catch(e){
+      qdToast('Błąd pobierania stats: '+e.message,'red',3000);
+      return;
+    }
+  }
+
   // Clear ALL match state from previous match — prevents cross-contamination
   clearAllOddsFields();
   clearMatchState();
@@ -6830,12 +6866,12 @@ function renderDashboardMatches(){
   const lateGoalMode=whitelist.enabled && whitelist.mode==='lategoal';
 
   // Filter into 4 buckets:
-  // - liveCards / upcomingCards: edge ≥5% only (high-signal)
-  // - liveAllCards: wszystkie live z cache, bez progu edge (raw view)
+  // - liveCards / upcomingCards: edge ≥5%, whitelist-filtered (high-signal action picks)
+  // - liveAllCards: WSZYSTKIE live z cache niezależnie od whitelist (informational view)
+  //   v9.1.5: bypass whitelist tu — user chce zobaczyć ALL live nawet poza strategy
   // - placedCards: zawsze widoczne (user tracking)
-  // Stale data zawsze pomijane (no actionable info)
   const liveCards=[], liveAllCards=[], upcomingCards=[], placedCards=[];
-  let totalChecked=0, whitelistFiltered=0;
+  let totalChecked=0, whitelistFiltered=0, allLiveCount=0;
   cards.forEach((c,idx)=>{
     const id=String(c.match.id);
     if(prefs.hidden.includes(id)) return;
@@ -6843,8 +6879,16 @@ function renderDashboardMatches(){
     // Placed always visible regardless of whitelist
     if(isPlaced){ placedCards.push({card:c,idx,placed:placed[id]}); return; }
     if(c.staleData) return;
+    const live=isLiveMatch(c.match);
+
+    // v9.1.5: liveAllCards FIRST — wszystkie live, bez whitelist filter (raw view)
+    if(live){
+      liveAllCards.push({card:c,idx,placed:placed[id]});
+      allLiveCount++;
+    }
+
     totalChecked++;
-    // v9.0/v9.1: whitelist filter (mode-aware: whitelist OR lategoal)
+    // v9.0/v9.1: whitelist filter (mode-aware: whitelist OR lategoal) — applied dla LIVE i UPCOMING tabs
     // Pass cached liveStats jeśli mamy (z window._lateGoalStatsCache, lazy-loaded by live poller)
     const liveStats=window._lateGoalStatsCache?.[String(c.match.id)]||null;
     const wlMatch=isCardInWhitelist(c,whitelist,liveStats);
@@ -6859,15 +6903,13 @@ function renderDashboardMatches(){
         leagueBias:wlMatch.leagueBias
       }:null;
     } else { c._tier=null; c._lateGoal=null; }
-    const live=isLiveMatch(c.match);
-    if(live) liveAllCards.push({card:c,idx,placed:placed[id]});
     // v9.1: w late goal mode pomijamy edge filter (PI is the gate, edge irrelevant)
     if(!lateGoalMode && c.bestEdge<EDGE_VALUE) return;
     if(live) liveCards.push({card:c,idx,placed:placed[id]});
     else if(c.match.status!=='complete' && !lateGoalMode) upcomingCards.push({card:c,idx,placed:placed[id]});
   });
   // Expose whitelist stats dla dashboard header info
-  window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered};
+  window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount};
 
   // Update counts
   document.getElementById('dashCountLive').textContent=liveCards.length;
@@ -7103,23 +7145,15 @@ else window.addEventListener('load',()=>setTimeout(startLateGoalPolling,3000));
 // Aktualizuje TYLKO live + placed cards. Zachowuje team stats + odds (nie re-fetchuje).
 async function dashboardLightRefresh(){
   if(Date.now()<window._afBackoffUntil) return;
-  const cache=window._scanCardsCache||[];
-  if(!cache.length) return;
+  const cache=window._scanCardsCache||window._scanCardsCache||(window._scanCardsCache=[]);
   const placed=loadPlacedMatches();
-  const toRefresh=cache.filter(c=>{
-    if(isLiveMatch(c.match)) return true;
-    if(placed[String(c.match.id)]) return true;
-    return false;
-  });
-  if(!toRefresh.length){
-    const status=document.getElementById('dashboardStatus');
-    if(status) status.textContent='Brak meczów live · ostatni skan: '+new Date().toLocaleTimeString('pl');
-    return;
-  }
   try{
-    // 1 call dla wszystkich live (jeden mecz może być live ale nie z naszej cache — ignorujemy)
+    // 1 call /fixtures?live=all — wszystkie aktualnie live mecze
     const liveAll=await afScanLive();
     const liveMap=new Map(liveAll.map(m=>[String(m.id),m]));
+    const cacheIds=new Set(cache.map(c=>String(c.match.id)));
+
+    // 1) Update existing cards które są w cache i nadal live
     let updated=0;
     cache.forEach(c=>{
       const fresh=liveMap.get(String(c.match.id));
@@ -7135,24 +7169,63 @@ async function dashboardLightRefresh(){
         odds_ft_over35:c.match.odds_ft_over35,odds_ft_under35:c.match.odds_ft_under35
       };
       Object.assign(c.match,fresh,preserved);
-      const newCard=footyComputeMatchCard(c.match,c.homeT,c.awayT);
-      if(newCard){
-        c.bestEdge=newCard.bestEdge;
-        c.bestMarket=newCard.bestMarket;
-        c.allMarkets=newCard.allMarkets;
-        c.staleData=false;
-        c.staleReason='';
-        c.isLiveOnly=newCard.isLiveOnly;
+      // Recompute card jeśli mamy team stats (z poprzedniego pełnego skanu)
+      const hasStats=(c.homeT?.stats?.xg_for_avg_home||c.homeT?.stats?.xg_for_avg_overall)
+        && (c.awayT?.stats?.xg_for_avg_away||c.awayT?.stats?.xg_for_avg_overall);
+      if(hasStats){
+        const newCard=footyComputeMatchCard(c.match,c.homeT,c.awayT);
+        if(newCard){
+          c.bestEdge=newCard.bestEdge;
+          c.bestMarket=newCard.bestMarket;
+          c.allMarkets=newCard.allMarkets;
+          c.isLiveOnly=newCard.isLiveOnly;
+        }
       }
+      c.staleData=false;
+      c.staleReason='';
       updated++;
     });
-    if(updated>0){
+
+    // 2) v9.1.5: DISCOVERY MODE — dodaj NOWE live matches do cache jako "lightweight" cards
+    // (bez team stats, bez edge — user kliknie Analizuj on-demand żeby fetch full data)
+    const newLive=liveAll.filter(m=>!cacheIds.has(String(m.id)));
+    let discovered=0;
+    if(newLive.length){
+      // Limit żeby cache nie rósł nieskończenie — keep top 50 live matches
+      const cacheLiveCount=cache.filter(c=>isLiveMatch(c.match)).length;
+      const toAdd=newLive.slice(0,Math.max(0,50-cacheLiveCount));
+      toAdd.forEach(m=>{
+        cache.push({
+          match:m,
+          homeT:{stats:{}},  // empty — placeholder, no edge calc bez stats
+          awayT:{stats:{}},
+          bestEdge:0,
+          bestMarket:{label:'⚽ LIVE — kliknij Analizuj dla edge calc',odd:0,modelP:0,group:'live-info'},
+          allMarkets:[],
+          totalLam:0,
+          staleData:false,
+          staleReason:'',
+          isLiveOnly:true,
+          _newlyDiscovered:true,
+          _discoveredAt:Date.now()
+        });
+        discovered++;
+      });
+    }
+
+    if(updated>0||discovered>0){
       const prevCacheCopy=cache.map(c=>({...c}));
       renderDashboardMatches();
       dashboardCheckNewPicks(prevCacheCopy,cache);
     }
     const status=document.getElementById('dashboardStatus');
-    if(status) status.textContent='Live update ('+updated+' z '+toRefresh.length+' śledzonych) · '+new Date().toLocaleTimeString('pl');
+    if(status){
+      const parts=[];
+      if(updated>0) parts.push(updated+' updated');
+      if(discovered>0) parts.push(discovered+' new live');
+      const msg=parts.length?parts.join(' · ')+' · '+new Date().toLocaleTimeString('pl'):'No live matches · '+new Date().toLocaleTimeString('pl');
+      status.textContent=msg;
+    }
   }catch(e){
     if(/cooldown/i.test(e.message)){
       const status=document.getElementById('dashboardStatus');
