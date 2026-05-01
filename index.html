@@ -820,11 +820,14 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.2.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3</span>
     </div>
-    <!-- v9.2: Full-width pixel art football match — 3v3 + ref + goalies + 2 goals + ball -->
-    <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — pixel art football"
+    <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
+    <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
       style="image-rendering:pixelated;image-rendering:crisp-edges;height:56px;flex:1;min-width:240px;max-width:720px;border-radius:8px;border:1px solid var(--border);background:linear-gradient(180deg,#0a1428 0%,#0e1a30 55%,#1a3a1a 55%,#0d2210 100%);"></canvas>
+    <!-- v9.3: Animation controls — pause/play toggle -->
+    <button id="headerAnimToggle" onclick="toggleHeaderAnim()" title="Pause / Play animacji"
+      style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;font-size:12px;flex-shrink:0;padding:0;">⏸</button>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
       <div id="tlDot" style="width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0;"></div>
       <div id="tlLabel" style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:var(--text-dim);text-transform:uppercase;">Czekam</div>
@@ -1916,7 +1919,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.2.2
+    Powered by MPlace · Match Predator v9.3
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -7396,8 +7399,10 @@ function initHeaderPixelArt(){
 
   const W=640, H=56;
   const GROUND_Y=44;
-  const COLOR_TEAM_A='#FF5A1F';   // Predator orange (lewa drużyna)
-  const COLOR_TEAM_B='#4A9EFF';   // Niebieska defenwa (prawa drużyna)
+  // v9.3: Liverpool (LIV, red) vs Manchester City (MCI, sky blue)
+  const COLOR_TEAM_A='#C8102E';   // Liverpool red (Anfield)
+  const COLOR_TEAM_B='#6CABDD';   // Manchester City sky blue (Etihad)
+  const TEAM_A_NAME='LIV', TEAM_B_NAME='MCI';
   const COLOR_REF='#1A1A1A';      // Sędzia czarny
   const COLOR_SKIN='#F5C896', COLOR_DARK='#1A1A1A', COLOR_WHITE='#F5F5F5';
   const COLOR_GRASS_DARK='#0d2210', COLOR_GRASS_LIGHT='#1a4520';
@@ -7582,15 +7587,15 @@ function initHeaderPixelArt(){
   }
 
   function drawScoreboard(){
-    // Score "A 0:0 B" w środku górnej części canvasu
+    // Score "LIV 0:0 MCI" w środku górnej części canvasu
     ctx.font='bold 9px monospace';
     ctx.textAlign='center';
     ctx.fillStyle=COLOR_TEAM_A;
-    ctx.fillText('A',W/2-18,11);
+    ctx.fillText(TEAM_A_NAME,W/2-22,11);
     ctx.fillStyle='#FFFFFF';
     ctx.fillText(scoreA+':'+scoreB,W/2,11);
     ctx.fillStyle=COLOR_TEAM_B;
-    ctx.fillText('B',W/2+18,11);
+    ctx.fillText(TEAM_B_NAME,W/2+22,11);
   }
 
   function drawGoalCelebration(){
@@ -7781,10 +7786,23 @@ function initHeaderPixelArt(){
   function throttledLoop(t){
     if(t-lastFrame>=33){  // 30 fps
       lastFrame=t;
-      update();
-      render();
+      // v9.3: pause/play state
+      if(!window._headerAnimPaused){
+        update();
+      }
+      render();  // zawsze render (żeby pause overlay się rysował)
+      if(window._headerAnimPaused) renderPauseOverlay();
     }
     animId=requestAnimationFrame(throttledLoop);
+  }
+  // Render "PAUSED" overlay
+  function renderPauseOverlay(){
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(0,0,W,H);
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillStyle='#FFFFFF';
+    ctx.fillText('⏸ PAUZA',W/2,H/2+4);
   }
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
@@ -7794,6 +7812,19 @@ function initHeaderPixelArt(){
     }
   });
   animId=requestAnimationFrame(throttledLoop);
+  // Expose state dla toggle button
+  window._headerAnimRunning=true;
+}
+
+// v9.3: Pause/Play toggle dla header animation
+function toggleHeaderAnim(){
+  window._headerAnimPaused=!window._headerAnimPaused;
+  const btn=document.getElementById('headerAnimToggle');
+  if(btn){
+    btn.textContent=window._headerAnimPaused?'▶':'⏸';
+    btn.title=window._headerAnimPaused?'Play animacji':'Pause animacji';
+    btn.style.color=window._headerAnimPaused?'var(--accent)':'var(--text-dim)';
+  }
 }
 if(document.readyState==='complete') setTimeout(initHeaderPixelArt,200);
 else window.addEventListener('load',()=>setTimeout(initHeaderPixelArt,200));
