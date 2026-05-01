@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.1</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1907,7 +1907,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1
+    Powered by MPlace · Match Predictor v9.1.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6385,7 +6385,21 @@ function isCardLateGoalCandidate(card,prefs,liveStats){
   const lg=prefs.lateGoal||{};
   // Window check
   if(minute<(lg.windowMinFrom||50) || minute>(lg.windowMinTo||75)) return false;
-  // League bias check (skip ligi z too-low baseline)
+
+  // v9.1: User's preferred leagues check (jeśli lista zdefiniowana i non-empty)
+  // — mecz musi być w preferred list. Jeśli user usunął wszystkie ligi → blokuje wszystko.
+  // Match po _af_leagueId LUB po name (case-insensitive).
+  const preferredLeagues=lg.preferredLeagues||WHITELIST_DEFAULTS_LATEGOAL_LEAGUES;
+  if(preferredLeagues && preferredLeagues.length){
+    const inPreferred=preferredLeagues.some(pl=>{
+      if(pl._af_leagueId && m._af_leagueId && pl._af_leagueId===m._af_leagueId) return true;
+      if(pl.name && m._leagueName && pl.name.toLowerCase()===m._leagueName.toLowerCase()) return true;
+      return false;
+    });
+    if(!inPreferred) return false;
+  }
+
+  // League bias check (skip ligi z too-low baseline) — secondary filter
   const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||LATE_GOAL_LEAGUE_BIAS._default;
   if(leagueBias<(lg.minLeagueBias||0.60)) return false;
   // Compute Pressure Index
@@ -7804,15 +7818,46 @@ function wlPopulateUI(){
 function changeStrategyMode(){
   const w=loadWhitelistPrefs();
   w.mode=$('setStrategyMode').value;
+  // Initialize preferredLeagues z defaults jeśli puste (first time switching to lategoal)
+  if(w.mode==='lategoal' && (!w.lateGoal?.preferredLeagues || !w.lateGoal.preferredLeagues.length)){
+    if(!w.lateGoal) w.lateGoal={};
+    w.lateGoal.preferredLeagues=WHITELIST_DEFAULTS_LATEGOAL_LEAGUES.slice();
+  }
   saveWhitelistPrefs(w);
   // Toggle late-goal section visibility
   const lgSection=$('setLateGoalSection');
   if(lgSection) lgSection.style.display=(w.mode==='lategoal')?'block':'none';
+  // v9.1: re-render listy bo zawartość się zmienia per mode
+  wlRenderLeaguesList(w);
+  wlRenderTeamsList(w);
   wlUpdatePreview();
   if(typeof renderDashboardMatches==='function') renderDashboardMatches();
 }
 function wlRenderLeaguesList(w){
   const div=$('wlLeaguesList');
+  // v9.1: mode-aware list rendering
+  if(w.mode==='lategoal'){
+    // Late Goal mode — pokazuj preferred ligi z research z ROI badges
+    const lgLeagues=w.lateGoal?.preferredLeagues||WHITELIST_DEFAULTS_LATEGOAL_LEAGUES;
+    if(!lgLeagues.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
+    const sortedLg=lgLeagues.slice().sort((a,b)=>(b.backtestROI||0)-(a.backtestROI||0));
+    div.innerHTML='<div style="font-size:11px;color:var(--negative);margin-bottom:8px;font-weight:600;">🔥 Late Goal preferred ligi (research-backed ROI 22-24/25):</div>'
+      +sortedLg.map((l,i)=>{
+        const roiColor=l.backtestROI>=10?'var(--positive)':l.backtestROI>=5?'var(--accent)':'var(--warning)';
+        const priorityBadge=l.priority===1?'T1':l.priority===2?'T2':'T3';
+        const priorityColor=l.priority===1?'var(--positive)':l.priority===2?'var(--accent)':'var(--text-dim)';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);">'
+          +'<span style="color:'+priorityColor+';font-weight:600;">'+priorityBadge+'</span>'
+          +'<span style="color:var(--text);flex:1;">'+l.name+'</span>'
+          +'<span style="color:var(--text-faint);font-size:11px;">baseline '+(l.baseline*100).toFixed(0)+'%</span>'
+          +'<span style="color:'+roiColor+';font-weight:600;">+'+l.backtestROI.toFixed(1)+'% ROI</span>'
+          +'<button onclick="wlRemoveLateGoalLeague('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+        +'</div>';
+      }).join('')
+      +'<div style="font-size:11px;color:var(--text-dim);margin-top:8px;font-style:italic;">Late goal markets to: Over 0.5 (drugopołówka), BTTS Yes, Next Goal — wszystkie wybierane automatycznie wg PI.</div>';
+    return;
+  }
+  // Default: Whitelist v9.0 mode — liga × market list
   if(!w.leagues||!w.leagues.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
   div.innerHTML=w.leagues.map((l,i)=>{
     const tierColor=l.tier===1?'var(--positive)':(l.tier===2?'var(--accent)':'var(--text-dim)');
@@ -7824,8 +7869,25 @@ function wlRenderLeaguesList(w){
     +'</div>';
   }).join('');
 }
+function wlRemoveLateGoalLeague(idx){
+  const w=loadWhitelistPrefs();
+  if(!w.lateGoal) w.lateGoal={};
+  if(!w.lateGoal.preferredLeagues) w.lateGoal.preferredLeagues=WHITELIST_DEFAULTS_LATEGOAL_LEAGUES.slice();
+  w.lateGoal.preferredLeagues.splice(idx,1);
+  saveWhitelistPrefs(w);
+  wlRenderLeaguesList(w);
+  wlUpdatePreview();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
 function wlRenderTeamsList(w){
   const div=$('wlTeamsList');
+  // v9.1: w late goal mode — drużyny nie mają znaczenia (PI based on live state)
+  if(w.mode==='lategoal'){
+    div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:12px;text-align:center;">'
+      +'🔥 W Late Goal Hunter mode drużyny nie są filtrem — Pressure Index liczy się z LIVE state (xG, posiadanie, score) niezależnie od drużyn.<br><br>'
+      +'<span style="font-size:11px;">Filtr per liga jest w zakładce <b>Ligi</b>.</span></div>';
+    return;
+  }
   if(!w.teams||!w.teams.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
   div.innerHTML=w.teams.map((t,i)=>{
     const tierColor=t.tier===1?'var(--positive)':(t.tier===2?'var(--accent)':'var(--text-dim)');
@@ -7988,9 +8050,17 @@ function wlUpdatePreview(){
     return r&&typeof r==='object';
   }).length;
   const span=$('wlPreview');
-  if(span) span.textContent=w.enabled
-    ? '✓ ON · '+matching+' / '+cache.length+' meczów pasuje · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban'
-    : '○ OFF · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban (dodaj/usuń przez tabs)';
+  if(!span) return;
+  if(w.mode==='lategoal'){
+    const lgList=w.lateGoal?.preferredLeagues||WHITELIST_DEFAULTS_LATEGOAL_LEAGUES;
+    span.textContent=w.enabled
+      ? '✓ Late Goal Hunter ON · '+matching+' / '+cache.length+' live anomalii · '+lgList.length+' preferred lig · PI threshold '+(w.lateGoal?.threshold||80)
+      : '○ OFF · Late Goal Hunter (włącz checkbox na górze)';
+  } else {
+    span.textContent=w.enabled
+      ? '✓ Whitelist ON · '+matching+' / '+cache.length+' meczów pasuje · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban'
+      : '○ OFF · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban (włącz checkbox na górze)';
+  }
 }
 function getBookmakerUrl(){ return localStorage.getItem('predator_bookmaker_url')||''; }
 function openBookmaker(pickJson){
