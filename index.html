@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v8.9.1</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.0</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1654,6 +1654,9 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <!-- Calibration table -->
       <div id="bktCalibration" style="display:none;margin-bottom:18px;"></div>
 
+      <!-- v9.0: Per-team breakdown — top zyskowne i top stratne drużyny -->
+      <div id="bktTeamTable" style="display:none;margin-bottom:18px;"></div>
+
       <!-- Sample picks (top 10 by P&L, both wins and losses) -->
       <div id="bktTopPicks" style="display:none;"></div>
     </div>
@@ -1682,6 +1685,113 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <label>Kelly multiplier</label>
       <input type="number" id="setKellyMult" min="0.10" max="1.00" step="0.05" value="0.25">
       <div class="hint">Stała mnożenia Kelly. Default 0.25 = ćwiartka Kelly (konserwatywne). 1.0 = pełny Kelly (agresywne).</div>
+    </div>
+
+    <!-- v9.0: Whitelist Mode — backtest-validated picks only -->
+    <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
+      <label style="margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="setWhitelistEnabled" onchange="toggleWhitelistMode()" style="accent-color:var(--accent);width:18px;height:18px;">
+        <span style="font-weight:600;">🎯 Whitelist Mode — pokazuj tylko backtest-validated picks</span>
+      </label>
+      <div class="hint" style="margin-bottom:10px;">Filtruje dashboard do (liga × market) + (drużyna × market) z multi-season backtest. Banlist auto-skip.</div>
+
+      <!-- Stake per Tier -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);">Tier 1 stake (zł)</label>
+          <input type="number" id="setStakeTier1" min="10" max="500" step="5" value="50" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);">Tier 2 stake (zł)</label>
+          <input type="number" id="setStakeTier2" min="10" max="500" step="5" value="30" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);">Tier 3 stake (zł)</label>
+          <input type="number" id="setStakeTier3" min="10" max="500" step="5" value="20" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+        </div>
+      </div>
+
+      <!-- Tabs: Ligi / Drużyny / Banlist -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="btn btn-sm" id="wlTabLeagues" onclick="wlSwitchTab('leagues')" style="background:var(--accent-tint);color:var(--accent);border:1px solid var(--accent-bd);">Ligi</button>
+        <button class="btn btn-sm" id="wlTabTeams" onclick="wlSwitchTab('teams')">Drużyny</button>
+        <button class="btn btn-sm" id="wlTabBanlist" onclick="wlSwitchTab('banlist')">Banlist</button>
+      </div>
+
+      <!-- Ligi tab -->
+      <div id="wlPaneLeagues" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;">
+        <div id="wlLeaguesList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Dodaj nową ligę:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 60px 80px;gap:6px;">
+            <input type="text" id="wlNewLeagueName" placeholder="np. Brazil Serie A" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+            <select id="wlNewLeagueMarket" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+              <option value="Over 2.5">Over 2.5</option>
+              <option value="Under 2.5">Under 2.5</option>
+              <option value="BTTS">BTTS</option>
+              <option value="Home Win">Home Win</option>
+              <option value="Away Win">Away Win</option>
+            </select>
+            <select id="wlNewLeagueTier" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+              <option value="1">T1</option>
+              <option value="2" selected>T2</option>
+              <option value="3">T3</option>
+            </select>
+            <button class="btn btn-sm" onclick="wlAddLeague()" style="background:var(--accent);color:var(--bg);">+ Dodaj</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drużyny tab -->
+      <div id="wlPaneTeams" style="display:none;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;">
+        <div id="wlTeamsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Dodaj drużynę (np. Liverpool · Over 2.5):</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 60px 80px;gap:6px;">
+            <input type="text" id="wlNewTeamName" placeholder="np. Liverpool FC" list="wlTeamSuggestions" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+            <datalist id="wlTeamSuggestions"></datalist>
+            <select id="wlNewTeamMarket" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+              <option value="Over 2.5">Over 2.5</option>
+              <option value="Under 2.5">Under 2.5</option>
+              <option value="BTTS">BTTS</option>
+              <option value="Home Win">Home Win</option>
+              <option value="Away Win">Away Win</option>
+            </select>
+            <select id="wlNewTeamTier" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+              <option value="1">T1</option>
+              <option value="2" selected>T2</option>
+              <option value="3">T3</option>
+            </select>
+            <button class="btn btn-sm" onclick="wlAddTeam()" style="background:var(--accent);color:var(--bg);">+ Dodaj</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banlist tab -->
+      <div id="wlPaneBanlist" style="display:none;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;">
+        <div class="hint" style="margin-bottom:8px;color:var(--negative);">🚫 Te kombinacje (drużyna × market) są BLOKOWANE niezależnie od whitelist match.</div>
+        <div id="wlBanlistList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Dodaj do banlist:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;">
+            <input type="text" id="wlNewBanName" placeholder="np. Tottenham Hotspur" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+            <select id="wlNewBanMarket" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+              <option value="Over 2.5">Over 2.5</option>
+              <option value="Under 2.5">Under 2.5</option>
+              <option value="BTTS">BTTS</option>
+              <option value="Home Win">Home Win</option>
+              <option value="Away Win">Away Win</option>
+            </select>
+            <button class="btn btn-sm" onclick="wlAddBan()" style="background:var(--negative);color:var(--bg);">🚫 Ban</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer: reset + preview -->
+      <div style="display:flex;gap:10px;align-items:center;margin-top:12px;">
+        <button class="btn btn-sm" onclick="wlResetDefaults()" style="background:var(--surface-2);color:var(--text-dim);">↺ Reset do defaults</button>
+        <span id="wlPreview" style="font-size:11px;color:var(--text-dim);font-family:var(--mono);"></span>
+      </div>
     </div>
 
     <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
@@ -1755,7 +1865,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v8.9.1
+    Powered by MPlace · Match Predictor v9.0
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6077,6 +6187,92 @@ function loadNotifSeen(){
 }
 function saveNotifSeen(s){ localStorage.setItem(DASH_NOTIF_KEY,JSON.stringify(s)); }
 
+// ──────────────────────────────────────────────────────────────────────
+// v9.0: Whitelist Mode — pre-loaded z multi-season backtest validation
+// (8 lig × 3 sezony) + per-team backtest (PL/BL/L1 × 3 sezony).
+// ──────────────────────────────────────────────────────────────────────
+const WHITELIST_KEY='predator_whitelist';
+// Stable 6 z multi-season validation. Tier 1 = 3/3 sezony positive. Tier 2 = volatile/2-3 positive.
+const WHITELIST_DEFAULTS_LEAGUES=[
+  // TIER 1 — 3/3 sezony positive (most stable)
+  {name:'Brazil Serie A',markets:['Home Win'],tier:1},
+  {name:'Italy Serie A',markets:['Under 2.5'],tier:1},
+  {name:'Europe UEFA Champions League',markets:['BTTS','Home Win'],tier:1},
+  // TIER 2 — net positive ale volatile (2/3 sezony)
+  {name:'USA MLS',markets:['Away Win'],tier:2},
+  {name:'Spain La Liga',markets:['Over 2.5'],tier:2}
+];
+// Per-team picks z PL/BL/L1 backtest (3 sezony, ≥+15% ROI lub strong sample)
+const WHITELIST_DEFAULTS_TEAMS=[
+  // PREMIER LEAGUE — Tier 1 (≥10 picks, ≥+15% ROI, 3/3 sezony positive)
+  {name:'Arsenal',markets:['Over 2.5'],tier:1},
+  {name:'Aston Villa',markets:['Home Win'],tier:1},
+  {name:'Wolverhampton Wanderers',markets:['Under 2.5'],tier:1},
+  {name:'Nottingham Forest',markets:['Over 2.5'],tier:1},
+  // PREMIER LEAGUE — Tier 2 (small sample but 3/3 sezony, ekstremalny ROI)
+  {name:'Manchester United',markets:['Home Win'],tier:2},
+  {name:'Fulham',markets:['Home Win'],tier:2},
+  // FRANCE LIGUE 1 — Tier 1
+  {name:'Nice',markets:['Under 2.5'],tier:1},
+  {name:'Olympique Lyonnais',markets:['Under 2.5'],tier:1},
+  // FRANCE LIGUE 1 — Tier 2 (small sample but 3/3 sezony stable)
+  {name:'Lens',markets:['Home Win'],tier:2},
+  {name:'PSG',markets:['BTTS'],tier:2},
+  {name:'Monaco',markets:['Under 2.5'],tier:2}
+  // BUNDESLIGA — brak stable picks z 3-sezon validation, świadomie pomijamy
+];
+// Banlist — drużyny gdzie model konsekwentnie traci (z research). Auto-skip jeśli whitelist mode ON.
+const WHITELIST_DEFAULTS_BANLIST=[
+  {name:'Tottenham Hotspur',markets:['Under 2.5']},  // 57 picks, -34% ROI 3/3 sezony
+  {name:'Crystal Palace',markets:['Home Win','Over 2.5']},
+  {name:'Strasbourg',markets:['Home Win','Away Win']},
+  {name:'Hoffenheim',markets:['Home Win','Away Win']},
+  {name:'Bayer Leverkusen',markets:['Under 2.5']},  // 32 picks, -37%
+  {name:'Borussia Dortmund',markets:['Under 2.5']},  // 20 picks, -29%
+  {name:'PSG',markets:['Under 2.5']},  // 28 picks, -23% (PSG strzela)
+  {name:'Manchester City',markets:['BTTS']}  // 10 picks, -33%
+];
+
+function loadWhitelistPrefs(){
+  const def={
+    enabled:false,
+    leagues:WHITELIST_DEFAULTS_LEAGUES.slice(),
+    teams:WHITELIST_DEFAULTS_TEAMS.slice(),
+    banlist:WHITELIST_DEFAULTS_BANLIST.slice(),
+    stakes:{tier1:50,tier2:30,tier3:20}
+  };
+  try{
+    const stored=JSON.parse(localStorage.getItem(WHITELIST_KEY)||'{}');
+    return Object.assign(def,stored);
+  }catch(_){ return def; }
+}
+function saveWhitelistPrefs(w){ localStorage.setItem(WHITELIST_KEY,JSON.stringify(w)); }
+
+// Sprawdza czy card pasuje do whitelist. Returns:
+//   - false → ukryj (poza whitelist)
+//   - {tier:N} → pokaż z tier metadata
+//   - true → pass-through (whitelist disabled)
+function isCardInWhitelist(card,w){
+  if(!w||!w.enabled) return true;
+  const m=card.match, mk=card.bestMarket?.label;
+  if(!mk) return false;
+  // Banlist check FIRST — banned (team, market) blokuje niezależnie od whitelist match
+  if(w.banlist && w.banlist.length){
+    const banHome=w.banlist.find(b=>b.name===m.home_name && b.markets.includes(mk));
+    const banAway=w.banlist.find(b=>b.name===m.away_name && b.markets.includes(mk));
+    if(banHome||banAway) return false;
+  }
+  // Liga × market match
+  const lgMatch=w.leagues.find(l=>l.name===m._leagueName && l.markets.includes(mk));
+  if(lgMatch) return {tier:lgMatch.tier||1};
+  // Team × market match (home or away)
+  const tmHome=w.teams.find(t=>t.name===m.home_name && t.markets.includes(mk));
+  const tmAway=w.teams.find(t=>t.name===m.away_name && t.markets.includes(mk));
+  if(tmHome) return {tier:tmHome.tier||2};
+  if(tmAway) return {tier:tmAway.tier||2};
+  return false;
+}
+
 function toggleMatchPlaced(matchId,state,pickInfo){
   const map=loadPlacedMatches();
   if(state){
@@ -6139,9 +6335,20 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   if(m.status==='complete'||isLive) score=(m.homeGoals||[]).length+':'+(m.awayGoals||[]).length;
   else score='—';
   const bankroll=parseInt(localStorage.getItem('predator_bankroll'))||1000;
-  const stakeSuggest=Math.round(bankroll*0.05);
+  // v9.0: tier-aware stake. Jeśli card._tier set (whitelist mode ON), użyj per-Tier stake; inaczej 5% bankroll
+  const wlPrefs=loadWhitelistPrefs();
+  let stakeSuggest;
+  if(card._tier && wlPrefs.enabled){
+    stakeSuggest=wlPrefs.stakes?.['tier'+card._tier]||Math.round(bankroll*0.05);
+  } else {
+    stakeSuggest=Math.round(bankroll*0.05);
+  }
   const payout=card.bestMarket && card.bestMarket.odd>1.01?Math.round(stakeSuggest*(card.bestMarket.odd-1)):null;
-  const leagueBadge=m._leagueName?'<span class="match-card-league">'+m._leagueName+'</span>':'';
+  // v9.0: tier badge (T1/T2/T3) w league badge area
+  const tierBadge=card._tier
+    ?'<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.05em;color:'+(card._tier===1?'var(--positive)':card._tier===2?'var(--accent)':'var(--text-dim)')+';background:'+(card._tier===1?'rgba(74,222,128,0.15)':card._tier===2?'var(--accent-tint)':'var(--surface-3)')+';padding:1px 6px;border-radius:999px;margin-right:6px;text-transform:uppercase;border:1px solid '+(card._tier===1?'var(--positive)':card._tier===2?'var(--accent-bd)':'var(--border)')+';">🎯 T'+card._tier+'</span>'
+    :'';
+  const leagueBadge=tierBadge+(m._leagueName?'<span class="match-card-league">'+m._leagueName+'</span>':'');
   const placedClass=isPlaced?'placed':'';
   const staleClass='';
 
@@ -6336,24 +6543,37 @@ function renderDashboardMatches(){
   const prefs=loadDashPrefs();
   const activeTab=prefs.activeTab||'live';
 
+  // v9.0: Whitelist mode filter — przed filterami buckets, sprawdź czy card pasuje
+  const whitelist=loadWhitelistPrefs();
+
   // Filter into 4 buckets:
   // - liveCards / upcomingCards: edge ≥5% only (high-signal)
   // - liveAllCards: wszystkie live z cache, bez progu edge (raw view)
   // - placedCards: zawsze widoczne (user tracking)
   // Stale data zawsze pomijane (no actionable info)
   const liveCards=[], liveAllCards=[], upcomingCards=[], placedCards=[];
+  let totalChecked=0, whitelistFiltered=0;
   cards.forEach((c,idx)=>{
     const id=String(c.match.id);
     if(prefs.hidden.includes(id)) return;
     const isPlaced=!!placed[id];
+    // Placed always visible regardless of whitelist
     if(isPlaced){ placedCards.push({card:c,idx,placed:placed[id]}); return; }
     if(c.staleData) return;
+    totalChecked++;
+    // v9.0: whitelist filter
+    const wlMatch=isCardInWhitelist(c,whitelist);
+    if(wlMatch===false){ whitelistFiltered++; return; }
+    if(typeof wlMatch==='object' && wlMatch.tier){ c._tier=wlMatch.tier; }
+    else c._tier=null;
     const live=isLiveMatch(c.match);
     if(live) liveAllCards.push({card:c,idx,placed:placed[id]});
     if(c.bestEdge<EDGE_VALUE) return;
     if(live) liveCards.push({card:c,idx,placed:placed[id]});
     else if(c.match.status!=='complete') upcomingCards.push({card:c,idx,placed:placed[id]});
   });
+  // Expose whitelist stats dla dashboard header info
+  window._wlStats={enabled:!!whitelist.enabled,total:totalChecked,filtered:whitelistFiltered};
 
   // Update counts
   document.getElementById('dashCountLive').textContent=liveCards.length;
@@ -6721,7 +6941,7 @@ async function runBacktest(){
     status.textContent='⏳ Symuluję bety dla '+completed.length+' meczów…';
     const stats={
       totalPicks:0,hits:0,totalStake:0,totalPnL:0,
-      perMarket:{},edgeBuckets:{slim:{picks:0,hits:0,pnl:0},value:{picks:0,hits:0,pnl:0},strong:{picks:0,hits:0,pnl:0}},
+      perMarket:{},perTeamMarket:{},edgeBuckets:{slim:{picks:0,hits:0,pnl:0},value:{picks:0,hits:0,pnl:0},strong:{picks:0,hits:0,pnl:0}},
       calibration:{},picks:[],runningPnL:[],maxDrawdown:0,peak:0
     };
     let processed=0;
@@ -6762,6 +6982,15 @@ async function runBacktest(){
       if(!stats.perMarket[market.label]) stats.perMarket[market.label]={picks:0,hits:0,stake:0,pnl:0};
       const pm=stats.perMarket[market.label];
       pm.picks++; if(hit)pm.hits++; pm.stake+=stake; pm.pnl+=pnl;
+
+      // v9.0: Per-team aggregation (anchor team = bet's primary subject)
+      const teamKey = market.label==='Away Win' ? m.away_name : m.home_name;
+      if(teamKey){
+        if(!stats.perTeamMarket[teamKey]) stats.perTeamMarket[teamKey]={};
+        if(!stats.perTeamMarket[teamKey][market.label]) stats.perTeamMarket[teamKey][market.label]={picks:0,hits:0,pnl:0};
+        const tm=stats.perTeamMarket[teamKey][market.label];
+        tm.picks++; if(hit)tm.hits++; tm.pnl+=pnl;
+      }
 
       // Edge bucket
       const bucket=card.bestEdge>=15?'strong':(card.bestEdge>=5?'value':'slim');
@@ -6892,6 +7121,53 @@ function renderBacktestResults(s,stake){
   });
   calHtml+='</tbody></table>';
   cal.innerHTML=calHtml;
+
+  // v9.0: Per-team breakdown — TOP 15 i BOTTOM 10 (team × market)
+  const teamDiv=document.getElementById('bktTeamTable');
+  if(s.perTeamMarket && Object.keys(s.perTeamMarket).length){
+    teamDiv.style.display='block';
+    // Flatten {team: {market: {...}}} → array
+    const flat=[];
+    for(const [team,markets] of Object.entries(s.perTeamMarket)){
+      for(const [mk,v] of Object.entries(markets)){
+        const stk=v.picks*(s.picks?.[0]?.stake||50);  // approximate; uses first pick stake
+        flat.push({team,market:mk,picks:v.picks,hits:v.hits,pnl:v.pnl,roi:stk?v.pnl/stk*100:0,hr:v.picks?v.hits/v.picks*100:0});
+      }
+    }
+    const minPicks=5;  // filter szum
+    const profitable=flat.filter(f=>f.picks>=minPicks&&f.roi>0).sort((a,b)=>b.roi-a.roi).slice(0,15);
+    const losing=flat.filter(f=>f.picks>=minPicks&&f.roi<0).sort((a,b)=>a.roi-b.roi).slice(0,10);
+    let teamHtml='<h4 style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🎯 Per-team breakdown (≥'+minPicks+' picks)</h4>';
+    teamHtml+='<div class="hint" style="margin-bottom:8px;">Drużyny gdzie model bije bukmachera (top) lub konsekwentnie traci (banlist). Use this dla per-team whitelist w Settings.</div>';
+    teamHtml+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+    // Top profitable
+    teamHtml+='<div><div style="font-size:11px;color:var(--positive);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">✅ Top '+profitable.length+' zyskowne (whitelist candidates)</div>';
+    if(profitable.length===0) teamHtml+='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Brak zyskownych drużyn z ≥5 picks</div>';
+    profitable.forEach(f=>{
+      teamHtml+='<div style="font-size:11px;font-family:var(--mono);padding:5px 8px;border-bottom:1px solid var(--border);">'
+        +'<span style="color:var(--text);font-weight:500;">'+f.team+'</span> · '
+        +'<span style="color:var(--text-dim);">'+f.market+'</span><br>'
+        +'<span style="color:var(--text-faint);">'+f.picks+' picks · hit '+f.hr.toFixed(1)+'%</span> · '
+        +'<span style="color:var(--positive);font-weight:600;">+'+Math.round(f.pnl)+'zł · ROI +'+f.roi.toFixed(1)+'%</span>'
+      +'</div>';
+    });
+    teamHtml+='</div>';
+    // Banlist
+    teamHtml+='<div><div style="font-size:11px;color:var(--negative);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">🚫 Banlist (banowne drużyny)</div>';
+    if(losing.length===0) teamHtml+='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Brak konsekwentnie tracących</div>';
+    losing.forEach(f=>{
+      teamHtml+='<div style="font-size:11px;font-family:var(--mono);padding:5px 8px;border-bottom:1px solid var(--border);">'
+        +'<span style="color:var(--text);font-weight:500;">'+f.team+'</span> · '
+        +'<span style="color:var(--text-dim);">'+f.market+'</span><br>'
+        +'<span style="color:var(--text-faint);">'+f.picks+' picks · hit '+f.hr.toFixed(1)+'%</span> · '
+        +'<span style="color:var(--negative);font-weight:600;">'+Math.round(f.pnl)+'zł · ROI '+f.roi.toFixed(1)+'%</span>'
+      +'</div>';
+    });
+    teamHtml+='</div></div>';
+    teamDiv.innerHTML=teamHtml;
+  } else {
+    teamDiv.style.display='none';
+  }
 
   // Top picks (5 best wins + 5 worst losses)
   const tp=document.getElementById('bktTopPicks');
@@ -7048,8 +7324,8 @@ async function runSingleLeagueBacktest(seasonId,minEdge,minOdd,stake){
     }catch(_){}
   }
 
-  // Run model
-  const stats={totalPicks:0,hits:0,totalStake:0,totalPnL:0,perMarket:{},completed:completed.length};
+  // Run model — v9.0: track per-team breakdown obok per-market
+  const stats={totalPicks:0,hits:0,totalStake:0,totalPnL:0,perMarket:{},perTeamMarket:{},completed:completed.length};
   for(const m of completed){
     const homeT=teamCache[m.homeID], awayT=teamCache[m.awayID];
     if(!homeT||!awayT) continue;
@@ -7069,6 +7345,15 @@ async function runSingleLeagueBacktest(seasonId,minEdge,minOdd,stake){
     stats.totalPicks++; if(hit)stats.hits++; stats.totalStake+=stake; stats.totalPnL+=pnl;
     if(!stats.perMarket[mk.label]) stats.perMarket[mk.label]={picks:0,hits:0,pnl:0};
     stats.perMarket[mk.label].picks++; if(hit)stats.perMarket[mk.label].hits++; stats.perMarket[mk.label].pnl+=pnl;
+    // v9.0: per-team aggregation. Anchor team = "the team being bet on":
+    //   Away Win → away team, Home Win → home team. Match-level markets (Over/Under/BTTS) → home team.
+    const teamKey = mk.label==='Away Win' ? m.away_name : m.home_name;
+    if(!teamKey) continue;
+    if(!stats.perTeamMarket[teamKey]) stats.perTeamMarket[teamKey]={};
+    if(!stats.perTeamMarket[teamKey][mk.label]) stats.perTeamMarket[teamKey][mk.label]={picks:0,hits:0,pnl:0};
+    stats.perTeamMarket[teamKey][mk.label].picks++;
+    if(hit) stats.perTeamMarket[teamKey][mk.label].hits++;
+    stats.perTeamMarket[teamKey][mk.label].pnl+=pnl;
   }
   return stats;
 }
@@ -7151,6 +7436,8 @@ function openSettings(){
   $('setBookmaker').value=localStorage.getItem('predator_bookmaker_url')||'';
   $('setKellyMult').value=parseFloat(localStorage.getItem('predator_kelly_mult')||'0.25');
   applyRulesUI();
+  // v9.0: Whitelist UI
+  wlPopulateUI();
   $('settingsModal').classList.add('open');
 }
 function closeSettings(){ $('settingsModal').classList.remove('open'); }
@@ -7165,6 +7452,194 @@ function saveSettings(){
   closeSettings();
   qdToast('Ustawienia zapisane','green',2000);
   if(typeof calc==='function') calc();
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// v9.0: Whitelist Mode UI handlers
+// ──────────────────────────────────────────────────────────────────────
+function wlPopulateUI(){
+  const w=loadWhitelistPrefs();
+  $('setWhitelistEnabled').checked=!!w.enabled;
+  $('setStakeTier1').value=w.stakes?.tier1||50;
+  $('setStakeTier2').value=w.stakes?.tier2||30;
+  $('setStakeTier3').value=w.stakes?.tier3||20;
+  wlRenderLeaguesList(w);
+  wlRenderTeamsList(w);
+  wlRenderBanlist(w);
+  wlPopulateTeamSuggestions();
+  wlUpdatePreview();
+}
+function wlRenderLeaguesList(w){
+  const div=$('wlLeaguesList');
+  if(!w.leagues||!w.leagues.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
+  div.innerHTML=w.leagues.map((l,i)=>{
+    const tierColor=l.tier===1?'var(--positive)':(l.tier===2?'var(--accent)':'var(--text-dim)');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);">'
+      +'<span style="color:'+tierColor+';font-weight:600;">T'+l.tier+'</span>'
+      +'<span style="color:var(--text);flex:1;">'+l.name+'</span>'
+      +'<span style="color:var(--text-dim);">'+l.markets.join(', ')+'</span>'
+      +'<button onclick="wlRemoveLeague('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+    +'</div>';
+  }).join('');
+}
+function wlRenderTeamsList(w){
+  const div=$('wlTeamsList');
+  if(!w.teams||!w.teams.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
+  div.innerHTML=w.teams.map((t,i)=>{
+    const tierColor=t.tier===1?'var(--positive)':(t.tier===2?'var(--accent)':'var(--text-dim)');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);">'
+      +'<span style="color:'+tierColor+';font-weight:600;">T'+t.tier+'</span>'
+      +'<span style="color:var(--text);flex:1;">'+t.name+'</span>'
+      +'<span style="color:var(--text-dim);">'+t.markets.join(', ')+'</span>'
+      +'<button onclick="wlRemoveTeam('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+    +'</div>';
+  }).join('');
+}
+function wlRenderBanlist(w){
+  const div=$('wlBanlistList');
+  if(!w.banlist||!w.banlist.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta banlist</div>'; return; }
+  div.innerHTML=w.banlist.map((b,i)=>{
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);">'
+      +'<span style="color:var(--negative);font-weight:600;">🚫</span>'
+      +'<span style="color:var(--text);flex:1;">'+b.name+'</span>'
+      +'<span style="color:var(--text-dim);">'+b.markets.join(', ')+'</span>'
+      +'<button onclick="wlRemoveBan('+i+')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+    +'</div>';
+  }).join('');
+}
+function wlPopulateTeamSuggestions(){
+  // Autocomplete z aktualnych live cards (unique team names)
+  const cache=window._scanCardsCache||[];
+  const teams=new Set();
+  cache.forEach(c=>{ if(c.match.home_name) teams.add(c.match.home_name); if(c.match.away_name) teams.add(c.match.away_name); });
+  const dl=$('wlTeamSuggestions');
+  if(dl) dl.innerHTML=[...teams].sort().map(t=>'<option value="'+t+'">').join('');
+}
+function wlSwitchTab(tab){
+  ['leagues','teams','banlist'].forEach(t=>{
+    const pane=$('wlPane'+t.charAt(0).toUpperCase()+t.slice(1));
+    const btn=$('wlTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(pane) pane.style.display=t===tab?'block':'none';
+    if(btn){
+      btn.style.background=t===tab?'var(--accent-tint)':'';
+      btn.style.color=t===tab?'var(--accent)':'';
+      btn.style.border=t===tab?'1px solid var(--accent-bd)':'';
+    }
+  });
+}
+function toggleWhitelistMode(){
+  const w=loadWhitelistPrefs();
+  w.enabled=$('setWhitelistEnabled').checked;
+  saveWhitelistPrefs(w);
+  wlUpdatePreview();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
+function saveWhitelistFromUI(){
+  const w=loadWhitelistPrefs();
+  w.stakes={
+    tier1:parseInt($('setStakeTier1').value)||50,
+    tier2:parseInt($('setStakeTier2').value)||30,
+    tier3:parseInt($('setStakeTier3').value)||20
+  };
+  saveWhitelistPrefs(w);
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
+function wlAddLeague(){
+  const name=$('wlNewLeagueName').value.trim();
+  const market=$('wlNewLeagueMarket').value;
+  const tier=parseInt($('wlNewLeagueTier').value);
+  if(!name){ qdToast('Wpisz nazwę ligi','red',2000); return; }
+  const w=loadWhitelistPrefs();
+  // Merge — jeśli liga już jest, dodaj market do listy
+  const existing=w.leagues.find(l=>l.name.toLowerCase()===name.toLowerCase());
+  if(existing){
+    if(!existing.markets.includes(market)) existing.markets.push(market);
+    existing.tier=tier;
+  } else {
+    w.leagues.push({name,markets:[market],tier});
+  }
+  saveWhitelistPrefs(w);
+  $('wlNewLeagueName').value='';
+  wlRenderLeaguesList(w);
+  wlUpdatePreview();
+  qdToast('Dodano ligę: '+name+' · '+market,'green',2000);
+}
+function wlRemoveLeague(idx){
+  const w=loadWhitelistPrefs();
+  w.leagues.splice(idx,1);
+  saveWhitelistPrefs(w);
+  wlRenderLeaguesList(w);
+  wlUpdatePreview();
+}
+function wlAddTeam(){
+  const name=$('wlNewTeamName').value.trim();
+  const market=$('wlNewTeamMarket').value;
+  const tier=parseInt($('wlNewTeamTier').value);
+  if(!name){ qdToast('Wpisz nazwę drużyny','red',2000); return; }
+  const w=loadWhitelistPrefs();
+  const existing=w.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
+  if(existing){
+    if(!existing.markets.includes(market)) existing.markets.push(market);
+    existing.tier=tier;
+  } else {
+    w.teams.push({name,markets:[market],tier});
+  }
+  saveWhitelistPrefs(w);
+  $('wlNewTeamName').value='';
+  wlRenderTeamsList(w);
+  wlUpdatePreview();
+  qdToast('Dodano: '+name+' · '+market,'green',2000);
+}
+function wlRemoveTeam(idx){
+  const w=loadWhitelistPrefs();
+  w.teams.splice(idx,1);
+  saveWhitelistPrefs(w);
+  wlRenderTeamsList(w);
+  wlUpdatePreview();
+}
+function wlAddBan(){
+  const name=$('wlNewBanName').value.trim();
+  const market=$('wlNewBanMarket').value;
+  if(!name){ qdToast('Wpisz nazwę drużyny','red',2000); return; }
+  const w=loadWhitelistPrefs();
+  if(!w.banlist) w.banlist=[];
+  const existing=w.banlist.find(b=>b.name.toLowerCase()===name.toLowerCase());
+  if(existing){
+    if(!existing.markets.includes(market)) existing.markets.push(market);
+  } else {
+    w.banlist.push({name,markets:[market]});
+  }
+  saveWhitelistPrefs(w);
+  $('wlNewBanName').value='';
+  wlRenderBanlist(w);
+  wlUpdatePreview();
+  qdToast('🚫 '+name+' · '+market+' zbanowana','yellow',2000);
+}
+function wlRemoveBan(idx){
+  const w=loadWhitelistPrefs();
+  if(w.banlist) w.banlist.splice(idx,1);
+  saveWhitelistPrefs(w);
+  wlRenderBanlist(w);
+  wlUpdatePreview();
+}
+function wlResetDefaults(){
+  if(!confirm('Reset whitelist do defaults? Stracisz custom dodania.')) return;
+  localStorage.removeItem(WHITELIST_KEY);
+  wlPopulateUI();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+  qdToast('Whitelist zresetowana do defaults','green',2000);
+}
+function wlUpdatePreview(){
+  const w=loadWhitelistPrefs();
+  const cache=window._scanCardsCache||[];
+  const matching=cache.filter(c=>{
+    const r=isCardInWhitelist(c,w);
+    return r&&typeof r==='object';
+  }).length;
+  const span=$('wlPreview');
+  if(span) span.textContent=w.enabled
+    ? '✓ ON · '+matching+' / '+cache.length+' meczów pasuje · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban'
+    : '○ OFF · '+w.leagues.length+' lig · '+w.teams.length+' drużyn · '+(w.banlist?.length||0)+' ban (dodaj/usuń przez tabs)';
 }
 function getBookmakerUrl(){ return localStorage.getItem('predator_bookmaker_url')||''; }
 function openBookmaker(pickJson){

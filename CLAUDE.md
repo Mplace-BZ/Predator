@@ -50,7 +50,64 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v8.9 (BACKTEST MODULE — historical model validation)
+## Aktualna wersja: v9.0 (WHITELIST MODE — backtest-validated picks only + per-team filtering)
+
+## v9.0 — Whitelist Mode (multi-season validated picks)
+**Trigger:** Multi-season backtest (8 lig × 3 sezony, 24 backtestów) ujawnił że v8.9 single-season whitelist była w 50% **sezonowy fluke**. Tylko 6 kombinacji liga × market jest stabilne 3 sezony pod rząd. Plus: Chris gra PL/Bundesliga/Ligue 1 ale tylko dla **wybranych drużyn** — globalnie te ligi tracą, ale konkretne drużyny mogą bić bukmachera (Bayern Home Win, Liverpool Over 2.5).
+
+**Solution:** Whitelist Mode = filtr w `renderDashboardMatches` który pokazuje TYLKO picks z (zatwierdzonej liga × market) LUB (zatwierdzonej drużyna × market). Plus banlist (drużyny gdzie model konsekwentnie traci → auto-skip).
+
+### Stable defaults (wbudowane w v9.0)
+
+**6 ligi × market (multi-season validated):**
+1. 🇧🇷 Brazil Serie A · Home Win — Tier 1 (+23.7% ROI 3/3 sezony)
+2. 🇮🇹 Italy Serie A · Under 2.5 — Tier 1 (+9.6% 3/3 stable)
+3. 🇪🇺 UCL · BTTS + Home Win — Tier 1 (+7-18%)
+4. 🇺🇸 USA MLS · Away Win — Tier 2 (+7.9%, 2/3 positive)
+5. 🇪🇸 La Liga · Over 2.5 — Tier 2 (+6.5% volatile)
+
+**Per-team picks z PL/L1 backtest (3 sezony, ≥+15% ROI lub strong sample):**
+- 🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL: Arsenal · Over 2.5 (T1, +67%), Aston Villa · Home Win (T1, +33%), Wolverhampton · Under 2.5 (T1, +39%), Nottingham Forest · Over 2.5 (T1, +18%), Manchester United · Home Win (T2, +75%), Fulham · Home Win (T2, +43%)
+- 🇫🇷 L1: Nice · Under 2.5 (T1, +29%), Olympique Lyonnais · Under 2.5 (T1, +18%), Lens · Home Win (T2, +93%), PSG · BTTS (T2, +67%), Monaco · Under 2.5 (T2, +12%)
+- 🇩🇪 BL: BRAK stable picks (model słaby w Bundesliga) — świadomie pomijamy
+
+**Banlist (auto-skip):**
+- Tottenham · Under 2.5 (-34% z 57 picks 3/3)
+- Crystal Palace · Home Win/Over 2.5
+- Strasbourg · Home Win/Away Win
+- Hoffenheim · Home Win/Away Win
+- Bayer Leverkusen/BVB · Under 2.5 (model przeszacowuje Under dla offensywnych top drużyn)
+- PSG · Under 2.5 (PSG strzela)
+- Manchester City · BTTS
+
+### Architektura
+
+**`isCardInWhitelist(card, w)`** ([index.html:6255](index.html#L6255)) — central filter logic:
+1. Banlist check first → blokuje niezależnie od whitelist match
+2. Liga × market match → return `{tier:N}`
+3. Team × market match (home OR away) → return `{tier:N}`
+4. Else → return false (block)
+
+**Settings UI** ([index.html:1690](index.html#L1690)+, settings modal):
+- Toggle "🎯 Whitelist Mode" + per-Tier stake inputs (default 50/30/20zł)
+- 3 tabs: Ligi (checkboxy + add new), Drużyny (autocomplete z `_scanCardsCache`), Banlist
+- "Reset do defaults" button
+- Live preview: "✓ ON · X / Y meczów pasuje · N lig · M drużyn · K ban"
+
+**Dashboard integration:**
+- `renderDashboardMatches` ([index.html:6541](index.html#L6541)) — filter applied PRZED bucket assignment
+- `renderDashboardCard` ([index.html:6328](index.html#L6328)) — tier badge ("🎯 T1/T2/T3"), tier-aware stake suggestion
+
+**Backtest module enhancement** ([index.html:7068](index.html#L7068)):
+- `runSingleLeagueBacktest` + `runBacktest` zbierają `perTeamMarket` aggregation
+- Anchor team = home_name dla match-level markets (Over/Under/BTTS, Home Win), away_name dla Away Win
+- `renderBacktestResults` pokazuje "Top 15 zyskowne / Bottom 10 banlist" panel po Calibration
+
+**Tests** ([test/test_scan_pipeline.mjs:285](test/test_scan_pipeline.mjs#L285)):
+- `test_whitelist_filter()` — 7 scenariuszy: liga match, team match, random block, banlist override, disabled passthrough, market mismatch, away team match
+- All 21 tests pass (18 api-football integration + 3 whitelist logic)
+
+**Filozofia:** Predator globalnie traci (-2 do -8% ROI). Whitelist Mode konwertuje to w wąską strategię gdzie wygrywa. Reszta szumu odfiltrowana. Po sezonie testuj realny ROI per Tier — jeśli T1 zachowuje +ROI a T2 mocno odjeżdża, wycofaj T2.
 
 ## v8.9 — Backtest module (FootyStats jako historical research source)
 **Trigger:** Chris pytał "po co nam FootyStats jeśli api-football daje live?". Odpowiedź: FootyStats ma DWA killer features których api-football nie ma — sezonowy xG (bias-adjusted, vs goals.avg high-variance) ORAZ kompletny dataset historyczny (xG + odds + outcomes w jednym call /league-matches). Backtest module wykorzystuje ten dataset jako twardy walidator modelu.

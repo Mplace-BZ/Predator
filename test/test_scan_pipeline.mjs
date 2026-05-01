@@ -283,9 +283,87 @@ async function test_xg_live(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TEST 8 (v9.0): Whitelist filter — match z whitelist passes z tier metadata,
+// match poza whitelist blocked, match z banlist blocked nawet jeśli liga w whitelist
+// ──────────────────────────────────────────────────────────────────────
+function test_whitelist_filter(){
+  header('TEST 8 (v9.0): isCardInWhitelist filter logic');
+
+  // Replikacja logiki isCardInWhitelist z index.html
+  function isCardInWhitelist(card,w){
+    if(!w||!w.enabled) return true;
+    const m=card.match, mk=card.bestMarket?.label;
+    if(!mk) return false;
+    if(w.banlist && w.banlist.length){
+      const banHome=w.banlist.find(b=>b.name===m.home_name && b.markets.includes(mk));
+      const banAway=w.banlist.find(b=>b.name===m.away_name && b.markets.includes(mk));
+      if(banHome||banAway) return false;
+    }
+    const lgMatch=w.leagues.find(l=>l.name===m._leagueName && l.markets.includes(mk));
+    if(lgMatch) return {tier:lgMatch.tier||1};
+    const tmHome=w.teams.find(t=>t.name===m.home_name && t.markets.includes(mk));
+    const tmAway=w.teams.find(t=>t.name===m.away_name && t.markets.includes(mk));
+    if(tmHome) return {tier:tmHome.tier||2};
+    if(tmAway) return {tier:tmAway.tier||2};
+    return false;
+  }
+
+  const whitelist={
+    enabled:true,
+    leagues:[
+      {name:'Brazil Serie A',markets:['Home Win'],tier:1},
+      {name:'Italy Serie A',markets:['Under 2.5'],tier:1}
+    ],
+    teams:[
+      {name:'Arsenal',markets:['Over 2.5'],tier:1},
+      {name:'Liverpool FC',markets:['Over 2.5'],tier:2}
+    ],
+    banlist:[
+      {name:'Tottenham Hotspur',markets:['Under 2.5']}
+    ]
+  };
+
+  // 1. Match w whitelist liga × market — pass with tier
+  const card1={match:{_leagueName:'Brazil Serie A',home_name:'Flamengo',away_name:'Botafogo'},bestMarket:{label:'Home Win'}};
+  const r1=isCardInWhitelist(card1,whitelist);
+  assert(r1&&r1.tier===1,'liga match (Brazil Serie A · Home Win) → tier 1');
+
+  // 2. Match w whitelist team × market — pass with tier
+  const card2={match:{_leagueName:'England Premier League',home_name:'Arsenal',away_name:'Chelsea'},bestMarket:{label:'Over 2.5'}};
+  const r2=isCardInWhitelist(card2,whitelist);
+  assert(r2&&r2.tier===1,'team match (Arsenal · Over 2.5) → tier 1');
+
+  // 3. Match poza whitelist — blocked
+  const card3={match:{_leagueName:'Random Liga',home_name:'Random FC',away_name:'Other FC'},bestMarket:{label:'BTTS'}};
+  const r3=isCardInWhitelist(card3,whitelist);
+  assert(r3===false,'random match → blocked');
+
+  // 4. Match w banlist — blocked nawet jeśli liga w whitelist
+  const card4={match:{_leagueName:'Italy Serie A',home_name:'Tottenham Hotspur',away_name:'Inter'},bestMarket:{label:'Under 2.5'}};
+  const r4=isCardInWhitelist(card4,whitelist);
+  assert(r4===false,'banlist (Tottenham · Under 2.5) → blocked nawet jeśli Italy Serie A · Under 2.5 w whitelist');
+
+  // 5. Whitelist disabled — wszystko passes
+  const r5=isCardInWhitelist(card3,{...whitelist,enabled:false});
+  assert(r5===true,'whitelist disabled → wszystko passes');
+
+  // 6. Match liga + ODD market → blocked (market nie pasuje)
+  const card6={match:{_leagueName:'Brazil Serie A',home_name:'Flamengo',away_name:'Botafogo'},bestMarket:{label:'Over 2.5'}};
+  const r6=isCardInWhitelist(card6,whitelist);
+  assert(r6===false,'Brazil Serie A · Over 2.5 → blocked (whitelist ma tylko Home Win dla tej ligi)');
+
+  // 7. Liverpool away (jako away_name) — pass with tier=2
+  const card7={match:{_leagueName:'England Premier League',home_name:'Random FC',away_name:'Liverpool FC'},bestMarket:{label:'Over 2.5'}};
+  const r7=isCardInWhitelist(card7,whitelist);
+  assert(r7&&r7.tier===2,'Liverpool jako away → tier 2 (whitelist team match)');
+
+  console.log('  All 7 whitelist scenarios pass');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────────────────────────────
-console.log('Predator scan pipeline tests v8.8 (api-football) · '+new Date().toLocaleString('pl'));
+console.log('Predator scan pipeline tests v9.0 (api-football + whitelist) · '+new Date().toLocaleString('pl'));
 try{
   await test_status();
   await test_fixtures_today();
@@ -294,6 +372,7 @@ try{
   await test_synthetic_regression();
   await test_odds_structure();
   await test_xg_live();
+  test_whitelist_filter();  // sync — pure logic, no API
 }catch(e){
   console.error('TEST CRASH:',e);
   failed++;
