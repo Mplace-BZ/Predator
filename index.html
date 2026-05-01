@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.0</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1687,13 +1687,55 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="hint">Stała mnożenia Kelly. Default 0.25 = ćwiartka Kelly (konserwatywne). 1.0 = pełny Kelly (agresywne).</div>
     </div>
 
-    <!-- v9.0: Whitelist Mode — backtest-validated picks only -->
+    <!-- v9.0/v9.1: Strategy Mode — Whitelist (pre-match) lub Late Goal Hunter (live) -->
     <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
       <label style="margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;">
         <input type="checkbox" id="setWhitelistEnabled" onchange="toggleWhitelistMode()" style="accent-color:var(--accent);width:18px;height:18px;">
-        <span style="font-weight:600;">🎯 Whitelist Mode — pokazuj tylko backtest-validated picks</span>
+        <span style="font-weight:600;">🎯 Strategy Mode — filter dashboard wg backtest-validated reguł</span>
       </label>
-      <div class="hint" style="margin-bottom:10px;">Filtruje dashboard do (liga × market) + (drużyna × market) z multi-season backtest. Banlist auto-skip.</div>
+      <div class="hint" style="margin-bottom:10px;">Włącza filter (Whitelist v9.0 pre-match LUB Late Goal Hunter v9.1 live anomaly). Bez tego dashboard pokazuje wszystkie picks.</div>
+
+      <!-- Mode selector -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;color:var(--text-dim);">Wybierz strategię:</label>
+        <select id="setStrategyMode" onchange="changeStrategyMode()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-top:4px;">
+          <option value="whitelist">🎯 Whitelist (pre-match liga × market + per-team) — stabilne picks z multi-season backtest</option>
+          <option value="lategoal">🔥 Late Goal Hunter (live, minute 50-75) — pressure index ≥80 → wysokie kursy + anomalie</option>
+        </select>
+      </div>
+
+      <!-- Late Goal Hunter settings (visible tylko gdy mode=lategoal) -->
+      <div id="setLateGoalSection" style="display:none;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.20);padding:12px;border-radius:10px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--negative);margin-bottom:8px;">🔥 Late Goal Hunter — research z 7401 meczów × 7 lig × 3 sezony</div>
+        <div class="hint" style="margin-bottom:10px;font-size:11px;">PI ≥80 → 70.8% hit rate, ROI +3.3% globalnie. Per liga: Serie A +15.2%, La Liga +10.6%, Ligue 1 +6.0%, BL +4.2%. Window: minute 50-75 (live entry). Markets: Over 0.5 (drugopołówka), BTTS Yes, Next Goal.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-dim);">PI threshold</label>
+            <input type="number" id="setLgThreshold" min="40" max="100" step="5" value="80" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-dim);">Stake (zł)</label>
+            <input type="number" id="setLgStake" min="10" max="500" step="5" value="50" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-dim);">Min. liga bias</label>
+            <input type="number" id="setLgMinBias" min="0.50" max="0.80" step="0.01" value="0.60" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-dim);">Window minute od:</label>
+            <input type="number" id="setLgWinFrom" min="30" max="80" step="5" value="50" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-dim);">Window minute do:</label>
+            <input type="number" id="setLgWinTo" min="50" max="89" step="5" value="75" onchange="saveWhitelistFromUI()" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);">
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-dim);">
+          <b>Preferred ligi (research +ROI):</b> Italy Serie A (+15%), La Liga (+10%), Ligue 1 (+6%), Bundesliga (+4%), Brazil Serie A (+4%). Eredivisie i Premier League pominięte (paradox / słaba calibration).
+        </div>
+      </div>
 
       <!-- Stake per Tier -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
@@ -1865,7 +1907,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.0
+    Powered by MPlace · Match Predictor v9.1
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6233,13 +6275,151 @@ const WHITELIST_DEFAULTS_BANLIST=[
   {name:'Manchester City',markets:['BTTS']}  // 10 picks, -33%
 ];
 
+// ──────────────────────────────────────────────────────────────────────
+// v9.1: Late Goal Hunter — research-backed pressure index strategy
+// Z analizy 7401 meczów × 7 lig × 3 sezony (22/23, 23/24, 24/25):
+//   threshold=80 → 617 picks, 70.8% hit, ROI +3.3% globalnie
+//   Per liga @ PI≥80: Serie A +15.2%, La Liga +10.6%, Ligue 1 +6.0%, BL +4.2%
+//   Eredivisie -9.8% (paradoks: za wysoki baseline 73%, kursy zaszumiałe)
+// Top 20 patterns (sample ≥50, P(any goal 60-90') ≥60%) — wbudowany whitelist:
+// ──────────────────────────────────────────────────────────────────────
+const WHITELIST_DEFAULTS_LATEGOAL_LEAGUES=[
+  // Format: liga.league nazwa pełna (z FootyStats league-list match), oraz
+  //   _af_leagueId (api-football mapping) dla live PI calc.
+  // ROI/baseline z multi-season backtest: P(any goal 60-90') przy każdym wyniku
+  {name:'Italy Serie A',_af_leagueId:135,baseline:0.658,backtestROI:15.2,priority:1},
+  {name:'Spain La Liga',_af_leagueId:140,baseline:0.655,backtestROI:10.6,priority:1},
+  {name:'France Ligue 1',_af_leagueId:61,baseline:0.667,backtestROI:6.0,priority:2},
+  {name:'Germany Bundesliga',_af_leagueId:78,baseline:0.714,backtestROI:4.2,priority:2},
+  {name:'Brazil Serie A',_af_leagueId:71,baseline:0.645,backtestROI:3.8,priority:3}
+  // Świadomie pominięte: Eredivisie (-9.8% paradoks), Premier League (-1.5% słaba calibration)
+];
+
+// Pressure Index v1.0 — wzór 0-100 (calibrated na 7401 historical meczach).
+// Input: features object z {xgTotal, currentGoals, homeScore, awayScore, minute, leagueBias, shotsConvGap?}
+// Output: integer 0-100 — threshold ≥80 = action trigger
+function pressureIndex(features){
+  // 1. xG accumulation deficit (high xG ale low score = pent-up pressure) — 30pp
+  const xgDeficit=Math.min(1,Math.max(0,(features.xgTotal-features.currentGoals)/2.0));
+  // 2. Score urgency (0:0 = max urgency) — 25pp
+  const tied=features.homeScore===features.awayScore;
+  const closeGap=Math.abs(features.homeScore-features.awayScore)<=1;
+  const scoreUrgency=features.currentGoals===0?1.0:tied?0.85:closeGap?0.6:0.3;
+  // 3. League late-goal bias (historical avg P(any goal 60-90') per liga) — 20pp
+  const leagueBias=features.leagueBias!=null?features.leagueBias:0.5;
+  // 4. Time factor (peak in 60-75 min entry window) — 15pp
+  const minRemaining=Math.max(0,90-features.minute);
+  const timeFactor=Math.min(1,minRemaining/30);
+  // 5. Shots conversion gap (mało goli mimo dużej liczby strzałów) — 10pp
+  const shotsConvGap=features.shotsConvGap||0;  // shots*0.1 gdy <30% conversion
+
+  const idx=(
+    xgDeficit*30 +
+    scoreUrgency*25 +
+    leagueBias*20 +
+    timeFactor*15 +
+    Math.min(10,shotsConvGap)
+  );
+  return Math.round(Math.min(100,Math.max(0,idx)));
+}
+
+// League bias map — używane przez pressureIndex. Z research output (leagueBias).
+// Key: api-football league_id → P(any goal 60-90') across all scenarios.
+const LATE_GOAL_LEAGUE_BIAS={
+  39:0.725,    // Premier League (PL)
+  140:0.655,   // La Liga
+  135:0.658,   // Serie A
+  78:0.714,    // Bundesliga
+  61:0.667,    // Ligue 1
+  88:0.730,    // Eredivisie (high baseline ale paradoks ROI)
+  71:0.645,    // Brazil Serie A
+  // Default dla nieznanych lig
+  _default:0.65
+};
+
+// Compute Pressure Index dla card z dashboard cache (live match)
+// Wymaga: card.match z _af_elapsed, _af_leagueId, goals.home/away (z afFixtureToMatch)
+//   plus optional live stats z afLoadFixtureStats result (xg, shots etc.)
+function computeCardPressureIndex(card,liveStats){
+  const m=card.match;
+  if(!isLiveMatch(m)) return 0;
+  const minute=m._af_elapsed||60;
+  const homeG=(m.homeGoals||[]).length;
+  const awayG=(m.awayGoals||[]).length;
+  const currentGoals=homeG+awayG;
+  // Live xG z fixtures/statistics jeśli dostępne, inaczej fallback do team season xG × time
+  let xgTotal;
+  if(liveStats && liveStats.home && liveStats.away){
+    xgTotal=(liveStats.home.xg||0)+(liveStats.away.xg||0);
+  } else {
+    // Pre-match xG × proportion of time elapsed
+    const sH=card.homeT?.stats||{}, sA=card.awayT?.stats||{};
+    const hXG=sH.xg_for_avg_home||sH.xg_for_avg_overall||0;
+    const aXG=sA.xg_for_avg_away||sA.xg_for_avg_overall||0;
+    xgTotal=(hXG+aXG)*(minute/90);
+  }
+  // Shots conversion gap
+  let shotsConvGap=0;
+  if(liveStats && liveStats.home && liveStats.away){
+    const totShots=(liveStats.home.shots_total||0)+(liveStats.away.shots_total||0);
+    const conversion=totShots>0?currentGoals/totShots:0;
+    shotsConvGap=(conversion<0.10 && totShots>=10)?totShots*0.05:0;
+  }
+  const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||LATE_GOAL_LEAGUE_BIAS._default;
+  return pressureIndex({
+    xgTotal,currentGoals,
+    homeScore:homeG,awayScore:awayG,
+    minute,leagueBias,shotsConvGap
+  });
+}
+
+// Late Goal Hunter filter — sprawdza czy live card pasuje do late goal strategy
+// Returns:
+//   - false → skip
+//   - {pi, estimatedRate, suggestedOdd, suggestedMarket} → late goal candidate
+function isCardLateGoalCandidate(card,prefs,liveStats){
+  if(!card||!card.match) return false;
+  const m=card.match;
+  if(!isLiveMatch(m)) return false;  // Late goal mode = LIVE only
+  const minute=m._af_elapsed||0;
+  const lg=prefs.lateGoal||{};
+  // Window check
+  if(minute<(lg.windowMinFrom||50) || minute>(lg.windowMinTo||75)) return false;
+  // League bias check (skip ligi z too-low baseline)
+  const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||LATE_GOAL_LEAGUE_BIAS._default;
+  if(leagueBias<(lg.minLeagueBias||0.60)) return false;
+  // Compute Pressure Index
+  const pi=computeCardPressureIndex(card,liveStats);
+  if(pi<(lg.threshold||80)) return false;
+  // Estimated late goal probability — leagueBias jako proxy (could be refined z historical patterns)
+  const estimatedRate=Math.min(0.95,leagueBias*1.05+(pi-80)/200);
+  const suggestedOdd=Math.max(1.10,Math.min(5.0,1/(estimatedRate*1.05)));  // 5% bookmaker margin
+  return {
+    pi,
+    estimatedRate,
+    suggestedOdd,
+    suggestedMarket:'Over 0.5 (drugopołówka) lub BTTS Yes',
+    leagueBias
+  };
+}
+
 function loadWhitelistPrefs(){
   const def={
     enabled:false,
+    mode:'whitelist',  // v9.1: 'whitelist' | 'lategoal'
     leagues:WHITELIST_DEFAULTS_LEAGUES.slice(),
     teams:WHITELIST_DEFAULTS_TEAMS.slice(),
     banlist:WHITELIST_DEFAULTS_BANLIST.slice(),
-    stakes:{tier1:50,tier2:30,tier3:20}
+    stakes:{tier1:50,tier2:30,tier3:20},
+    // v9.1: Late Goal Hunter settings (research z 7401 meczów × 7 lig × 3 sezony)
+    lateGoal:{
+      threshold:80,           // pressure index ≥ X → trigger
+      stake:50,
+      minLeagueBias:0.60,     // skip ligi gdzie baseline rate <60%
+      windowMinFrom:50,       // entry window: minute 50-75 (post-Phase 5 calibration)
+      windowMinTo:75,
+      preferredLeagues:WHITELIST_DEFAULTS_LATEGOAL_LEAGUES.slice()
+    }
   };
   try{
     const stored=JSON.parse(localStorage.getItem(WHITELIST_KEY)||'{}');
@@ -6250,10 +6430,23 @@ function saveWhitelistPrefs(w){ localStorage.setItem(WHITELIST_KEY,JSON.stringif
 
 // Sprawdza czy card pasuje do whitelist. Returns:
 //   - false → ukryj (poza whitelist)
-//   - {tier:N} → pokaż z tier metadata
+//   - {tier:N} → pokaż z tier metadata (whitelist mode)
+//   - {pi, estimatedRate, suggestedOdd, lateGoal:true} → late goal candidate (lategoal mode)
 //   - true → pass-through (whitelist disabled)
-function isCardInWhitelist(card,w){
+function isCardInWhitelist(card,w,liveStats){
   if(!w||!w.enabled) return true;
+
+  // v9.1: Mode dispatcher
+  const mode=w.mode||'whitelist';
+
+  if(mode==='lategoal'){
+    // Late Goal Hunter mode — pokazuje TYLKO live anomalie z PI ≥threshold
+    const result=isCardLateGoalCandidate(card,w,liveStats);
+    if(!result) return false;
+    return Object.assign({lateGoal:true,tier:1},result);  // tier=1 (top stake)
+  }
+
+  // Default: whitelist mode (v9.0)
   const m=card.match, mk=card.bestMarket?.label;
   if(!mk) return false;
   // Banlist check FIRST — banned (team, market) blokuje niezależnie od whitelist match
@@ -6361,6 +6554,19 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
   let pickHtml;
   if(card.staleData){
     pickHtml='<span style="color:var(--warning);font-weight:600;">⚠ Pomiń — sprawdź wynik na żywo.</span>';
+  } else if(card._lateGoal){
+    // v9.1: Late Goal Hunter card — pokazuje PI gauge + suggested market/odd
+    const lg=card._lateGoal;
+    const piColor=lg.pi>=90?'var(--positive)':lg.pi>=80?'var(--accent)':'var(--warning)';
+    const lgStake=wlPrefs.lateGoal?.stake||50;
+    const estPayout=Math.round(lgStake*(lg.suggestedOdd-1));
+    pickHtml='<span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +'<span style="background:'+piColor+';color:var(--bg);font-weight:700;padding:2px 8px;border-radius:6px;font-size:11px;font-family:var(--mono);">🔥 PI '+lg.pi+'</span>'
+      +'<span style="color:var(--text);font-weight:600;">'+lg.suggestedMarket+'</span>'
+      +'<span style="color:var(--text-dim);font-family:var(--mono);">@ ~'+lg.suggestedOdd.toFixed(2)+'</span>'
+      +'<span style="color:var(--text-faint);font-size:11px;">· P(gol 60-90\') ≈ '+(lg.estimatedRate*100).toFixed(0)+'%</span>'
+      +'<span style="color:var(--accent);font-family:var(--mono);">'+lgStake+'zł → +'+estPayout+'zł</span>'
+      +'</span>';
   } else if(card.isLiveOnly){
     pickHtml='<span style="color:var(--accent-soft);font-weight:600;">'+card.bestMarket.label+'</span>'
       +' <span style="color:var(--text-faint);">· wszystkie standardowe linie hit, użyj live edge calc</span>';
@@ -6373,6 +6579,12 @@ function renderDashboardCard(card,placedEntry,cacheIdx){
 
   let edgeBadge;
   if(card.staleData) edgeBadge='<span class="badge-edge edge-stale">⚠ STALE</span>';
+  else if(card._lateGoal){
+    // v9.1: Late Goal Hunter badge — czerwony/pomarańczowy gradient z PI value
+    const lg=card._lateGoal;
+    const cls=lg.pi>=90?'edge-strong':'edge-value';
+    edgeBadge='<span class="badge-edge '+cls+'" style="font-family:var(--mono);">🔥 PI '+lg.pi+'</span>';
+  }
   else if(card.isLiveOnly) edgeBadge='<span class="badge-edge edge-live-info">⚽ LIVE</span>';
   else edgeBadge=dashboardEdgeBadge(card.bestEdge);
 
@@ -6543,8 +6755,9 @@ function renderDashboardMatches(){
   const prefs=loadDashPrefs();
   const activeTab=prefs.activeTab||'live';
 
-  // v9.0: Whitelist mode filter — przed filterami buckets, sprawdź czy card pasuje
+  // v9.0/v9.1: Whitelist mode filter — przed filterami buckets, sprawdź czy card pasuje
   const whitelist=loadWhitelistPrefs();
+  const lateGoalMode=whitelist.enabled && whitelist.mode==='lategoal';
 
   // Filter into 4 buckets:
   // - liveCards / upcomingCards: edge ≥5% only (high-signal)
@@ -6561,19 +6774,30 @@ function renderDashboardMatches(){
     if(isPlaced){ placedCards.push({card:c,idx,placed:placed[id]}); return; }
     if(c.staleData) return;
     totalChecked++;
-    // v9.0: whitelist filter
-    const wlMatch=isCardInWhitelist(c,whitelist);
+    // v9.0/v9.1: whitelist filter (mode-aware: whitelist OR lategoal)
+    // Pass cached liveStats jeśli mamy (z window._lateGoalStatsCache, lazy-loaded by live poller)
+    const liveStats=window._lateGoalStatsCache?.[String(c.match.id)]||null;
+    const wlMatch=isCardInWhitelist(c,whitelist,liveStats);
     if(wlMatch===false){ whitelistFiltered++; return; }
-    if(typeof wlMatch==='object' && wlMatch.tier){ c._tier=wlMatch.tier; }
-    else c._tier=null;
+    if(typeof wlMatch==='object'){
+      c._tier=wlMatch.tier||null;
+      c._lateGoal=wlMatch.lateGoal?{
+        pi:wlMatch.pi,
+        estimatedRate:wlMatch.estimatedRate,
+        suggestedOdd:wlMatch.suggestedOdd,
+        suggestedMarket:wlMatch.suggestedMarket,
+        leagueBias:wlMatch.leagueBias
+      }:null;
+    } else { c._tier=null; c._lateGoal=null; }
     const live=isLiveMatch(c.match);
     if(live) liveAllCards.push({card:c,idx,placed:placed[id]});
-    if(c.bestEdge<EDGE_VALUE) return;
+    // v9.1: w late goal mode pomijamy edge filter (PI is the gate, edge irrelevant)
+    if(!lateGoalMode && c.bestEdge<EDGE_VALUE) return;
     if(live) liveCards.push({card:c,idx,placed:placed[id]});
-    else if(c.match.status!=='complete') upcomingCards.push({card:c,idx,placed:placed[id]});
+    else if(c.match.status!=='complete' && !lateGoalMode) upcomingCards.push({card:c,idx,placed:placed[id]});
   });
   // Expose whitelist stats dla dashboard header info
-  window._wlStats={enabled:!!whitelist.enabled,total:totalChecked,filtered:whitelistFiltered};
+  window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered};
 
   // Update counts
   document.getElementById('dashCountLive').textContent=liveCards.length;
@@ -6707,6 +6931,104 @@ async function dashboardManualRefresh(){
 
 // LIGHT refresh — auto-refresh co 30s. Tylko 1 call do /todays-matches żeby zaktualizować live + placed + watched.
 // Pre-match cards zostają z initial scan (nie ruszamy ich).
+// v9.1: Late Goal live stats poller — auto-fetch fixtures/statistics dla live matches w PI window
+// Cache: window._lateGoalStatsCache[matchId] = {home:{xg,shots,...},away:{...},ts}
+// Trigger: co 90s gdy late goal mode włączony i są live matches w window
+window._lateGoalStatsCache=window._lateGoalStatsCache||{};
+window._lateGoalNotifSent=window._lateGoalNotifSent||{};
+
+async function pollLateGoalStats(){
+  const w=loadWhitelistPrefs();
+  if(!w.enabled || w.mode!=='lategoal') return;
+  if(Date.now()<window._afBackoffUntil) return;
+  const cache=window._scanCardsCache||[];
+  if(!cache.length) return;
+  const lg=w.lateGoal||{};
+  const winFrom=lg.windowMinFrom||50;
+  const winTo=lg.windowMinTo||75;
+  // Find live matches w window which need stats refresh (cache age >90s lub miss)
+  const candidates=cache.filter(c=>{
+    const m=c.match;
+    if(!isLiveMatch(m)) return false;
+    const min=m._af_elapsed||0;
+    if(min<winFrom||min>winTo) return false;
+    // Skip ligi z bias < threshold (oszczędność calls — nie warto)
+    const bias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||LATE_GOAL_LEAGUE_BIAS._default;
+    if(bias<(lg.minLeagueBias||0.60)) return false;
+    return true;
+  });
+  if(!candidates.length) return;
+  // Limit: max 5 statistics calls per poll (oszczędność quota — 5×12/h = 60/h max)
+  const toFetch=candidates.slice(0,5);
+  let updated=0;
+  for(const c of toFetch){
+    const id=String(c.match.id);
+    const cached=window._lateGoalStatsCache[id];
+    if(cached && (Date.now()-cached.ts)<90000) continue;  // <90s old, skip
+    try{
+      const stats=await afLoadFixtureStats(c.match.id);
+      if(stats){
+        window._lateGoalStatsCache[id]={...stats,ts:Date.now()};
+        updated++;
+        // Recompute PI z fresh stats
+        const pi=computeCardPressureIndex(c,stats);
+        const previousPI=c._lastPI||0;
+        c._lastPI=pi;
+        // Trigger notification gdy PI crosses threshold up
+        if(pi>=(lg.threshold||80) && previousPI<(lg.threshold||80)){
+          if(!window._lateGoalNotifSent[id]){
+            window._lateGoalNotifSent[id]=Date.now();
+            sendLateGoalNotification(c,pi,stats);
+          }
+        }
+      }
+    }catch(e){
+      console.warn('[lateGoal] stats fetch fail for',id,e&&e.message);
+    }
+  }
+  if(updated>0 && typeof renderDashboardMatches==='function'){
+    renderDashboardMatches();
+  }
+}
+
+function sendLateGoalNotification(card,pi,stats){
+  const m=card.match;
+  const homeG=(m.homeGoals||[]).length, awayG=(m.awayGoals||[]).length;
+  const minute=m._af_elapsed||0;
+  const title='🔥 Late Goal Hunter trigger!';
+  const body=m.home_name+' '+homeG+':'+awayG+' '+m.away_name+' (min '+minute+'\') · PI '+pi+' · '+m._leagueName;
+  // Tab title flash
+  const origTitle=document.title;
+  document.title='⚡ '+title;
+  setTimeout(()=>{ document.title=origTitle; },10000);
+  // Browser notification (jeśli permission granted)
+  if(typeof Notification!=='undefined' && Notification.permission==='granted'){
+    try{
+      const n=new Notification(title,{body,icon:'./predator-banner.png',tag:'lategoal-'+m.id});
+      n.onclick=()=>{ window.focus(); n.close(); };
+    }catch(_){}
+  }
+  qdToast('🔥 Late Goal: '+m.home_name+' '+homeG+':'+awayG+' '+m.away_name+' · PI '+pi,'red',6000);
+  console.log('[lateGoal] TRIGGER:',m.home_name,'vs',m.away_name,'PI='+pi);
+}
+
+// Auto-poll co 90s
+window._lateGoalPollTimer=window._lateGoalPollTimer||null;
+function startLateGoalPolling(){
+  if(window._lateGoalPollTimer) return;
+  window._lateGoalPollTimer=setInterval(()=>{
+    if(!document.hidden) pollLateGoalStats();
+  },90000);
+  // First poll natychmiast (jeśli late goal mode aktywne)
+  setTimeout(pollLateGoalStats,500);
+}
+function stopLateGoalPolling(){
+  if(window._lateGoalPollTimer){ clearInterval(window._lateGoalPollTimer); window._lateGoalPollTimer=null; }
+}
+// Boot start (gdy sprzed ładowania apki)
+if(document.readyState==='complete') setTimeout(startLateGoalPolling,3000);
+else window.addEventListener('load',()=>setTimeout(startLateGoalPolling,3000));
+
 // v8.8: dashboardLightRefresh — 1 call /fixtures?live=all (api-football real-time).
 // Aktualizuje TYLKO live + placed cards. Zachowuje team stats + odds (nie re-fetchuje).
 async function dashboardLightRefresh(){
@@ -7463,11 +7785,31 @@ function wlPopulateUI(){
   $('setStakeTier1').value=w.stakes?.tier1||50;
   $('setStakeTier2').value=w.stakes?.tier2||30;
   $('setStakeTier3').value=w.stakes?.tier3||20;
+  // v9.1: Strategy mode
+  const sel=$('setStrategyMode'); if(sel) sel.value=w.mode||'whitelist';
+  // Late goal settings
+  if($('setLgThreshold')) $('setLgThreshold').value=w.lateGoal?.threshold||80;
+  if($('setLgStake')) $('setLgStake').value=w.lateGoal?.stake||50;
+  if($('setLgMinBias')) $('setLgMinBias').value=w.lateGoal?.minLeagueBias||0.60;
+  if($('setLgWinFrom')) $('setLgWinFrom').value=w.lateGoal?.windowMinFrom||50;
+  if($('setLgWinTo')) $('setLgWinTo').value=w.lateGoal?.windowMinTo||75;
+  // Toggle late-goal section visibility
+  const lgSection=$('setLateGoalSection'); if(lgSection) lgSection.style.display=(w.mode==='lategoal')?'block':'none';
   wlRenderLeaguesList(w);
   wlRenderTeamsList(w);
   wlRenderBanlist(w);
   wlPopulateTeamSuggestions();
   wlUpdatePreview();
+}
+function changeStrategyMode(){
+  const w=loadWhitelistPrefs();
+  w.mode=$('setStrategyMode').value;
+  saveWhitelistPrefs(w);
+  // Toggle late-goal section visibility
+  const lgSection=$('setLateGoalSection');
+  if(lgSection) lgSection.style.display=(w.mode==='lategoal')?'block':'none';
+  wlUpdatePreview();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
 }
 function wlRenderLeaguesList(w){
   const div=$('wlLeaguesList');
@@ -7541,6 +7883,15 @@ function saveWhitelistFromUI(){
     tier2:parseInt($('setStakeTier2').value)||30,
     tier3:parseInt($('setStakeTier3').value)||20
   };
+  // v9.1: late-goal settings
+  if($('setLgThreshold')){
+    if(!w.lateGoal) w.lateGoal={};
+    w.lateGoal.threshold=parseInt($('setLgThreshold').value)||80;
+    w.lateGoal.stake=parseInt($('setLgStake').value)||50;
+    w.lateGoal.minLeagueBias=parseFloat($('setLgMinBias').value)||0.60;
+    w.lateGoal.windowMinFrom=parseInt($('setLgWinFrom').value)||50;
+    w.lateGoal.windowMinTo=parseInt($('setLgWinTo').value)||75;
+  }
   saveWhitelistPrefs(w);
   if(typeof renderDashboardMatches==='function') renderDashboardMatches();
 }

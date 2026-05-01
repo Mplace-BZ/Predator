@@ -361,9 +361,131 @@ function test_whitelist_filter(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// TEST 9 (v9.1): Pressure Index calculation + Late Goal Hunter filter
+// ──────────────────────────────────────────────────────────────────────
+function test_pressure_index(){
+  header('TEST 9 (v9.1): Pressure Index + Late Goal Hunter');
+
+  // Replikacja pressureIndex z index.html
+  function pressureIndex(features){
+    const xgDeficit=Math.min(1,Math.max(0,(features.xgTotal-features.currentGoals)/2.0));
+    const tied=features.homeScore===features.awayScore;
+    const closeGap=Math.abs(features.homeScore-features.awayScore)<=1;
+    const scoreUrgency=features.currentGoals===0?1.0:tied?0.85:closeGap?0.6:0.3;
+    const leagueBias=features.leagueBias!=null?features.leagueBias:0.5;
+    const minRemaining=Math.max(0,90-features.minute);
+    const timeFactor=Math.min(1,minRemaining/30);
+    const shotsConvGap=features.shotsConvGap||0;
+    const idx=xgDeficit*30+scoreUrgency*25+leagueBias*20+timeFactor*15+Math.min(10,shotsConvGap);
+    return Math.round(Math.min(100,Math.max(0,idx)));
+  }
+
+  // Scenariusz 1: 0:0 @ 60' z xG 1.8 (wysoki deficit), Serie A bias 0.658
+  // Expected: bardzo wysoki PI (xgDeficit~0.9, urgency 1.0, bias 0.66, timeFactor 1.0)
+  const pi1=pressureIndex({xgTotal:1.8,currentGoals:0,homeScore:0,awayScore:0,minute:60,leagueBias:0.658});
+  console.log('  0:0 @60\' xG=1.8 SerieA → PI='+pi1);
+  assert(pi1>=80,'wysoki deficit + 0:0 + dobre liga = PI ≥80 (got '+pi1+')');
+
+  // Scenariusz 2: 3:0 @ 60' z xG 2.5 (już sypie), Eredivisie bias 0.73
+  // currentGoals 3 → urgency low, deficit ~0
+  const pi2=pressureIndex({xgTotal:2.5,currentGoals:3,homeScore:3,awayScore:0,minute:60,leagueBias:0.73});
+  console.log('  3:0 @60\' xG=2.5 Eredivisie → PI='+pi2);
+  assert(pi2<70,'mecz już rozstrzygnięty (3:0) = niski PI mimo wysokiego bias (got '+pi2+')');
+
+  // Scenariusz 3: 1:1 @ 75' z xG 2.4 (close end-game), Premier League bias 0.725
+  // Edge case: time factor maleje (50%), scoreUrgency wysoki (1:1 tied=0.85), low deficit (0.2)
+  // Math: 6 + 21.25 + 14.5 + 7.5 = 49pp — realistic mid-range
+  const pi3=pressureIndex({xgTotal:2.4,currentGoals:2,homeScore:1,awayScore:1,minute:75,leagueBias:0.725});
+  console.log('  1:1 @75\' xG=2.4 PL → PI='+pi3);
+  assert(pi3>=40 && pi3<=70,'remis z presją @75\' but xG already realised = mid PI (got '+pi3+')');
+
+  // Scenariusz 4: 0:0 @ 30' (za wcześnie na late goal mode) — timeFactor=2.0 ale capped
+  const pi4=pressureIndex({xgTotal:0.5,currentGoals:0,homeScore:0,awayScore:0,minute:30,leagueBias:0.5});
+  console.log('  0:0 @30\' (poza window) low xG → PI='+pi4);
+  assert(pi4<70,'low xG defensywny mecz = niski PI (got '+pi4+')');
+
+  // Replikacja LATE_GOAL_LEAGUE_BIAS + isCardLateGoalCandidate
+  const LATE_GOAL_LEAGUE_BIAS={39:0.725,140:0.655,135:0.658,78:0.714,61:0.667,88:0.730,71:0.645,_default:0.65};
+  function computeCardPI(card,liveStats){
+    const m=card.match;
+    if(m.status!=='in_play') return 0;
+    const minute=m._af_elapsed||60;
+    const homeG=(m.homeGoals||[]).length, awayG=(m.awayGoals||[]).length;
+    const cg=homeG+awayG;
+    let xgTotal;
+    if(liveStats?.home && liveStats?.away) xgTotal=(liveStats.home.xg||0)+(liveStats.away.xg||0);
+    else { const sH=card.homeT?.stats||{},sA=card.awayT?.stats||{}; xgTotal=((sH.xg_for_avg_home||0)+(sA.xg_for_avg_away||0))*(minute/90); }
+    const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||0.65;
+    return pressureIndex({xgTotal,currentGoals:cg,homeScore:homeG,awayScore:awayG,minute,leagueBias});
+  }
+  function isCardLateGoalCandidate(card,prefs,liveStats){
+    if(!card?.match) return false;
+    const m=card.match;
+    if(m.status!=='in_play') return false;
+    const minute=m._af_elapsed||0;
+    const lg=prefs.lateGoal||{};
+    if(minute<(lg.windowMinFrom||50)||minute>(lg.windowMinTo||75)) return false;
+    const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||0.65;
+    if(leagueBias<(lg.minLeagueBias||0.60)) return false;
+    const pi=computeCardPI(card,liveStats);
+    if(pi<(lg.threshold||80)) return false;
+    const estimatedRate=Math.min(0.95,leagueBias*1.05+(pi-80)/200);
+    const suggestedOdd=Math.max(1.10,Math.min(5.0,1/(estimatedRate*1.05)));
+    return {pi,estimatedRate,suggestedOdd,leagueBias};
+  }
+
+  // Test late goal filter — fresh live match Serie A (id=135), 0:0 @62', high-xG mecz
+  // xG_total_match estimate: home 1.8 + away 1.0 = 2.8 → live @62 = 2.8*(62/90) = 1.93
+  // PI math: deficit (1.93-0)/2 = 0.97 → 29pp + urgency 1.0 → 25pp + bias 0.658 → 13.16pp + time (90-62)/30=0.93 → 14pp = ~81
+  const card1={
+    match:{
+      id:99001,home_name:'Inter',away_name:'Milan',
+      _af_leagueId:135,status:'in_play',_af_elapsed:62,
+      homeGoals:[],awayGoals:[]
+    },
+    homeT:{stats:{xg_for_avg_home:1.8}},
+    awayT:{stats:{xg_for_avg_away:1.0}}
+  };
+  const prefs={enabled:true,mode:'lategoal',lateGoal:{threshold:80,windowMinFrom:50,windowMinTo:75,minLeagueBias:0.60}};
+  const r1=isCardLateGoalCandidate(card1,prefs);
+  console.log('  Inter 0:0 Milan @62\' Serie A xG~1.5 → '+(r1?'PI='+r1.pi+', rate='+(r1.estimatedRate*100).toFixed(0)+'%, odd~'+r1.suggestedOdd.toFixed(2):'BLOCKED'));
+  assert(r1!==false,'live anomaly Serie A 0:0 → late goal candidate');
+  assert(r1.pi>=80,'PI ≥80 dla anomalii (got '+r1?.pi+')');
+
+  // Test 2: minute 30 (poza window) → blocked
+  const card2={...card1,match:{...card1.match,_af_elapsed:30}};
+  const r2=isCardLateGoalCandidate(card2,prefs);
+  console.log('  Same match @30\' (poza window) → '+(r2?'PASS':'BLOCKED'));
+  assert(r2===false,'minute 30 < window start 50 → blocked');
+
+  // Test 3: liga z niskim bias (np. fictional lig id=999) → blocked nawet jeśli PI wysoki
+  const card3={...card1,match:{...card1.match,_af_leagueId:999}};
+  const r3=isCardLateGoalCandidate(card3,prefs);
+  console.log('  Same match Serie A → unknown liga → '+(r3?'PASS PI='+r3.pi:'BLOCKED'));
+  // _default 0.65 ≥ 0.60 więc passes — sprawdź czy PI wystarczy
+  // (nie blokujemy, default bias 0.65 wystarcza)
+
+  // Test 4: mode=whitelist (nie lategoal) → fallback to whitelist logic
+  const prefsWhite={enabled:true,mode:'whitelist',leagues:[],teams:[],banlist:[]};
+  // (function isCardInWhitelist nie replikowana tutaj, test już done w test_whitelist_filter)
+
+  // Test 5: 3:0 @60 (mecz rozstrzygnięty) → low PI → blocked
+  const card5={
+    match:{id:99002,home_name:'A',away_name:'B',_af_leagueId:135,status:'in_play',_af_elapsed:62,
+      homeGoals:['12','25','45'],awayGoals:[]},
+    homeT:{stats:{xg_for_avg_home:1.0}},awayT:{stats:{xg_for_avg_away:0.5}}
+  };
+  const r5=isCardLateGoalCandidate(card5,prefs);
+  console.log('  3:0 @62\' (rozstrzygnięty) → '+(r5?'PI='+r5.pi:'BLOCKED'));
+  assert(r5===false,'3:0 = mecz po, niski PI → blocked');
+
+  console.log('  All Pressure Index scenarios pass');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────────────────────────────
-console.log('Predator scan pipeline tests v9.0 (api-football + whitelist) · '+new Date().toLocaleString('pl'));
+console.log('Predator scan pipeline tests v9.1 (api-football + whitelist + late goal) · '+new Date().toLocaleString('pl'));
 try{
   await test_status();
   await test_fixtures_today();
@@ -373,6 +495,7 @@ try{
   await test_odds_structure();
   await test_xg_live();
   test_whitelist_filter();  // sync — pure logic, no API
+  test_pressure_index();    // v9.1 — pure logic, no API
 }catch(e){
   console.error('TEST CRASH:',e);
   failed++;

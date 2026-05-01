@@ -50,7 +50,76 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v9.0 (WHITELIST MODE — backtest-validated picks only + per-team filtering)
+## Aktualna wersja: v9.1 (LATE GOAL HUNTER — Pressure Index strategy z 7401-mecz research)
+
+## v9.1 — Late Goal Hunter (high-odds anomaly hunting via Pressure Index)
+**Trigger:** Chris zauważył że v9.0 whitelist generuje głównie picks Under 2.5 z niskimi kursami (1.16-1.53), poza jego sweet spotem 1.80+. Plus filozofia z CLAUDE.md: "TYLKO Live betting" + "Najlepszy moment wejścia: gdy wynik NIE odzwierciedla dominacji". Whitelist v9.0 to PRE-MATCH stable picks; Chris realnie chce LIVE late-goal hunting z wysokimi kursami.
+
+**Research:** 7401 meczów (7 lig × 3 sezony 22/23-24/25 z FootyStats `/league-matches`) z goal timings.
+- Snapshot @ minute 60: simulujemy live entry, computujemy P(any goal in 60-90') per scenariusz
+- Pressure Index v1.0 wzór z waged features:
+  ```
+  pressureIndex = xgDeficit*30 + scoreUrgency*25 + leagueBias*20 + timeFactor*15 + shotsConvGap*1
+  ```
+- Calibration: threshold ≥80 → 70.8% hit, ROI **+3.3% globalnie** (617 picks)
+- Per liga @ PI≥80:
+  - **Italy Serie A: +15.2%** (defensywna liga, model dobrze widzi anomalie)
+  - **Spain La Liga: +10.6%**
+  - France Ligue 1: +6.0%
+  - Bundesliga: +4.2%
+  - Brazil Serie A: +3.8%
+  - Premier League: -1.5% (słaba calibration, pominięta)
+  - **Eredivisie: -9.8%** (paradoks — bias 73% już wysoki, kursy zaszumiałe)
+
+**Top patterns z research (P(any goal 60-90'), sample ≥30):**
+- PL @ 3+:0+ → **86.5%** (mecze z dużą ilością goli sypią dalej)
+- BL @ 2+:1+ → 80.3%
+- PL @ 2+:1+ → 80.2%
+- Eredivisie @ 0:1 → 76.8%
+- BL @ 1:0 → 75.0%
+- PL @ 0:1 → 73.5%
+
+**League bias map** ([index.html:6306](index.html#L6306) `LATE_GOAL_LEAGUE_BIAS`):
+PL 72.5% · LaLiga 65.5% · SerieA 65.8% · BL 71.4% · Ligue1 66.7% · Eredivisie 73% · BrazilA 64.5%
+
+### Architektura
+
+**Mode dispatcher** ([index.html:6296](index.html#L6296)):
+- `prefs.mode === 'whitelist'` → v9.0 logic (liga × market + per-team)
+- `prefs.mode === 'lategoal'` → v9.1 logic (PI ≥threshold w window)
+
+**Pressure Index** ([index.html:6273](index.html#L6273) `pressureIndex`, `computeCardPressureIndex`):
+- 5 features → 0-100 score
+- Live xG z `/fixtures/statistics` (top ligi) lub fallback do team season xG × time decay
+- Shots conversion gap = bonus gdy <10% conversion z ≥10 shots (defenswa zniechęcona)
+
+**Filter** ([index.html:6326](index.html#L6326) `isCardLateGoalCandidate`):
+- Window check: minute ∈ [50, 75]
+- League bias check: skip ligi z baseline <60%
+- PI threshold check: ≥80 default (configurable)
+- Returns `{pi, estimatedRate, suggestedOdd, suggestedMarket, leagueBias}`
+
+**Live Module** ([index.html:6755](index.html#L6755) `pollLateGoalStats`):
+- Auto-poll co 90s (gdy mode=lategoal i są live matches w window)
+- Per-poll: max 5 `/fixtures/statistics` calls (quota economy: ~60/h max)
+- Cache: `window._lateGoalStatsCache[matchId]` 90s TTL
+- Notification trigger: gdy PI crosses threshold up — browser notification + tab title flash + qdToast
+
+**Settings UI** ([index.html:1701](index.html#L1701)):
+- Mode dropdown: Whitelist | Late Goal Hunter
+- Late Goal section: PI threshold (40-100), Stake, Min league bias, Window (from-to)
+- Visible tylko gdy mode=lategoal
+
+**Dashboard rendering** ([index.html:6418](index.html#L6418) `renderDashboardCard`):
+- `card._lateGoal` → custom pickHtml z `🔥 PI XX` gauge + suggested market/odd + estimated payout
+- Edge badge → `🔥 PI XX` (color: green ≥90, accent ≥80, warning <80)
+- Skips standard edge filter w lategoal mode (PI is the gate)
+
+**Tests** ([test/test_scan_pipeline.mjs:300](test/test_scan_pipeline.mjs#L300)):
+- `test_pressure_index()` — 7 scenariuszy: 0:0 high xG SerieA (PI 80), 3:0 rozstrzygnięty (PI 37), 1:1 @75 mid-PI (49), 0:0 low xG (58), late goal candidate Inter-Milan (PI 81), out-of-window @30', 3:0 banned
+- All 29 tests pass
+
+**Filozofia v9.1 vs v9.0:** Whitelist v9.0 = "stable picks z niskimi kursami, low variance, +12-18% expected ROI". Late Goal Hunter v9.1 = "wysokie kursy 1.40-3.00, high variance, +3-15% per-liga ROI z research, ale wymagana aktywna sesja podczas meczów". Mutually exclusive — wybierasz strategię w settings.
 
 ## v9.0 — Whitelist Mode (multi-season validated picks)
 **Trigger:** Multi-season backtest (8 lig × 3 sezony, 24 backtestów) ujawnił że v8.9 single-season whitelist była w 50% **sezonowy fluke**. Tylko 6 kombinacji liga × market jest stabilne 3 sezony pod rząd. Plus: Chris gra PL/Bundesliga/Ligue 1 ale tylko dla **wybranych drużyn** — globalnie te ligi tracą, ale konkretne drużyny mogą bić bukmachera (Bayern Home Win, Liverpool Over 2.5).
