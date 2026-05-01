@@ -483,9 +483,119 @@ function test_pressure_index(){
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// v9.4: TOP LEAGUES filter — global hard whitelist po api-football ID
+// ──────────────────────────────────────────────────────────────────────
+const TOP_LEAGUES_DEFAULTS={
+  2:'UEFA Champions League', 3:'UEFA Europa League', 848:'UEFA Conference League',
+  4:'Euro Championship', 5:'UEFA Nations League', 531:'UEFA Super Cup',
+  1:'FIFA World Cup', 9:'Copa America', 32:'World Cup Qualifying Europe',
+  39:'Premier League', 40:'Championship', 45:'FA Cup', 48:'EFL Cup', 528:'Community Shield',
+  140:'La Liga', 141:'La Liga 2', 143:'Copa del Rey', 556:'Super Cup',
+  135:'Serie A', 136:'Serie B', 137:'Coppa Italia', 547:'Super Cup',
+  78:'Bundesliga', 79:'2. Bundesliga', 81:'DFB Pokal', 529:'Super Cup',
+  61:'Ligue 1', 62:'Ligue 2', 66:'Coupe de France', 526:'Trophée des Champions',
+  88:'Eredivisie',
+  94:'Primeira Liga', 96:'Taça de Portugal',
+  144:'Jupiler Pro League',
+  203:'Süper Lig', 206:'Cup',
+  197:'Super League 1',
+  106:'Ekstraklasa',
+  179:'Premiership',
+  253:'Major League Soccer',
+  262:'Liga MX',
+  71:'Serie A', 73:'Copa do Brasil',
+  128:'Liga Profesional Argentina', 130:'Copa Argentina',
+  307:'Saudi Pro League'
+};
+function getEffectiveTopLeagueIds(prefs){
+  const ids=new Set(Object.keys(TOP_LEAGUES_DEFAULTS).map(Number));
+  if(prefs && Array.isArray(prefs.customLeagueIds)) prefs.customLeagueIds.forEach(id=>ids.add(Number(id)));
+  if(prefs && Array.isArray(prefs.disabledLeagueIds)) prefs.disabledLeagueIds.forEach(id=>ids.delete(Number(id)));
+  return ids;
+}
+function isMatchInTopLeagues(match,prefs){
+  if(!prefs || !prefs.topLeaguesOnly) return true;
+  const id=match._af_leagueId;
+  if(!id) return false;
+  return getEffectiveTopLeagueIds(prefs).has(Number(id));
+}
+
+function test_top_leagues_filter(){
+  header('TEST 10: Top leagues filter (v9.4) — globalna lista 30+ elite lig, blokuje "krzaki"');
+  const prefsOn={topLeaguesOnly:true};
+  const prefsOff={topLeaguesOnly:false};
+
+  // Krzaki które Chris widział i nie chciał:
+  const niPremierIntermediate={_af_leagueId:412,_leagueName:'Premier Intermediate League'};
+  const scottishChampionship={_af_leagueId:180,_leagueName:'Championship'};  // nie EN Champ (40)
+  const polishIIILiga={_af_leagueId:108,_leagueName:'III Liga - Group 2'};
+  const georgianErovnuli={_af_leagueId:327,_leagueName:'Erovnuli Liga'};
+  const uaeLeagueCup={_af_leagueId:919,_leagueName:'League Cup'};
+  const danishSuperliga={_af_leagueId:119,_leagueName:'Superliga'};
+
+  // Top mecze które Chris chce widzieć:
+  const turkishSuperLig={_af_leagueId:203,_leagueName:'Süper Lig'};
+  const italianSerieA={_af_leagueId:135,_leagueName:'Serie A'};
+  const polishEkstraklasa={_af_leagueId:106,_leagueName:'Ekstraklasa'};
+  const englishPL={_af_leagueId:39,_leagueName:'Premier League'};
+  const englishChampionship={_af_leagueId:40,_leagueName:'Championship'};
+  const ucl={_af_leagueId:2,_leagueName:'UEFA Champions League'};
+
+  // 1. Krzaki blokowane
+  assert(!isMatchInTopLeagues(niPremierIntermediate,prefsOn),'NI Premier Intermediate (id 412) blocked');
+  assert(!isMatchInTopLeagues(scottishChampionship,prefsOn),'Scottish Championship (id 180) blocked');
+  assert(!isMatchInTopLeagues(polishIIILiga,prefsOn),'Polish III Liga (id 108) blocked');
+  assert(!isMatchInTopLeagues(georgianErovnuli,prefsOn),'Georgian Erovnuli (id 327) blocked');
+  assert(!isMatchInTopLeagues(uaeLeagueCup,prefsOn),'UAE League Cup (id 919) blocked');
+  assert(!isMatchInTopLeagues(danishSuperliga,prefsOn),'Danish Superliga (id 119) blocked (Brondby etc.)');
+
+  // 2. Top ligi pokazane
+  assert(isMatchInTopLeagues(turkishSuperLig,prefsOn),'Turkish Süper Lig (id 203) pokazany');
+  assert(isMatchInTopLeagues(italianSerieA,prefsOn),'Italian Serie A (id 135) pokazany');
+  assert(isMatchInTopLeagues(polishEkstraklasa,prefsOn),'Polish Ekstraklasa (id 106) pokazany');
+  assert(isMatchInTopLeagues(englishPL,prefsOn),'English Premier League (id 39) pokazany');
+  assert(isMatchInTopLeagues(englishChampionship,prefsOn),'English Championship (id 40) pokazany');
+  assert(isMatchInTopLeagues(ucl,prefsOn),'UEFA Champions League (id 2) pokazany');
+
+  // 3. Toggle off — wszystko widoczne
+  assert(isMatchInTopLeagues(niPremierIntermediate,prefsOff),'Toggle off → NI Premier Intermediate VIDOCZNY');
+  assert(isMatchInTopLeagues(polishIIILiga,prefsOff),'Toggle off → Polish III Liga VIDOCZNY');
+
+  // 4. Custom league addition (user dodaje własną)
+  const prefsCustom={topLeaguesOnly:true,customLeagueIds:[119]};  // user enabled Danish Superliga
+  assert(isMatchInTopLeagues(danishSuperliga,prefsCustom),'Custom add: Danish Superliga (id 119) → pokazany');
+  assert(!isMatchInTopLeagues(polishIIILiga,prefsCustom),'Custom add: nie wpływa na inne (Polish III Liga nadal blocked)');
+
+  // 5. Disabled default (user wyłącza Premier League)
+  const prefsDisabled={topLeaguesOnly:true,disabledLeagueIds:[39]};
+  assert(!isMatchInTopLeagues(englishPL,prefsDisabled),'Disabled default: PL (id 39) → blocked');
+  assert(isMatchInTopLeagues(italianSerieA,prefsDisabled),'Disabled default: Serie A nadal pokazany');
+
+  // 6. Edge case: brak _af_leagueId
+  const noId={_af_leagueId:null,_leagueName:'???'};
+  assert(!isMatchInTopLeagues(noId,prefsOn),'Match bez _af_leagueId → blocked (safety)');
+  assert(isMatchInTopLeagues(noId,prefsOff),'Match bez _af_leagueId + toggle off → pokazany');
+
+  // 7. Comprehensive coverage check — top 5 European + UEFA all included by default
+  const ids=getEffectiveTopLeagueIds(prefsOn);
+  const mustHave=[2,3,848,39,140,135,78,61,88,94,144,203,106,253,71];
+  mustHave.forEach(id=>{
+    assert(ids.has(id),'Default has league id '+id);
+  });
+
+  // 8. Comprehensive exclusion check — niedopuszczalne ligi NIE w defaults
+  const mustExclude=[180,108,327,412,919];  // Scottish Champ, Polish III, Georgian, NI Inter, UAE Cup
+  mustExclude.forEach(id=>{
+    assert(!ids.has(id),'Default does NOT have "krzak" id '+id);
+  });
+
+  console.log('  All top leagues filter scenarios pass');
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────────────────────────────
-console.log('Predator scan pipeline tests v9.1 (api-football + whitelist + late goal) · '+new Date().toLocaleString('pl'));
+console.log('Predator scan pipeline tests v9.4 (api-football + whitelist + late goal + top leagues) · '+new Date().toLocaleString('pl'));
 try{
   await test_status();
   await test_fixtures_today();
@@ -496,6 +606,7 @@ try{
   await test_xg_live();
   test_whitelist_filter();  // sync — pure logic, no API
   test_pressure_index();    // v9.1 — pure logic, no API
+  test_top_leagues_filter();// v9.4 — pure logic, no API
 }catch(e){
   console.error('TEST CRASH:',e);
   failed++;

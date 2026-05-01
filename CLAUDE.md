@@ -50,7 +50,64 @@ Wszystkie etykiety user-facing przerobione na PL human-friendly:
 - Repo: https://github.com/Mplace-BZ/Predator
 - Local: /Users/chrismac/bazgroszyt/Predator/
 
-## Aktualna wersja: v9.1 (LATE GOAL HUNTER — Pressure Index strategy z 7401-mecz research)
+## Aktualna wersja: v9.4 (TOP LEAGUES global hard whitelist — filtruje "krzaki")
+
+## v9.4 — TOP LEAGUES global hard whitelist
+**Trigger:** Chris widział na dashboardzie NI Premier Intermediate League, Scottish Championship (lower tier), Polish III Liga, Georgian Erovnuli, UAE League Cup, Danish Superliga (Brondby) — explicit: "TOP LIGI a nie krzaki kurwa o tym już rozmawialiśmy". v9.3.x sub-threshold fallback respektował lategoal `preferredLeagues`, ale `liveAllBypassesWhitelist=true` + brak globalnego filtra = krzaki nadal latały w "Wszystkie live" + "Dziś".
+
+**Solution:** Hardcoded `TOP_LEAGUES_DEFAULTS` map (~30 elite competitions po api-football ID) apliowany jako PIERWSZY filter w `renderDashboardMatches`, NIEZALEŻNIE od strategy mode. Niedopuszczalne ligi są blocked completely (poza placedCards — user explicitly trackuje swoje bety).
+
+### Lista (defaults)
+- **UEFA**: UCL (2), UEL (3), UECL (848), Euro (4), Nations League (5), Super Cup (531)
+- **FIFA**: World Cup (1), Copa America (9)
+- **England**: PL (39), Championship (40), FA Cup (45), EFL Cup (48), Community Shield (528)
+- **Spain**: La Liga (140), La Liga 2 (141), Copa del Rey (143), Super Cup (556)
+- **Italy**: Serie A (135), Serie B (136), Coppa Italia (137), Super Cup (547)
+- **Germany**: Bundesliga (78), 2. Bundesliga (79), DFB Pokal (81), Super Cup (529)
+- **France**: Ligue 1 (61), Ligue 2 (62), Coupe de France (66), Trophée des Champions (526)
+- **Netherlands**: Eredivisie (88)
+- **Portugal**: Primeira Liga (94), Taça (96)
+- **Belgium**: Pro League (144)
+- **Turkey**: Süper Lig (203), Cup (206)
+- **Greece**: Super League 1 (197)
+- **Poland**: Ekstraklasa (106)
+- **Scotland**: Premiership (179) — top tier only
+- **USA**: MLS (253)
+- **Mexico**: Liga MX (262)
+- **Brazil**: Serie A (71), Copa do Brasil (73)
+- **Argentina**: Liga Profesional (128), Copa Argentina (130)
+- **Saudi**: Pro League (307)
+
+### Architektura
+- `TOP_LEAGUES_DEFAULTS` ([index.html:6244+](index.html#L6244)) — ID → name map.
+- `getEffectiveTopLeagueIds(prefs)` — defaults + user's `customLeagueIds` − `disabledLeagueIds`.
+- `isMatchInTopLeagues(match,prefs)` — toggle check + ID lookup. Returns true/false.
+- Filter point: `renderDashboardMatches` cards.forEach przed bucket assignment ([index.html:6985+](index.html#L6985)).
+- Stats: `window._wlStats.topLeaguesFiltered` — count meczów odfiltrowanych.
+
+### Settings UI
+- Toggle "🌍 Tylko top ligi (filtruj 'krzaki')" — default ON.
+- Stats line: "Aktywne ligi: N · Defaults: M · Custom: K · Disabled: D".
+- Collapsible editor: 2-col grid wszystkich defaults z checkboxami (możesz wyłączyć dowolny). Plus custom league section z ID + name input + remove button.
+- Custom add: api-football league ID + display name → użytkownik dodaje co chce (np. Swiss Super League id 207).
+- LocalStorage: `predator_dashboard_pref` przedłużone o `topLeaguesOnly`, `customLeagueIds`, `customLeagueNames`, `disabledLeagueIds`.
+
+### Empty state
+Gdy filter blokuje wszystko w bucket: dedykowany empty state z `🌍` icon, "X meczów odfiltrowanych" + 2 CTA: "⚙ Edytuj top ligi" / "🌐 Wyłącz filter (pokaż wszystko)".
+
+### Tests
+- `test_top_leagues_filter()` w [test/test_scan_pipeline.mjs](test/test_scan_pipeline.mjs) — 38 scenariuszy:
+  1. 6× "krzaki" blocked (NI, Scottish Champ, Polish III, Georgian, UAE Cup, Danish Superliga)
+  2. 6× top ligi pokazane (Turkish, Italian, Polish Ekstraklasa, PL, EN Championship, UCL)
+  3. Toggle off → wszystko widoczne
+  4. Custom add → user's added ligi pokazane bez wpływu na inne
+  5. Disabled default → user wyłącza PL → blocked
+  6. Edge case: brak `_af_leagueId` → blocked w on, shown w off (safety)
+  7. Coverage: top 5 European + UEFA all in defaults (15 IDs sprawdzonych)
+  8. Exclusion: 5 "krzakowych" IDs NIE w defaults
+
+### Filozofia
+v9.3.x próbowało rozwiązać problem przez "respect preferredLeagues w sub-threshold fallback" — ale lategoal `preferredLeagues` to wąska lista 6 lig dla research-backed strategy. v9.4 = osobna warstwa: GLOBALNY filter "co w ogóle pokazujemy" niezależnie od jakiejkolwiek strategii. `topLeaguesOnly=true` + `lategoal mode` = "tylko top ligi z PI≥80". `topLeaguesOnly=true` + whitelist mode = "tylko top ligi z value≥5%". `topLeaguesOnly=false` = chaos (debug only).
 
 ## v9.1 — Late Goal Hunter (high-odds anomaly hunting via Pressure Index)
 **Trigger:** Chris zauważył że v9.0 whitelist generuje głównie picks Under 2.5 z niskimi kursami (1.16-1.53), poza jego sweet spotem 1.80+. Plus filozofia z CLAUDE.md: "TYLKO Live betting" + "Najlepszy moment wejścia: gdy wynik NIE odzwierciedla dominacji". Whitelist v9.0 to PRE-MATCH stable picks; Chris realnie chce LIVE late-goal hunting z wysokimi kursami.

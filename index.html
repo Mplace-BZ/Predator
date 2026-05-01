@@ -820,7 +820,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.3.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -1699,6 +1699,26 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <div class="hint">Stała mnożenia Kelly. Default 0.25 = ćwiartka Kelly (konserwatywne). 1.0 = pełny Kelly (agresywne).</div>
     </div>
 
+    <!-- v9.4: TOP LEAGUES filter — global hard whitelist po api-football ID -->
+    <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
+      <label style="margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="setTopLeaguesOnly" onchange="toggleTopLeaguesOnly()" style="accent-color:var(--accent);width:18px;height:18px;">
+        <span style="font-weight:600;">🌍 Tylko top ligi (filtruj "krzaki")</span>
+      </label>
+      <div class="hint" style="margin-bottom:10px;">Pokazuje WYŁĄCZNIE mecze z ~30 top lig (UCL/UEL/UECL, top 5 European, Eredivisie, Primeira, Süper Lig, Ekstraklasa, MLS, Brazil Serie A, Argentyna, etc.). Filtruje: NI Premier Intermediate, Scottish Championship, Polish III liga, Georgian Erovnuli, UAE League Cup, U-divisions, lower-tier women, etc. Apliowany WSZĘDZIE (LIVE, Wszystkie live, Dziś, Moje bety = wyjątek bo user explicitly tracks).</div>
+      <div id="topLeaguesStats" style="font-size:11px;color:var(--text-dim);margin-bottom:10px;font-family:var(--mono);"></div>
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer;font-size:12px;color:var(--accent);user-select:none;">⚙ Edytuj listę top lig (zaznacz/odznacz + dodaj custom)</summary>
+        <div id="topLeaguesEditor" style="margin-top:10px;background:var(--surface-2);padding:12px;border-radius:8px;max-height:320px;overflow-y:auto;"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <input type="number" id="topLeaguesCustomId" placeholder="api-football league ID (np. 207)" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--mono);font-size:12px;">
+          <input type="text" id="topLeaguesCustomName" placeholder="Nazwa (np. Swiss Super League)" style="flex:1.5;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">
+          <button class="btn btn-sm" onclick="addCustomTopLeague()" style="background:var(--accent);color:var(--bg);">+ Dodaj</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:6px;">ID znajdziesz w api-football.com/leagues lub w console.log scan'a (LIGI: object).</div>
+      </details>
+    </div>
+
     <!-- v9.0/v9.1: Strategy Mode — Whitelist (pre-match) lub Late Goal Hunter (live) -->
     <div class="modal-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:18px;">
       <label style="margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -1919,7 +1939,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.3.4
+    Powered by MPlace · Match Predator v9.4
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6233,9 +6253,79 @@ function loadPlacedMatches(){
 }
 function savePlacedMatches(map){ localStorage.setItem(DASH_PLACED_KEY,JSON.stringify(map)); }
 function loadDashPrefs(){
-  try{ return Object.assign({activeTab:'live',hidden:[]},JSON.parse(localStorage.getItem(DASH_PREFS_KEY)||'{}')); }catch(_){ return {activeTab:'live',hidden:[]}; }
+  try{ return Object.assign({activeTab:'live',hidden:[],topLeaguesOnly:true,customLeagueIds:[]},JSON.parse(localStorage.getItem(DASH_PREFS_KEY)||'{}')); }catch(_){ return {activeTab:'live',hidden:[],topLeaguesOnly:true,customLeagueIds:[]}; }
 }
 function saveDashPrefs(p){ localStorage.setItem(DASH_PREFS_KEY,JSON.stringify(p)); }
+
+// ──────────────────────────────────────────────────────────────────────
+// v9.4: TOP LEAGUES global hard whitelist — apliowany dla każdej karty,
+// niezależnie od strategy mode. Filtruje "krzaki" (NI Premier Intermediate,
+// Scottish Championship, UAE Cup, Polish III liga, Georgian Erovnuli, etc.)
+// Mapping: api-football league_id → display name.
+// User może dodać custom IDs przez settings.
+// ──────────────────────────────────────────────────────────────────────
+const TOP_LEAGUES_DEFAULTS={
+  // UEFA — top european competitions
+  2:'UEFA Champions League', 3:'UEFA Europa League', 848:'UEFA Conference League',
+  4:'Euro Championship', 5:'UEFA Nations League', 531:'UEFA Super Cup',
+  // FIFA / international top
+  1:'FIFA World Cup', 9:'Copa America', 32:'World Cup Qualifying Europe',
+  // England — top tier + Championship + cups
+  39:'Premier League', 40:'Championship', 45:'FA Cup', 48:'EFL Cup', 528:'Community Shield',
+  // Spain
+  140:'La Liga', 141:'La Liga 2', 143:'Copa del Rey', 556:'Super Cup',
+  // Italy
+  135:'Serie A', 136:'Serie B', 137:'Coppa Italia', 547:'Super Cup',
+  // Germany
+  78:'Bundesliga', 79:'2. Bundesliga', 81:'DFB Pokal', 529:'Super Cup',
+  // France
+  61:'Ligue 1', 62:'Ligue 2', 66:'Coupe de France', 526:'Trophée des Champions',
+  // Netherlands
+  88:'Eredivisie',
+  // Portugal
+  94:'Primeira Liga', 96:'Taça de Portugal',
+  // Belgium
+  144:'Jupiler Pro League',
+  // Turkey
+  203:'Süper Lig', 206:'Cup',
+  // Greece
+  197:'Super League 1',
+  // Poland
+  106:'Ekstraklasa',
+  // Scotland — Premiership (top tier) only
+  179:'Premiership',
+  // USA / Canada
+  253:'Major League Soccer',
+  // Mexico
+  262:'Liga MX',
+  // Brazil
+  71:'Serie A', 73:'Copa do Brasil',
+  // Argentina
+  128:'Liga Profesional Argentina', 130:'Copa Argentina',
+  // Saudi (Pro League — major now)
+  307:'Saudi Pro League'
+};
+
+function getEffectiveTopLeagueIds(prefs){
+  // Default IDs + user's custom additions
+  const ids=new Set(Object.keys(TOP_LEAGUES_DEFAULTS).map(Number));
+  if(prefs && Array.isArray(prefs.customLeagueIds)){
+    prefs.customLeagueIds.forEach(id=>ids.add(Number(id)));
+  }
+  if(prefs && Array.isArray(prefs.disabledLeagueIds)){
+    prefs.disabledLeagueIds.forEach(id=>ids.delete(Number(id)));
+  }
+  return ids;
+}
+
+// Hard filter: czy mecz jest w top ligach? Apliowany w renderDashboardMatches.
+// Returns true = pokaż, false = ukryj.
+function isMatchInTopLeagues(match,prefs){
+  if(!prefs || !prefs.topLeaguesOnly) return true;  // toggle off = pokaż wszystko
+  const id=match._af_leagueId;
+  if(!id) return false;  // brak ID = ukryj (nie wiemy co to)
+  return getEffectiveTopLeagueIds(prefs).has(Number(id));
+}
 function loadNotifSeen(){
   try{ return JSON.parse(localStorage.getItem(DASH_NOTIF_KEY)||'{}'); }catch(_){ return {}; }
 }
@@ -6903,14 +6993,18 @@ function renderDashboardMatches(){
   // - liveAllCards: live z cache (mode-aware: bypass w whitelist, filter w lategoal)
   // - placedCards: zawsze widoczne (user tracking)
   const liveCards=[], liveAllCards=[], upcomingCards=[], placedCards=[];
-  let totalChecked=0, whitelistFiltered=0, allLiveCount=0;
+  let totalChecked=0, whitelistFiltered=0, allLiveCount=0, topLeaguesFiltered=0;
   cards.forEach((c,idx)=>{
     const id=String(c.match.id);
     if(prefs.hidden.includes(id)) return;
     const isPlaced=!!placed[id];
-    // Placed always visible regardless of whitelist
+    // Placed always visible regardless of whitelist or top-leagues filter
+    // (user explicitly tracking, even non-top mecze)
     if(isPlaced){ placedCards.push({card:c,idx,placed:placed[id]}); return; }
     if(c.staleData) return;
+    // v9.4: TOP LEAGUES hard filter — skip "krzaki" (NI tier 3, Scottish 2nd, UAE Cup, Polish III, etc.)
+    // Apliowany przed wszystkim innym. User toggle 'topLeaguesOnly' default ON.
+    if(!isMatchInTopLeagues(c.match,prefs)){ topLeaguesFiltered++; return; }
     const live=isLiveMatch(c.match);
 
     // v9.1.5: liveAllCards FIRST — bypass whitelist (whitelist mode) lub filter (lategoal mode)
@@ -6946,7 +7040,7 @@ function renderDashboardMatches(){
     if(!live && c.match.status!=='complete' && !lateGoalMode) upcomingCards.push({card:c,idx,placed:placed[id]});
   });
   // Expose whitelist stats dla dashboard header info
-  window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount};
+  window._wlStats={enabled:!!whitelist.enabled,mode:whitelist.mode,total:totalChecked,filtered:whitelistFiltered,allLive:allLiveCount,topLeaguesFiltered:topLeaguesFiltered,topLeaguesOnly:!!prefs.topLeaguesOnly};
 
   // v9.3.2: w lategoal mode pokaż PI badge na każdej karcie live (informational), nie tylko
   // przy passing threshold. User chce widzieć PI każdego live meczu i sam decydować.
@@ -7066,6 +7160,19 @@ function renderDashboardMatches(){
     // Special case: cache pusty = brak skanu yet → CTA
     if(!cards.length){
       list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">📡</div><div style="font-size:15px;color:var(--text);margin-bottom:8px;font-weight:600;">Dashboard gotowy</div><div style="margin-bottom:14px;">Kliknij <strong>"↻ Pełny skan"</strong> żeby zaciągnąć dzisiejsze mecze ze wszystkich 50 lig.<br>Po pierwszym skanie auto-update co 30s aktualizuje live + obstawione.</div><button class="btn btn-accent" onclick="dashboardManualRefresh()" style="padding:10px 18px;font-size:13px;">↻ Skanuj teraz</button></div>';
+      return;
+    }
+    // v9.4: TOP LEAGUES filtered out everything — informacyjny empty state
+    if(prefs.topLeaguesOnly && (window._wlStats?.topLeaguesFiltered||0)>0 && (effectiveTab==='live'||effectiveTab==='liveAll'||effectiveTab==='upcoming')){
+      const filt=window._wlStats.topLeaguesFiltered;
+      list.innerHTML='<div class="dashboard-empty"><div class="dashboard-empty-icon">🌍</div>'
+        +'<div style="font-size:14px;color:var(--text);margin-bottom:6px;font-weight:600;">Top ligi filter aktywny — '+filt+' meczów odfiltrowanych</div>'
+        +'<div style="margin-bottom:12px;font-size:13px;color:var(--text-dim);">Z meczów w cache <b>'+filt+'</b> jest poza top ligami (NI Premier Intermediate, Scottish Championship, Polish III liga, U-divisions, lower-tier women, etc.). Top ligi to ~30 elite competitions (UCL/UEL, top 5 European, Eredivisie, Primeira, Süper Lig, Ekstraklasa, MLS, Brazil Serie A, Argentina).<br><br>'
+        +'<span style="font-size:12px;color:var(--text-faint);">Możesz wyłączyć filter lub edytować listę w ustawieniach.</span></div>'
+        +'<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'
+        +'<button class="btn btn-sm" onclick="openSettings()" style="background:var(--accent);color:var(--bg);">⚙ Edytuj top ligi</button>'
+        +'<button class="btn btn-sm" onclick="(function(){const p=loadDashPrefs();p.topLeaguesOnly=false;saveDashPrefs(p);renderDashboardMatches();})()" style="background:var(--surface-2);">🌐 Wyłącz filter (pokaż wszystko)</button>'
+        +'</div></div>';
       return;
     }
     // v9.2.2: Late Goal Hunter mode — informacyjny empty state z PI status
@@ -8504,9 +8611,113 @@ function openSettings(){
   applyRulesUI();
   // v9.0: Whitelist UI
   wlPopulateUI();
+  // v9.4: Top leagues UI
+  topLeaguesPopulateUI();
   $('settingsModal').classList.add('open');
 }
 function closeSettings(){ $('settingsModal').classList.remove('open'); }
+
+// v9.4: Top leagues filter UI
+function topLeaguesPopulateUI(){
+  const prefs=loadDashPrefs();
+  $('setTopLeaguesOnly').checked=!!prefs.topLeaguesOnly;
+  topLeaguesRenderEditor();
+  topLeaguesUpdateStats();
+}
+
+function topLeaguesRenderEditor(){
+  const prefs=loadDashPrefs();
+  const editor=document.getElementById('topLeaguesEditor');
+  if(!editor) return;
+  const disabled=new Set((prefs.disabledLeagueIds||[]).map(Number));
+  const customSet=new Set((prefs.customLeagueIds||[]).map(Number));
+  // Group: defaults (with checkbox), then customs (with remove button)
+  const defaultIds=Object.keys(TOP_LEAGUES_DEFAULTS).map(Number).sort((a,b)=>a-b);
+  let html='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">';
+  defaultIds.forEach(id=>{
+    const name=TOP_LEAGUES_DEFAULTS[id];
+    const enabled=!disabled.has(id);
+    html+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:6px;'+(enabled?'':'opacity:0.45;')+'background:var(--surface);">'
+      +'<input type="checkbox" '+(enabled?'checked':'')+' onchange="toggleDefaultLeague('+id+',this.checked)" style="accent-color:var(--accent);">'
+      +'<span style="font-family:var(--mono);color:var(--text-faint);font-size:10px;">'+id+'</span>'
+      +'<span style="color:var(--text);">'+name+'</span>'
+      +'</label>';
+  });
+  html+='</div>';
+  if(customSet.size){
+    html+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);"><div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Custom (dodane przez Ciebie):</div>';
+    (prefs.customLeagueNames||{});
+    Array.from(customSet).forEach(id=>{
+      const name=(prefs.customLeagueNames||{})[id]||'Custom #'+id;
+      html+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 6px;background:var(--surface);border-radius:6px;margin-bottom:4px;">'
+        +'<span style="font-family:var(--mono);color:var(--accent);font-size:10px;">'+id+'</span>'
+        +'<span style="color:var(--text);flex:1;">'+name+'</span>'
+        +'<button onclick="removeCustomTopLeague('+id+')" style="background:transparent;border:1px solid var(--border);color:var(--negative);font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;">×</button>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+  editor.innerHTML=html;
+}
+
+function topLeaguesUpdateStats(){
+  const prefs=loadDashPrefs();
+  const ids=getEffectiveTopLeagueIds(prefs);
+  const stats=document.getElementById('topLeaguesStats');
+  if(stats) stats.textContent='Aktywne ligi: '+ids.size+' · Defaults: '+Object.keys(TOP_LEAGUES_DEFAULTS).length+' · Custom: '+((prefs.customLeagueIds||[]).length)+' · Disabled: '+((prefs.disabledLeagueIds||[]).length);
+}
+
+function toggleTopLeaguesOnly(){
+  const prefs=loadDashPrefs();
+  prefs.topLeaguesOnly=$('setTopLeaguesOnly').checked;
+  saveDashPrefs(prefs);
+  topLeaguesUpdateStats();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
+
+function toggleDefaultLeague(id,enabled){
+  const prefs=loadDashPrefs();
+  prefs.disabledLeagueIds=prefs.disabledLeagueIds||[];
+  const set=new Set(prefs.disabledLeagueIds.map(Number));
+  if(enabled) set.delete(Number(id));
+  else set.add(Number(id));
+  prefs.disabledLeagueIds=Array.from(set);
+  saveDashPrefs(prefs);
+  topLeaguesUpdateStats();
+  topLeaguesRenderEditor();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
+
+function addCustomTopLeague(){
+  const idStr=$('topLeaguesCustomId').value.trim();
+  const name=$('topLeaguesCustomName').value.trim();
+  const id=parseInt(idStr,10);
+  if(!id||id<=0){ alert('Podaj prawidłowy api-football league ID (liczba)'); return; }
+  if(!name){ alert('Podaj nazwę ligi'); return; }
+  const prefs=loadDashPrefs();
+  prefs.customLeagueIds=prefs.customLeagueIds||[];
+  prefs.customLeagueNames=prefs.customLeagueNames||{};
+  if(!prefs.customLeagueIds.map(Number).includes(id)){
+    prefs.customLeagueIds.push(id);
+  }
+  prefs.customLeagueNames[id]=name;
+  saveDashPrefs(prefs);
+  $('topLeaguesCustomId').value='';
+  $('topLeaguesCustomName').value='';
+  topLeaguesRenderEditor();
+  topLeaguesUpdateStats();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
+
+function removeCustomTopLeague(id){
+  const prefs=loadDashPrefs();
+  prefs.customLeagueIds=(prefs.customLeagueIds||[]).filter(x=>Number(x)!==Number(id));
+  if(prefs.customLeagueNames) delete prefs.customLeagueNames[id];
+  saveDashPrefs(prefs);
+  topLeaguesRenderEditor();
+  topLeaguesUpdateStats();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
+}
 
 // v9.3.1: PI explainer modal — wyjaśnienie Pressure Index po polsku
 function showPIExplainer(){
