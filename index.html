@@ -813,7 +813,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predictor</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.1.3</span>
     </div>
     <div class="spacer"></div>
     <div id="trafficLight" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);">
@@ -1907,7 +1907,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predictor v9.1.2
+    Powered by MPlace · Match Predictor v9.1.3
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -6340,6 +6340,31 @@ const LATE_GOAL_LEAGUE_BIAS={
   _default:0.65
 };
 
+// v9.1.3: Per-team late goal RESEARCH (PL/BL/L1 × 3 sezony, 3050 meczów @ PI≥80)
+// Top zyskowne drużyny których MECZE w late goal mode dawały dodatni ROI.
+// Sample size mały (8-20 picks per team), użyj jako suggestions.
+const LATEGOAL_RESEARCH_TOP_TEAMS=[
+  {name:'Werder Bremen',league:'BL',picks:13,hitRate:92.3,roi:14.8},
+  {name:'Montpellier',league:'L1',picks:8,hitRate:87.5,roi:17.6},
+  {name:'Stuttgart',league:'BL',picks:8,hitRate:87.5,roi:9.2},
+  {name:'Lorient',league:'L1',picks:8,hitRate:75.0,roi:0.7},
+  {name:'Lens',league:'L1',picks:8,hitRate:75.0,roi:0.2}
+];
+// Top stratne drużyny — auto-banlist w late goal mode (research-backed)
+// Większość z PL — model traci mimo wysokiego hit rate, bo kursy PL są za niskie (baseline 72.5%)
+const LATEGOAL_RESEARCH_BANLIST=[
+  {name:'Newcastle United',league:'PL',picks:10,roi:-38.8},
+  {name:'Liverpool',league:'PL',picks:8,roi:-23.9},
+  {name:'Brighton & Hove Albion',league:'PL',picks:9,roi:-18.3},
+  {name:'Brentford',league:'PL',picks:16,roi:-15.9},
+  {name:'Crystal Palace',league:'PL',picks:13,roi:-15.3},
+  {name:'Everton',league:'PL',picks:20,roi:-13.8},
+  {name:"Borussia M'gladbach",league:'BL',picks:8,roi:-53.0},
+  {name:'Freiburg',league:'BL',picks:11,roi:-43.7},
+  {name:'Wolfsburg',league:'BL',picks:8,roi:-37.2},
+  {name:'Union Berlin',league:'BL',picks:12,roi:-27.1}
+];
+
 // Compute Pressure Index dla card z dashboard cache (live match)
 // Wymaga: card.match z _af_elapsed, _af_leagueId, goals.home/away (z afFixtureToMatch)
 //   plus optional live stats z afLoadFixtureStats result (xg, shots etc.)
@@ -6402,6 +6427,24 @@ function isCardLateGoalCandidate(card,prefs,liveStats){
     if(!inPreferred) return false;
   }
 
+  // v9.1.3: Banlist check — drużyny gdzie research pokazał konsekwentny minus
+  if(lg.banlist && lg.banlist.length){
+    const banned=lg.banlist.some(b=>
+      (b.name && (b.name.toLowerCase()===m.home_name?.toLowerCase() || b.name.toLowerCase()===m.away_name?.toLowerCase()))
+    );
+    if(banned) return false;
+  }
+
+  // v9.1.3: Per-team filter — jeśli user dodał drużyny do preferredTeams, mecz musi mieć
+  // przynajmniej jedną z home/away. Empty list = brak filtra (passes all).
+  if(lg.preferredTeams && lg.preferredTeams.length){
+    const inTeams=lg.preferredTeams.some(t=>{
+      const tn=t.name?.toLowerCase();
+      return tn && (tn===m.home_name?.toLowerCase() || tn===m.away_name?.toLowerCase());
+    });
+    if(!inTeams) return false;
+  }
+
   // League bias check (skip ligi z too-low baseline) — secondary filter
   const leagueBias=LATE_GOAL_LEAGUE_BIAS[m._af_leagueId]||LATE_GOAL_LEAGUE_BIAS._default;
   if(leagueBias<(lg.minLeagueBias||0.60)) return false;
@@ -6435,7 +6478,9 @@ function loadWhitelistPrefs(){
       minLeagueBias:0.60,     // skip ligi gdzie baseline rate <60%
       windowMinFrom:50,       // entry window: minute 50-75 (post-Phase 5 calibration)
       windowMinTo:75,
-      preferredLeagues:WHITELIST_DEFAULTS_LATEGOAL_LEAGUES.slice()
+      preferredLeagues:WHITELIST_DEFAULTS_LATEGOAL_LEAGUES.slice(),
+      preferredTeams:[],      // v9.1.3: opcjonalny per-team filter (jeśli non-empty, mecz musi mieć home OR away w liście)
+      banlist:LATEGOAL_RESEARCH_BANLIST.map(t=>({name:t.name}))  // v9.1.3: research-backed auto-banlist
     }
   };
   try{
@@ -7887,11 +7932,53 @@ function wlRemoveLateGoalLeague(idx){
 }
 function wlRenderTeamsList(w){
   const div=$('wlTeamsList');
-  // v9.1: w late goal mode — drużyny nie mają znaczenia (PI based on live state)
+  // v9.1.3: w late goal mode — pokazuje user's preferredTeams + research suggestions
   if(w.mode==='lategoal'){
-    div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:12px;text-align:center;">'
-      +'🔥 W Late Goal Hunter mode drużyny nie są filtrem — Pressure Index liczy się z LIVE state (xG, posiadanie, score) niezależnie od drużyn.<br><br>'
-      +'<span style="font-size:11px;">Filtr per liga jest w zakładce <b>Ligi</b>.</span></div>';
+    const userTeams=w.lateGoal?.preferredTeams||[];
+    let html='<div style="font-size:11px;color:var(--negative);margin-bottom:8px;font-weight:600;">🔥 Late Goal — drużyny które grasz (filter):</div>';
+    if(!userTeams.length){
+      html+='<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px;text-align:center;background:var(--surface-2);border-radius:6px;margin-bottom:10px;">Pusta lista — pokazuje wszystkie mecze z preferred lig. Dodaj drużyny żeby filtrować TYLKO te które chcesz grać.</div>';
+    } else {
+      html+=userTeams.map((t,i)=>{
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:12px;font-family:var(--mono);margin-bottom:4px;">'
+          +'<span style="color:var(--positive);font-weight:600;">✓</span>'
+          +'<span style="color:var(--text);flex:1;">'+t.name+'</span>'
+          +(t.league?'<span style="color:var(--text-faint);font-size:11px;">'+t.league+'</span>':'')
+          +'<button onclick="wlRemoveLateGoalTeam('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+        +'</div>';
+      }).join('');
+    }
+    // Suggestions z research
+    html+='<div style="font-size:11px;color:var(--positive);margin-top:14px;margin-bottom:6px;font-weight:600;">💡 Research suggestions (PI≥80, ≥8 picks):</div>';
+    LATEGOAL_RESEARCH_TOP_TEAMS.forEach(t=>{
+      const inUser=userTeams.find(u=>u.name===t.name);
+      if(inUser) return;  // already added
+      const roiColor=t.roi>=10?'var(--positive)':t.roi>=5?'var(--accent)':'var(--warning)';
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface-3);border-radius:6px;font-size:11px;font-family:var(--mono);margin-bottom:3px;opacity:0.85;">'
+        +'<span style="color:'+roiColor+';font-weight:600;">+'+t.roi.toFixed(1)+'%</span>'
+        +'<span style="color:var(--text);flex:1;">'+t.name+'</span>'
+        +'<span style="color:var(--text-faint);">'+t.league+' · '+t.picks+' picks · '+t.hitRate.toFixed(0)+'% hit</span>'
+        +'<button onclick="wlAddLateGoalTeamFromSuggestion(\''+t.name.replace(/'/g,"\\'")+'\',\''+t.league+'\')" style="background:var(--accent);color:var(--bg);border:none;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;">+ Dodaj</button>'
+      +'</div>';
+    });
+    // Banlist info
+    const banlist=w.lateGoal?.banlist||[];
+    if(banlist.length){
+      html+='<div style="font-size:11px;color:var(--negative);margin-top:14px;margin-bottom:6px;font-weight:600;">🚫 Auto-banlist (research -ROI, '+banlist.length+' drużyn):</div>';
+      html+='<div style="font-size:11px;color:var(--text-dim);background:var(--surface-3);padding:8px;border-radius:6px;">'+banlist.map(b=>b.name).join(' · ')+'</div>';
+      html+='<div style="font-size:10px;color:var(--text-faint);margin-top:4px;font-style:italic;">Mecze z tymi drużynami SKIP nawet jeśli PI≥80. Manage przez zakładkę "Banlist".</div>';
+    }
+    // Add new team form
+    html+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">'
+      +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">Dodaj custom drużynę (filter — pokazuj TYLKO mecze z tymi drużynami):</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:6px;">'
+      +'<input type="text" id="wlNewLateGoalTeamName" placeholder="np. Manchester City" list="wlTeamSuggestions" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">'
+      +'<select id="wlNewLateGoalTeamLeague" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;">'
+        +'<option value="PL">PL</option><option value="L1">L1</option><option value="BL">BL</option><option value="SerieA">SerieA</option><option value="LaLiga">LaLiga</option><option value="UCL">UCL</option><option value="">?</option>'
+      +'</select>'
+      +'<button class="btn btn-sm" onclick="wlAddLateGoalTeam()" style="background:var(--accent);color:var(--bg);">+ Dodaj</button>'
+      +'</div></div>';
+    div.innerHTML=html;
     return;
   }
   if(!w.teams||!w.teams.length){ div.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-style:italic;">Pusta lista</div>'; return; }
@@ -7904,6 +7991,43 @@ function wlRenderTeamsList(w){
       +'<button onclick="wlRemoveTeam('+i+')" style="background:transparent;border:none;color:var(--negative);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
     +'</div>';
   }).join('');
+}
+function wlAddLateGoalTeam(){
+  const name=$('wlNewLateGoalTeamName').value.trim();
+  const league=$('wlNewLateGoalTeamLeague').value;
+  if(!name) return qdToast('Wpisz nazwę drużyny','red',2000);
+  const w=loadWhitelistPrefs();
+  if(!w.lateGoal) w.lateGoal={};
+  if(!w.lateGoal.preferredTeams) w.lateGoal.preferredTeams=[];
+  if(w.lateGoal.preferredTeams.find(t=>t.name.toLowerCase()===name.toLowerCase())){
+    qdToast('Już dodana','yellow',2000); return;
+  }
+  w.lateGoal.preferredTeams.push({name,league});
+  saveWhitelistPrefs(w);
+  $('wlNewLateGoalTeamName').value='';
+  wlRenderTeamsList(w);
+  wlUpdatePreview();
+  qdToast('+ '+name,'green',2000);
+}
+function wlAddLateGoalTeamFromSuggestion(name,league){
+  const w=loadWhitelistPrefs();
+  if(!w.lateGoal) w.lateGoal={};
+  if(!w.lateGoal.preferredTeams) w.lateGoal.preferredTeams=[];
+  if(w.lateGoal.preferredTeams.find(t=>t.name===name)) return;
+  w.lateGoal.preferredTeams.push({name,league});
+  saveWhitelistPrefs(w);
+  wlRenderTeamsList(w);
+  wlUpdatePreview();
+  qdToast('+ '+name,'green',2000);
+}
+function wlRemoveLateGoalTeam(idx){
+  const w=loadWhitelistPrefs();
+  if(!w.lateGoal?.preferredTeams) return;
+  w.lateGoal.preferredTeams.splice(idx,1);
+  saveWhitelistPrefs(w);
+  wlRenderTeamsList(w);
+  wlUpdatePreview();
+  if(typeof renderDashboardMatches==='function') renderDashboardMatches();
 }
 function wlRenderBanlist(w){
   const div=$('wlBanlistList');
