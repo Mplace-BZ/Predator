@@ -7,9 +7,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="predator-version" content="9.4.4">
+<meta name="predator-version" content="9.5">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Match Predator v9.4.4 — Live Football Hunter</title>
+<title>Match Predator v9.5 — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -825,7 +825,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.4.4</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.5</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -923,6 +923,49 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   <button class="tag-pill" data-tag="youth" onclick="toggleTag(this)"><span class="tag-icon">🧒</span> U19 / U20 / młodzież</button>
   <button class="tag-pill" data-tag="topvbottom" onclick="toggleTag(this)"><span class="tag-icon">⚖️</span> Top vs słaby</button>
 </div>
+
+<!-- ───── PRE-MATCH PROBABILITY WIDGET (v9.5) ───── -->
+<section class="section" id="prematchWidget" style="display:none;">
+  <div style="background:linear-gradient(135deg,rgba(255,90,31,0.08),rgba(255,179,71,0.04));border:1px solid rgba(255,179,71,0.25);border-radius:12px;padding:20px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;">📊 Pre-match probability (sezon)</div>
+      <div style="font-size:11px;color:var(--text-faint);font-family:var(--mono);" id="pmw_avg_label">avg goals/match: —</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 8px;text-align:center;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">1H · Gol</div>
+        <div id="pmw_o05_1h" style="font-size:36px;font-weight:800;color:var(--positive);font-feature-settings:'tnum';line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text-faint);margin-top:4px;">Over 0.5 1H</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 8px;text-align:center;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">1H · 2+ goli</div>
+        <div id="pmw_o15_1h" style="font-size:36px;font-weight:800;color:var(--accent);font-feature-settings:'tnum';line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text-faint);margin-top:4px;">Over 1.5 1H</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 8px;text-align:center;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">2H · Gol</div>
+        <div id="pmw_o05_2h" style="font-size:36px;font-weight:800;color:var(--positive);font-feature-settings:'tnum';line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text-faint);margin-top:4px;">Over 0.5 2H</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:10px;padding:14px 8px;text-align:center;border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">2H · 2+ goli</div>
+        <div id="pmw_o15_2h" style="font-size:36px;font-weight:800;color:var(--accent);font-feature-settings:'tnum';line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text-faint);margin-top:4px;">Over 1.5 2H</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);font-family:var(--mono);justify-content:center;border-top:1px solid var(--border);padding-top:12px;">
+      <span>BTTS: <b id="pmw_btts" style="color:var(--text);">—</b></span>
+      <span>·</span>
+      <span>Over 2.5: <b id="pmw_o25" style="color:var(--text);">—</b></span>
+      <span>·</span>
+      <span>Over 3.5: <b id="pmw_o35" style="color:var(--text);">—</b></span>
+      <span>·</span>
+      <span>1H λ: <b id="pmw_lam1h" style="color:var(--text);">—</b></span>
+      <span>·</span>
+      <span>2H λ: <b id="pmw_lam2h" style="color:var(--text);">—</b></span>
+    </div>
+  </div>
+</section>
 
 <!-- ───── HERO RECOMMENDATION ───── -->
 <section class="section">
@@ -1944,7 +1987,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.4.4
+    Powered by MPlace · Match Predator v9.5
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -2109,6 +2152,61 @@ function renderGoalTiming(minute,homeTeam,awayTeam,boostInfo){
 }
 
 // ── CALC ──────────────────────────────────────────────────────────
+// v9.5: Pre-match probability widget — Poisson na bazie season goal distribution per minute interval
+// Z api-football /teams/statistics: goals.for.average (overall) + goals.for.minute (% per bucket).
+// Compute: combined match 1H lambda = home*home1H_share + away*away1H_share. Same for 2H.
+// P(Over 0.5 1H) = 1 - exp(-lam1H). P(Over 1.5 1H) = 1 - exp(-lam1H)*(1+lam1H). Same dla 2H.
+// P(Over 2.5/3.5) = 1 - poissonCum(total, k). BTTS = (1-exp(-h))*(1-exp(-a)).
+function _pmwPois(lam,k){ return Math.exp(-lam)*Math.pow(lam,k)/(k===0?1:k===1?1:k===2?2:k===3?6:24); }
+function _pmwPoisCum(lam,k){ let s=0; for(let i=0;i<=k;i++) s+=_pmwPois(lam,i); return s; }
+function computePrematchProbabilities(homeT,awayT){
+  if(!homeT?.stats || !awayT?.stats) return null;
+  const sH=homeT.stats, sA=awayT.stats;
+  const totalH=parseFloat(sH.goals_for_avg_overall)||parseFloat(sH.xg_for_avg_overall)||0;
+  const totalA=parseFloat(sA.goals_for_avg_overall)||parseFloat(sA.xg_for_avg_overall)||0;
+  if(totalH<=0&&totalA<=0) return null;
+  const bH=sH.goal_timing_buckets||{}, bA=sA.goal_timing_buckets||{};
+  // 1H share % from sum of intervals 0-15, 16-30, 31-45 (z afTeamStatsToFlat są procentami goli per bucket)
+  const sum1H_h=(bH['0-15']||0)+(bH['16-30']||0)+(bH['31-45']||0);
+  const sum1H_a=(bA['0-15']||0)+(bA['16-30']||0)+(bA['31-45']||0);
+  // Jeśli buckets puste / niekompletne → fallback 50/50 split (typowo 1H ma ~45% goli)
+  const shareH_1H=sum1H_h>0?sum1H_h/100:0.45;
+  const shareA_1H=sum1H_a>0?sum1H_a/100:0.45;
+  const shareH_2H=1-shareH_1H, shareA_2H=1-shareA_1H;
+  const lam1H=totalH*shareH_1H + totalA*shareA_1H;
+  const lam2H=totalH*shareH_2H + totalA*shareA_2H;
+  const lamTotal=totalH+totalA;
+  return {
+    pOver05_1H: 1-Math.exp(-lam1H),
+    pOver15_1H: Math.max(0,1-Math.exp(-lam1H)*(1+lam1H)),
+    pOver05_2H: 1-Math.exp(-lam2H),
+    pOver15_2H: Math.max(0,1-Math.exp(-lam2H)*(1+lam2H)),
+    pOver25: Math.max(0,1-_pmwPoisCum(lamTotal,2)),
+    pOver35: Math.max(0,1-_pmwPoisCum(lamTotal,3)),
+    pBTTS: (1-Math.exp(-totalH))*(1-Math.exp(-totalA)),
+    avgGoals: lamTotal,
+    lam1H, lam2H
+  };
+}
+function renderPrematchWidget(){
+  const w=$('prematchWidget');
+  if(!w) return;
+  const probs=computePrematchProbabilities(window._prematchHomeT,window._prematchAwayT);
+  if(!probs){ w.style.display='none'; return; }
+  w.style.display='block';
+  const pct=v=>Math.round(v*100)+'%';
+  $('pmw_o05_1h').textContent=pct(probs.pOver05_1H);
+  $('pmw_o15_1h').textContent=pct(probs.pOver15_1H);
+  $('pmw_o05_2h').textContent=pct(probs.pOver05_2H);
+  $('pmw_o15_2h').textContent=pct(probs.pOver15_2H);
+  $('pmw_btts').textContent=pct(probs.pBTTS);
+  $('pmw_o25').textContent=pct(probs.pOver25);
+  $('pmw_o35').textContent=pct(probs.pOver35);
+  $('pmw_lam1h').textContent=probs.lam1H.toFixed(2);
+  $('pmw_lam2h').textContent=probs.lam2H.toFixed(2);
+  $('pmw_avg_label').textContent='avg goals/match: '+probs.avgGoals.toFixed(2);
+}
+
 function calc(){
   const minute=Math.max(1,Math.min(120,n('minute')));
   const remMin=Math.max(0,90-minute);
@@ -5732,6 +5830,10 @@ function footyMapMatch(match,homeT,awayT){
     set('aConc',s.xg_against_avg_away||s.xg_against_avg_overall);
     set('aPPG',s.seasonPPG_away);
   }
+  // v9.5: Pre-match probability widget — store team stats global dla widget renderowania
+  window._prematchHomeT = homeT;
+  window._prematchAwayT = awayT;
+  if(typeof renderPrematchWidget==='function') renderPrematchWidget();
 
   // v8.8: live in-match stats async fetch — xG, possession, shots, corners, cards
   // (api-football /fixtures/statistics — top ligi mają, niższe może nie). Non-blocking.
