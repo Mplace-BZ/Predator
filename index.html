@@ -9,7 +9,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="predator-version" content="9.6">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23161b22'/><text x='50' y='50' font-size='72' font-family='Inter,sans-serif' font-weight='700' fill='%23ffd166' text-anchor='middle' dominant-baseline='central'>P</text></svg>">
-<title>Match Predator v9.6.2 — Live Football Hunter</title>
+<title>Match Predator v9.6.3 — Live Football Hunter</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 /* ───────────────────────── MPlace Design Tokens ─────────────────────────
@@ -860,7 +860,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
         <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
       </svg>
       <span class="brand-name">Match Predator</span>
-      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.6.2</span>
+      <span class="brand-suffix" style="margin-left:8px;color:var(--text-faint);font-size:12px;">v9.6.3</span>
     </div>
     <!-- v9.2: Full-width pixel art football match — Liverpool vs Manchester City -->
     <canvas id="headerPixelArt" width="640" height="56" title="Match Predator — Liverpool vs Manchester City"
@@ -2035,7 +2035,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
     <svg class="brand-flame" viewBox="0 0 24 24" style="width:14px;height:14px;" aria-hidden="true">
       <path d="M12 2.5c.4 2.6 2.5 4.5 4 6.4 1.6 2 2.5 4 2.5 6.1a6.5 6.5 0 1 1-13 0c0-2.6 1.5-4.5 3-6.1.7-.7 1.3-1.4 1.3-2.4 0-.5-.2-1-.4-1.5-.1-.3.2-.6.5-.5 1.6.3 2.1 1.5 2.1 3 0 .5-.1.9-.3 1.3.1.1.3.1.4 0 1-1.4.7-3.5-.1-5.3-.1-.3.2-.6.5-.5.4.1.7.3 1 .5.1.1.2.1.3 0 .4-.5.5-1 .2-1.5-.1-.2.1-.5.4-.4.6.2 1.1.6 1.4 1.2.1.2.4.2.4-.1z"/>
     </svg>
-    Powered by MPlace · Match Predator v9.6.2
+    Powered by MPlace · Match Predator v9.6.3
   </div>
   <div style="color:var(--text-faint);font-size:11px;margin-top:4px;">Model Poissona z xG · nie jest poradą inwestycyjną</div>
 </footer>
@@ -2239,7 +2239,7 @@ function computePrematchProbabilities(homeT,awayT){
 function renderPrematchWidget(){
   const w=$('prematchWidget');
   if(!w) return;
-  // v9.6.2: dwie ścieżki obliczeń:
+  // v9.6.3: dwie ścieżki obliczeń:
   // 1. z window._prematchHomeT/_awayT (dashboard Analizuj — pełne goal_timing_buckets)
   // 2. fallback z form fields (hXG, aXG, hScored, aScored) gdy paste workflow — bez bucketów,
   //    używamy 47/53 split (typowe rozkład 1H/2H z multi-league research).
@@ -3000,7 +3000,7 @@ function calc(){
     staleReason: window._currentMatchStaleReason || ''
   };
   renderQuickDecision();
-  // v9.6.2: widget uruchamia się też po paste (calc triggered z input change)
+  // v9.6.3: widget uruchamia się też po paste (calc triggered z input change)
   if(typeof renderPrematchWidget==='function') renderPrematchWidget();
 }
 
@@ -6444,7 +6444,15 @@ const TOP_LEAGUES_DEFAULTS={
   4:'Euro Championship', 5:'UEFA Nations League', 531:'UEFA Super Cup',
   // FIFA / international top
   1:'FIFA World Cup', 9:'Copa America', 32:'World Cup Qualifying Europe',
-  // England — top tier + Championship + cups
+  // CONMEBOL continental
+  13:'Copa Libertadores', 11:'Copa Sudamericana',
+  // AFC continental
+  17:'AFC Champions League', 18:'AFC Cup',
+  // CAF continental
+  20:'CAF Champions League', 21:'CAF Confederation Cup',
+  // CONCACAF continental
+  26:'CONCACAF Champions Cup',
+  // England
   39:'Premier League', 40:'Championship', 45:'FA Cup', 48:'EFL Cup', 528:'Community Shield',
   // Spain
   140:'La Liga', 141:'La Liga 2', 143:'Copa del Rey', 556:'Super Cup',
@@ -6455,29 +6463,77 @@ const TOP_LEAGUES_DEFAULTS={
   // France
   61:'Ligue 1', 62:'Ligue 2', 66:'Coupe de France', 526:'Trophée des Champions',
   // Netherlands
-  88:'Eredivisie',
+  88:'Eredivisie', 89:'KNVB Beker',
   // Portugal
   94:'Primeira Liga', 96:'Taça de Portugal',
   // Belgium
   144:'Jupiler Pro League',
   // Turkey
-  203:'Süper Lig', 206:'Cup',
+  203:'Süper Lig', 206:'Türkiye Kupası',
   // Greece
   197:'Super League 1',
   // Poland
   106:'Ekstraklasa',
   // Scotland — Premiership (top tier) only
   179:'Premiership',
+  // Switzerland
+  207:'Super League',
+  // Austria
+  218:'Bundesliga',
+  // Czech Republic
+  345:'Czech First League',
+  // Romania
+  283:'Liga 1',
+  // Croatia
+  210:'HNL',
+  // Ukraine
+  333:'Premier League',
+  // Serbia
+  286:'SuperLiga',
+  // Norway
+  103:'Eliteserien',
+  // Sweden
+  113:'Allsvenskan',
+  // Russia
+  235:'Premier League',
+  // Japan
+  98:'J1 League',
+  // South Korea
+  292:'K League 1',
+  // China
+  169:'Chinese Super League',
+  // Australia
+  188:'A-League Men',
+  // India — ISL (top tier)
+  323:'Indian Super League',
   // USA / Canada
   253:'Major League Soccer',
   // Mexico
   262:'Liga MX',
   // Brazil
-  71:'Serie A', 73:'Copa do Brasil',
+  71:'Brasileirão Serie A', 72:'Brasileirão Serie B', 73:'Copa do Brasil',
   // Argentina
-  128:'Liga Profesional Argentina', 130:'Copa Argentina',
-  // Saudi (Pro League — major now)
-  307:'Saudi Pro League'
+  128:'Liga Profesional Argentina', 130:'Copa Argentina', 131:'Primera Nacional',
+  // Colombia
+  239:'Liga BetPlay',
+  // Chile
+  265:'Primera División',
+  // Peru
+  281:'Liga 1',
+  // Ecuador
+  268:'Serie A',
+  // Uruguay
+  273:'Primera División',
+  // Paraguay
+  278:'División Profesional',
+  // Saudi
+  307:'Saudi Pro League',
+  // Egypt
+  233:'Premier League',
+  // Morocco
+  200:'Botola Pro',
+  // South Africa
+  288:'Premier Soccer League'
 };
 
 function getEffectiveTopLeagueIds(prefs){
