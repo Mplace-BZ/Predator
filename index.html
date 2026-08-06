@@ -784,6 +784,27 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 .qd-toast.celebrate{animation:qd-celebrate 0.8s ease-out;}
 @keyframes qd-celebrate{0%{transform:translateX(-50%) scale(0.5) translateY(0);}50%{transform:translateX(-50%) scale(1.15) translateY(-6px);}100%{transform:translateX(-50%) scale(1) translateY(0);}}
 
+/* SCORE ALERT POPUP */
+#scoreAlertContainer{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:320px;}
+.score-alert-popup{background:var(--surface,#1a1a2e);border:2px solid var(--accent,#FF5A1F);border-radius:12px;padding:18px 20px;width:300px;box-shadow:0 8px 32px rgba(255,90,31,0.35);animation:sal-in 0.35s ease;pointer-events:all;}
+@keyframes sal-in{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+.sal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sal-badge{font-size:11px;font-weight:700;color:var(--accent,#FF5A1F);letter-spacing:.08em;text-transform:uppercase;}
+.sal-close{background:none;border:none;color:var(--text-dim,#888);cursor:pointer;font-size:16px;padding:0;line-height:1;}
+.sal-teams{font-size:14px;font-weight:700;color:var(--text,#fff);margin-bottom:4px;line-height:1.3;}
+.sal-score{font-size:22px;font-variant-numeric:tabular-nums;color:var(--accent,#FF5A1F);margin:0 6px;}
+.sal-minute{font-family:var(--mono,'Manrope',monospace);font-size:12px;color:var(--text-dim,#888);margin-bottom:10px;}
+.sal-goals-grid{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px;}
+.sal-half{display:flex;gap:8px;font-size:12px;align-items:baseline;line-height:1.5;}
+.sal-half-label{font-family:var(--mono,'Manrope',monospace);font-size:10px;font-weight:700;color:var(--accent,#FF5A1F);min-width:18px;text-transform:uppercase;flex-shrink:0;}
+.sal-suggestion{font-size:12px;color:var(--positive,#4ADE80);margin-bottom:12px;font-weight:600;}
+.sal-actions{display:flex;gap:8px;}
+.sal-btn{flex:1;padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;}
+.sal-btn-go{background:var(--accent,#FF5A1F);color:#fff;}
+.sal-btn-skip{background:rgba(255,255,255,0.07);color:var(--text-dim,#888);}
+.sal-toggle{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dim);cursor:pointer;font-family:var(--sans);user-select:none;}
+.sal-toggle input{accent-color:var(--accent,#FF5A1F);width:14px;height:14px;cursor:pointer;}
+
 /* GOAL TIMING HEAT MAP */
 .goal-timing-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;}
 .gt-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap;}
@@ -901,6 +922,10 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
       <label class="auto-refresh-toggle" title="Po pierwszym pełnym skanie aktywuje auto-update co 30s (1 call/skan). Pre-match cache'owane.">
         <input type="checkbox" id="dashAutoRefresh" onchange="dashboardToggleAutoRefresh()">
         🔔 Auto-skan
+      </label>
+      <label class="sal-toggle" title="Popup gdy live mecz: wynik 2-1, gol w 1H i 2H, minuta 70-85">
+        <input type="checkbox" id="scoreAlertToggle" onchange="salToggleSave(this.checked)" checked>
+        🚨 Alert 2-1
       </label>
       <button class="btn btn-sm btn-accent" onclick="dashboardManualRefresh()" id="dashRefreshBtn" title="Skanuje wszystkie 50 lig — start tutaj">↻ Pełny skan</button>
     </div>
@@ -7680,6 +7705,118 @@ function stopLateGoalPolling(){
 if(document.readyState==='complete') setTimeout(startLateGoalPolling,3000);
 else window.addEventListener('load',()=>setTimeout(startLateGoalPolling,3000));
 
+// ─── SCORE ALERT — popup gdy live mecz 2-1 w minutach 70-85, gol w obu połowach ──
+window._scoreAlertSeen = window._scoreAlertSeen || new Set();
+
+function salToggleSave(enabled){
+  localStorage.setItem('predator_score_alert', enabled ? '1' : '0');
+}
+function salIsEnabled(){
+  const v = localStorage.getItem('predator_score_alert');
+  return v === null || v === '1';
+}
+
+async function checkScoreAlerts(cache){
+  if(!salIsEnabled()) return;
+  const cands = (cache || []).filter(c => {
+    const m = c.match;
+    const hg = (m.homeGoals || []).length, ag = (m.awayGoals || []).length;
+    const total = hg + ag, diff = Math.abs(hg - ag);
+    const min = m._af_elapsed || 0;
+    const htH = m._af_halftimeH ?? null, htA = m._af_halftimeA ?? null;
+    if(m.status !== 'in_play') return false;
+    if(min < 70 || min > 85) return false;
+    if(total !== 3 || diff !== 1) return false;
+    if(htH === null || htA === null) return false;
+    if((htH + htA) === 0) return false;
+    if((hg + ag) <= (htH + htA)) return false;
+    const key = m.id + '_' + hg + ':' + ag;
+    return !window._scoreAlertSeen.has(key);
+  });
+  for(const card of cands){
+    const m = card.match;
+    const hg = (m.homeGoals || []).length, ag = (m.awayGoals || []).length;
+    window._scoreAlertSeen.add(m.id + '_' + hg + ':' + ag);
+    let evData = null;
+    try{ evData = await afLoadEvents(m.id); }catch(_){}
+    salShowPopup(card, evData);
+    notifyWatch('🚨 Alert 2-1 — ' + m.home_name + ' vs ' + m.away_name,
+      (m._af_elapsed || '?') + "' · Gol w 1H i 2H · Do obstawienia!");
+  }
+}
+
+function salShowPopup(card, evData){
+  const m = card.match;
+  const hg = (m.homeGoals || []).length, ag = (m.awayGoals || []).length;
+  const min = m._af_elapsed || '?';
+  const htH = m._af_halftimeH ?? 0, htA = m._af_halftimeA ?? 0;
+
+  // Minuty goli per połowa
+  let h1html = '', h2html = '';
+  if(evData && evData.goals && evData.goals.length){
+    const h1 = [], h2 = [];
+    evData.goals.forEach(g => {
+      const isHome = g.team === m.homeID;
+      const shortName = (isHome ? m.home_name : m.away_name).split(' ').slice(-1)[0];
+      const color = isHome ? 'var(--text,#fff)' : 'var(--accent-soft,#FFB347)';
+      const entry = `<span style="color:${color}">${shortName} ${g.minute}'</span>`;
+      if(g.minute <= 45) h1.push(entry); else h2.push(entry);
+    });
+    h1html = h1.join(' · ') || (htH + ':' + htA + ' (HT)');
+    h2html = h2.join(' · ') || '—';
+  } else {
+    h1html = htH + ':' + htA + ' (HT)';
+    h2html = hg + ':' + ag + ' (live)';
+  }
+
+  // Propozycja zakładu
+  let bet = '💡 Next Goal / Over 3.5';
+  if(card.bestMarket && card.bestMarket.odd > 1.1 && !card.isLiveOnly){
+    const e = card.bestEdge > 0 ? ' (+' + card.bestEdge.toFixed(0) + '% edge)' : '';
+    bet = '💡 ' + card.bestMarket.label + ' @ ' + card.bestMarket.odd.toFixed(2) + e;
+  }
+
+  const popupId = 'sal_' + m.id;
+  const old = document.getElementById(popupId);
+  if(old) old.remove();
+
+  const cacheIdx = (window._scanCardsCache || []).findIndex(c => c.match.id === m.id);
+  const analyzeCall = cacheIdx >= 0
+    ? 'footyLoadFromScan(window._scanCardsCache[' + cacheIdx + '],' + cacheIdx + ')'
+    : 'qdToast(\'Kliknij Analizuj w karcie meczu\',\'green\',2000)';
+
+  const div = document.createElement('div');
+  div.className = 'score-alert-popup';
+  div.id = popupId;
+  div.innerHTML =
+    '<div class="sal-top">' +
+      '<div class="sal-badge">🚨 Alert — do obstawienia</div>' +
+      '<button class="sal-close" onclick="document.getElementById(\'' + popupId + '\').remove()">✕</button>' +
+    '</div>' +
+    '<div class="sal-teams">' + m.home_name + '<span class="sal-score">' + hg + ':' + ag + '</span>' + m.away_name + '</div>' +
+    '<div class="sal-minute">⏱ ' + min + '\' &nbsp;·&nbsp; <span style="color:var(--text-dim)">' + (m._leagueName || '') + '</span></div>' +
+    '<div class="sal-goals-grid">' +
+      '<div class="sal-half"><span class="sal-half-label">1H</span><span>' + h1html + '</span></div>' +
+      '<div class="sal-half"><span class="sal-half-label">2H</span><span>' + h2html + '</span></div>' +
+    '</div>' +
+    '<div class="sal-suggestion">' + bet + '</div>' +
+    '<div class="sal-actions">' +
+      '<button class="sal-btn sal-btn-go" onclick="' + analyzeCall + ';document.getElementById(\'' + popupId + '\').remove()">Analizuj →</button>' +
+      '<button class="sal-btn sal-btn-skip" onclick="document.getElementById(\'' + popupId + '\').remove()">Pomiń</button>' +
+    '</div>';
+
+  const container = document.getElementById('scoreAlertContainer');
+  if(container) container.appendChild(div);
+  else document.body.appendChild(div);
+}
+
+// Init toggle state on load
+(function salInit(){
+  const cb = document.getElementById('scoreAlertToggle');
+  if(cb) cb.checked = salIsEnabled();
+})();
+// ─────────────────────────────────────────────────────────────────────────────
+
 // v8.8: dashboardLightRefresh — 1 call /fixtures?live=all (api-football real-time).
 // Aktualizuje TYLKO live + placed cards. Zachowuje team stats + odds (nie re-fetchuje).
 async function dashboardLightRefresh(){
@@ -7756,6 +7893,7 @@ async function dashboardLightRefresh(){
       const prevCacheCopy=cache.map(c=>({...c}));
       renderDashboardMatches();
       dashboardCheckNewPicks(prevCacheCopy,cache);
+      checkScoreAlerts(cache);
     }
     const status=document.getElementById('dashboardStatus');
     if(status){
@@ -9873,5 +10011,6 @@ function renderScanCards(matches,isMulti){
 #stratPanel::-webkit-scrollbar-thumb{background:var(--green-bd);border-radius:2px;}
 @media(max-width:768px){#stratTab,#stratPanel{display:none;}}
 </style>
+<div id="scoreAlertContainer"></div>
 </body>
 </html>
