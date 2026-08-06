@@ -784,6 +784,20 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 .qd-toast.celebrate{animation:qd-celebrate 0.8s ease-out;}
 @keyframes qd-celebrate{0%{transform:translateX(-50%) scale(0.5) translateY(0);}50%{transform:translateX(-50%) scale(1.15) translateY(-6px);}100%{transform:translateX(-50%) scale(1) translateY(0);}}
 
+/* ── MINIMALIST MATCH PANEL ── */
+#matchPanel{animation:mp-in .25s ease;}
+@keyframes mp-in{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.match-panel-nav{display:flex;align-items:center;gap:12px;padding:10px 0 18px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.btn-back{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;transition:border-color .15s,color .15s;}
+.btn-back:hover{border-color:var(--accent);color:var(--accent);}
+.match-panel-label{font-size:13px;color:var(--text-dim);font-family:var(--mono);}
+
+/* compact risk bar — 1 row thin */
+.risk-bar{grid-template-columns:repeat(4,1fr);padding:8px 14px;gap:6px;margin-bottom:14px;}
+.risk-label{font-size:10px;}
+.risk-value{font-size:16px;}
+.risk-bar-track{margin-top:2px;}
+
 /* SCORE ALERT POPUP */
 #scoreAlertContainer{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:320px;}
 .score-alert-popup{background:var(--surface,#1a1a2e);border:2px solid var(--accent,#FF5A1F);border-radius:12px;padding:18px 20px;width:300px;box-shadow:0 8px 32px rgba(255,90,31,0.35);animation:sal-in 0.35s ease;pointer-events:all;}
@@ -935,6 +949,13 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </section>
 
 <!-- ───── MATCH CONTEXT TAGS ───── -->
+<!-- ───── MATCH PANEL — ukryty dopóki user nie kliknie Analizuj ───── -->
+<div id="matchPanel" style="display:none">
+<div class="match-panel-nav">
+  <button class="btn-back" onclick="hideMatchPanel()">← Lista meczów</button>
+  <span id="matchPanelLabel" class="match-panel-label"></span>
+</div>
+
 <div class="tag-bar" id="tagBar">
   <span class="tag-bar-label">Kontekst:</span>
   <button class="tag-pill" data-tag="final" onclick="toggleTag(this)"><span class="tag-icon">🏆</span> Finał</button>
@@ -1065,7 +1086,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
 </section>
 
 <!-- ───── MULTI-MATCH SCAN (najbliższe 24h) ───── -->
-<section class="section" id="scanTodaySection">
+<section class="section" id="scanTodaySection" style="display:none">
   <div class="picks-header">
     <div>
       <div class="eyebrow" style="color:var(--accent);">🎯 Skan API — mecze warte typowania</div>
@@ -1748,6 +1769,7 @@ footer{margin-top:2.5rem;text-align:center;font-size:10px;color:var(--text3);fon
   </details>
 </section>
 <!-- ───── /ACCORDION: Backtest ───── -->
+</div><!-- /matchPanel -->
 
 <!-- ───── MODALS ───── -->
 <div class="modal-backdrop" id="settingsModal" onclick="if(event.target===this)closeSettings()">
@@ -5902,6 +5924,10 @@ function footyMapMatch(match,homeT,awayT){
   if(typeof saveFields==='function') saveFields();
   if(typeof renderFieldStatus==='function') renderFieldStatus();
   if(typeof calc==='function') calc();
+  // Pokaż panel analizy (matchPanel) — ukryty domyślnie, pojawia się po załadowaniu meczu
+  const _hg=(match.homeGoals||[]).length, _ag=(match.awayGoals||[]).length;
+  const _lbl=(match.home_name||'Home')+' '+_hg+':'+_ag+' '+(match.away_name||'Away')+(match._af_elapsed?' · '+match._af_elapsed+"'":'');
+  showMatchPanel(_lbl);
 }
 
 async function footyAutoFetch(){
@@ -6381,18 +6407,13 @@ function footyToggleAutoRefresh(){
 async function footyLoadFromScan(idx){
   const card=window._scanCardsCache[idx];
   if(!card) return;
-  // Clear stale state from previous match
   clearAllOddsFields();
   clearMatchState();
-  // Reuse existing footyMapMatch
   footyMapMatch(card.match,card.homeT,card.awayT);
-  // Trigger calc so _lastPredictions is fresh
   if(typeof calc==='function') calc();
-  // Scroll to picks section
-  setTimeout(()=>{
-    const el=$('picksSection');
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-  },200);
+  const hg=(card.match.homeGoals||[]).length, ag=(card.match.awayGoals||[]).length;
+  const label=card.match.home_name+' '+hg+':'+ag+' '+card.match.away_name+(card.match._af_elapsed?' · '+(card.match._af_elapsed)+"'":'');
+  showMatchPanel(label);
   qdToast('Załadowano '+card.match.home_name+' vs '+card.match.away_name,'green',2500);
 }
 
@@ -7704,6 +7725,22 @@ function stopLateGoalPolling(){
 // Boot start (gdy sprzed ładowania apki)
 if(document.readyState==='complete') setTimeout(startLateGoalPolling,3000);
 else window.addEventListener('load',()=>setTimeout(startLateGoalPolling,3000));
+
+// ─── MATCH PANEL — show/hide analyze view ────────────────────────────────────
+function showMatchPanel(label){
+  const p = document.getElementById('matchPanel');
+  if(!p) return;
+  p.style.display = 'block';
+  const lbl = document.getElementById('matchPanelLabel');
+  if(lbl && label) lbl.textContent = label;
+  setTimeout(() => p.scrollIntoView({behavior:'smooth', block:'start'}), 80);
+}
+function hideMatchPanel(){
+  const p = document.getElementById('matchPanel');
+  if(p) p.style.display = 'none';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ─── SCORE ALERT — popup gdy live mecz 2-1 w minutach 70-85, gol w obu połowach ──
 window._scoreAlertSeen = window._scoreAlertSeen || new Set();
