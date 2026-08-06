@@ -7782,7 +7782,7 @@ function salShowPopup(card, evData){
 
   const cacheIdx = (window._scanCardsCache || []).findIndex(c => c.match.id === m.id);
   const analyzeCall = cacheIdx >= 0
-    ? 'footyLoadFromScan(window._scanCardsCache[' + cacheIdx + '],' + cacheIdx + ')'
+    ? 'footyLoadFromScan(' + cacheIdx + ')'
     : 'qdToast(\'Kliknij Analizuj w karcie meczu\',\'green\',2000)';
 
   const div = document.createElement('div');
