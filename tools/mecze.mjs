@@ -68,6 +68,22 @@ async function one(f) {
     const lam = (live + form) / 2 * rem;
     out.push(`  Szansa: ${n} strzeli jeszcze gola ≈ ${pct(pois(lam))} (tylko gra dziś ${pct(pois(live * rem))}, tylko forma ${pct(pois(form * rem))}, zostało ~${rem}')`);
   }
+  // Tryb agresywny (prośba Chrisa 2026-11-22): czy PRZEGRYWAJĄCY strzeli — nie "czy kurs się opłaca".
+  // Sygnały: gra przegrywającego ≥80% xG prowadzącego (anomalia: wynik ≠ gra), przewaga 2+ goli
+  // po 60' (prowadzący odpuszcza/zmienia), końcówka 75'+ przy 1 golu różnicy (przegrywający rzuca się).
+  if (gh !== ga && gh != null) {
+    const [tr, ld] = gh < ga ? [H, A] : [A, H];
+    const diff = Math.abs(gh - ga), why = [];
+    const xt = xg(tr), xl = xg(ld);
+    if (xt != null && xl != null && xt >= 0.8 * xl) why.push(`xG ${xt} vs ${xl} — gra lepiej niż wynik`);
+    if (diff >= 2 && el >= 60) why.push(`prowadzący +${diff} po 60' — odpuszcza`);
+    if (diff === 1 && el >= 75) why.push(`1 gol różnicy w ${el}' — rzuca się do przodu`);
+    const sot = S[tr]?.['Shots on Goal'] ?? 0;
+    if (sot === 0 && el >= 40) why.push(`ale 0 celnych strzałów`);
+    const pos = why.filter(w => !w.startsWith('ale')).length, dead = sot === 0 && el >= 40;
+    const verdict = pos >= 1 && !dead ? (pos >= 2 ? '🔥 TAK' : 'TAK (ryzykownie)') : 'NIE';
+    out.push(`  AGRESYWNIE — ${tr} strzeli: ${verdict}${why.length ? ' · ' + why.join(' · ') : ''}`);
+  }
   const want = /Team Score a Goal|Team Goals|Which team will score|Both Teams to Score$|Last Team to Score|Match Goals/;
   for (const r of od.response) for (const b of r.odds) if (want.test(b.name))
     out.push(`  Kurs ${b.name}: ` + b.values.filter(v => !v.suspended).slice(0, 6).map(v => `${v.value}${v.handicap ? ' ' + v.handicap : ''} @${v.odd}`).join(' | '));
