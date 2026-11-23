@@ -51,6 +51,21 @@ async function one(f) {
   out.push(`\n=== ${H} ${gh}:${ga} ${A} | ${el}' ${st} | ${f.league.name} | ${f.fixture.venue?.name}, ${f.fixture.venue?.city}`);
   out.push('Zdarzenia: ' + (ev.response.filter(e => e.type === 'Goal' || /Red/.test(e.detail)).map(e => `${e.time.elapsed}' ${e.team.name} ${e.detail}`).join(' · ') || 'brak'));
   for (const n of [H, A]) { const s = S[n] || {}; out.push(`  ${n}: xG ${s.expected_goals ?? '-'} · strzały ${s['Total Shots'] ?? '-'} (celne ${s['Shots on Goal'] ?? '-'}) · w polu karnym ${s['Shots insidebox'] ?? '-'} · posiadanie ${s['Ball Possession'] ?? '-'} · rożne ${s['Corner Kicks'] ?? '-'} · czerwone ${s['Red Cards'] ?? 0}`); }
+  // Trend od poprzedniego skanu (lekcja 2026-11-23 Neftchi-Al-Hilal: typowałem Al-Hilal, a w 2. połowie
+  // miał 1 strzał i 0 celnych). API daje tylko sumy z całego meczu, więc różnicę liczymy między skanami.
+  {
+    const snap = n => ({ el, shots: +S[n]?.['Total Shots'] || 0, sot: +S[n]?.['Shots on Goal'] || 0, cor: +S[n]?.['Corner Kicks'] || 0, xg: xg(n) || 0 });
+    const prev = CACHE[id];
+    if (prev && prev.el < el) {
+      for (const n of [H, A]) {
+        const a = prev[n], b = snap(n); if (!a) continue;
+        const d = { shots: b.shots - a.shots, sot: b.sot - a.sot, cor: b.cor - a.cor, xg: +(b.xg - a.xg).toFixed(2) };
+        const dead = d.sot === 0 && d.shots <= 1 ? '  ⚠️ NIE ATAKUJE — nie typuj jej gola' : '';
+        out.push(`  Od ${prev.el}' do ${el}': ${n} strzały +${d.shots} (celne +${d.sot}) · rożne +${d.cor} · xG +${d.xg}${dead}`);
+      }
+    } else out.push('  Trend: brak poprzedniego skanu — uruchom skan ponownie za kilka minut, żeby zobaczyć, kto naciska TERAZ');
+    CACHE[id] = { el, [H]: snap(H), [A]: snap(A) };
+  }
   if (p) {
     for (const t of [th, ta]) {
       const L = t.league;
@@ -103,6 +118,11 @@ async function one(f) {
   out.push('  Pogoda: ' + await weather(f.fixture.venue?.city || ''));
   return out.join('\n');
 }
+
+import { readFileSync, writeFileSync } from 'node:fs';
+const CACHE_FILE = new URL('./.mecze-cache.json', import.meta.url);
+let CACHE = {}; try { CACHE = JSON.parse(readFileSync(CACHE_FILE, 'utf8')); } catch {}
+process.on('exit', () => { try { writeFileSync(CACHE_FILE, JSON.stringify(CACHE)); } catch {} });
 
 const names = process.argv.slice(2).map(s => s.toLowerCase());
 const live = await af('/fixtures?live=all');
