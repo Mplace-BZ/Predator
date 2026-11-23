@@ -61,7 +61,7 @@ async function one(f) {
       for (const n of [H, A]) {
         const a = prev[n], b = snap(n); if (!a) continue;
         const d = { shots: b.shots - a.shots, sot: b.sot - a.sot, cor: b.cor - a.cor, xg: +(b.xg - a.xg).toFixed(2) };
-        const dead = d.sot === 0 && d.shots <= 1 ? '  ⚠️ NIE ATAKUJE — nie typuj jej gola' : '';
+        const dead = el - prev.el >= 10 && d.sot === 0 && d.shots <= 1 ? '  ⚠️ NIE ATAKUJE — nie typuj jej gola' : (el - prev.el < 10 ? '  (okno <10 min — za krótkie na wniosek)' : '');
         out.push(`  Od ${prev.el}' do ${el}': ${n} strzały +${d.shots} (celne +${d.sot}) · rożne +${d.cor} · xG +${d.xg}${dead}`);
       }
     } else out.push('  Trend: brak poprzedniego skanu — uruchom skan ponownie za kilka minut, żeby zobaczyć, kto naciska TERAZ');
