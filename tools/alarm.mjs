@@ -1,28 +1,41 @@
 #!/usr/bin/env node
-// Alarm momentum: kończy się (i budzi Claude), gdy wskazana drużyna zaczyna naciskać, padnie gol albo mecz się skończy.
-// Użycie: node tools/alarm.mjs "Al Shamal"   — sprawdza co 2 min, okno 6 min
+// Alarm na żywo dla kilku meczów naraz (api-football PRO). Sprawdza co 60 s.
+// Kończy się (i budzi Claude) przy pierwszym zdarzeniu: gol, czerwona kartka albo drużyna zaczyna naciskać
+// (w oknie 5 min: celny strzał i co najmniej 2 strzały, albo 3 rożne).
+// Użycie: node tools/alarm.mjs "Ceuta" "Monza" "Levante"
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
-const team = process.argv[2].toLowerCase();
+const names = process.argv.slice(2).map(s => s.toLowerCase());
 const af = async p => (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
-const hist = []; let score0 = null;
-for (let i = 0; i < 40; i++) {
-  const f = ((await af('/fixtures?live=all')).response || []).find(f => (f.teams.home.name + ' ' + f.teams.away.name).toLowerCase().includes(team));
-  if (!f) { console.log('ALARM: mecz zakończony / zniknął z live'); process.exit(0); }
-  const sc = `${f.goals.home}:${f.goals.away}`, el = f.fixture.status.elapsed;
-  if (score0 && sc !== score0) { console.log(`ALARM: GOL — ${f.teams.home.name} ${sc} ${f.teams.away.name} (${el}')`); process.exit(0); }
-  score0 ||= sc;
-  const st = (await af(`/fixtures/statistics?fixture=${f.fixture.id}`)).response || [];
-  const t = st.find(x => x.team.name.toLowerCase().includes(team));
-  if (t) {
-    const m = Object.fromEntries(t.statistics.map(s => [s.type, s.value]));
-    const now = { el, shots: +m['Total Shots'] || 0, sot: +m['Shots on Goal'] || 0, cor: +m['Corner Kicks'] || 0 };
-    hist.push(now);
-    const base = hist.filter(h => h.el <= el - 6).pop();
-    if (base) {
-      const d = { shots: now.shots - base.shots, sot: now.sot - base.sot, cor: now.cor - base.cor };
-      if (d.sot >= 1 || d.shots >= 2 || d.cor >= 2) { console.log(`ALARM: ${t.team.name} naciska — od ${base.el}' do ${el}': strzały +${d.shots}, celne +${d.sot}, rożne +${d.cor} (wynik ${sc})`); process.exit(0); }
+const state = {}; // id -> { score, reds, hist: { team: [{el,shots,sot,cor}] } }
+
+function fire(msg) { console.log('ALARM: ' + msg); process.exit(0); }
+
+for (let i = 0; i < 180; i++) {
+  const live = (await af('/fixtures?live=all')).response || [];
+  const hits = live.filter(f => names.some(n => (f.teams.home.name + ' ' + f.teams.away.name).toLowerCase().includes(n)));
+  if (!hits.length && i > 2) fire('wszystkie śledzone mecze zakończone');
+  for (const f of hits) {
+    const id = f.fixture.id, el = f.fixture.status.elapsed, sc = `${f.goals.home}:${f.goals.away}`;
+    const label = `${f.teams.home.name} ${sc} ${f.teams.away.name} (${el}')`;
+    const s = (state[id] ||= { score: sc, reds: 0, hist: {} });
+    if (sc !== s.score) fire(`GOL — ${label}`);
+    const st = (await af(`/fixtures/statistics?fixture=${id}`)).response || [];
+    let reds = 0;
+    for (const t of st) {
+      const m = Object.fromEntries(t.statistics.map(x => [x.type, x.value]));
+      reds += +m['Red Cards'] || 0;
+      const now = { el, shots: +m['Total Shots'] || 0, sot: +m['Shots on Goal'] || 0, cor: +m['Corner Kicks'] || 0 };
+      const h = (s.hist[t.team.name] ||= []); h.push(now);
+      const base = h.filter(x => x.el <= el - 5).pop();
+      if (base) {
+        const d = { shots: now.shots - base.shots, sot: now.sot - base.sot, cor: now.cor - base.cor };
+        if ((d.sot >= 1 && d.shots >= 2) || d.cor >= 3)
+          fire(`NACISK ${t.team.name} — od ${base.el}' do ${el}': strzały +${d.shots}, celne +${d.sot}, rożne +${d.cor} · ${label}`);
+      }
     }
-    console.log(`${new Date().toLocaleTimeString('pl-PL')} ${el}' ${sc} ${t.team.name}: strzały ${now.shots} celne ${now.sot} rożne ${now.cor}`);
+    if (reds > s.reds && i > 0) fire(`CZERWONA KARTKA — ${label}`);
+    s.reds = reds;
   }
-  await new Promise(r => setTimeout(r, 120_000));
+  console.log(`${new Date().toLocaleTimeString('pl-PL')} ` + hits.map(f => `${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.fixture.status.elapsed}'`).join(' · '));
+  await new Promise(r => setTimeout(r, 60_000));
 }
