@@ -43,7 +43,8 @@ async function one(f) {
   const id = f.fixture.id, el = f.fixture.status.elapsed ?? 0, st = f.fixture.status.short;
   const H = f.teams.home.name, A = f.teams.away.name, gh = f.goals.home, ga = f.goals.away;
   const [stats, ev, pr, od] = [await af(`/fixtures/statistics?fixture=${id}`), await af(`/fixtures/events?fixture=${id}`),
-    await af(`/predictions?fixture=${id}`), await af(`/odds/live?fixture=${id}`).catch(() => ({ response: [] }))];
+    FAST ? { response: [] } : await af(`/predictions?fixture=${id}`),
+    FAST ? { response: [] } : await af(`/odds/live?fixture=${id}`).catch(() => ({ response: [] }))];
   const S = {}; for (const t of stats.response) S[t.team.name] = Object.fromEntries(t.statistics.map(s => [s.type, s.value]));
   const xg = n => parseFloat(S[n]?.expected_goals) || null;
   const p = pr.response[0], th = p?.teams.home, ta = p?.teams.away;
@@ -114,8 +115,8 @@ async function one(f) {
   const want = /Team Score a Goal|Team Goals|Which team will score|Both Teams to Score$|Last Team to Score|Match Goals/;
   for (const r of od.response) for (const b of r.odds) if (want.test(b.name))
     out.push(`  Kurs ${b.name}: ` + b.values.filter(v => !v.suspended).slice(0, 6).map(v => `${v.value}${v.handicap ? ' ' + v.handicap : ''} @${v.odd}`).join(' | '));
-  if (!od.response.length) out.push('  Kursy na żywo: brak');
-  out.push('  Pogoda: ' + await weather(f.fixture.venue?.city || ''));
+  if (!od.response.length && !FAST) out.push('  Kursy na żywo: brak');
+  if (!FAST) out.push('  Pogoda: ' + await weather(f.fixture.venue?.city || ''));
   return out.join('\n');
 }
 
@@ -124,7 +125,9 @@ const CACHE_FILE = new URL('./.mecze-cache.json', import.meta.url);
 let CACHE = {}; try { CACHE = JSON.parse(readFileSync(CACHE_FILE, 'utf8')); } catch {}
 process.on('exit', () => { try { writeFileSync(CACHE_FILE, JSON.stringify(CACHE)); } catch {} });
 
-const names = process.argv.slice(2).map(s => s.toLowerCase());
+// --szybko: tylko statystyki + zdarzenia (2 zapytania na mecz) — do odświeżania trendu co kilka minut
+const FAST = process.argv.includes('--szybko');
+const names = process.argv.slice(2).filter(a => !a.startsWith('--')).map(s => s.toLowerCase());
 const live = await af('/fixtures?live=all');
 const hits = live.response.filter(f => !names.length || names.some(n => (f.teams.home.name + ' ' + f.teams.away.name).toLowerCase().includes(n)));
 const miss = names.filter(n => !hits.some(f => (f.teams.home.name + ' ' + f.teams.away.name).toLowerCase().includes(n)));
