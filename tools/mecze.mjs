@@ -84,6 +84,18 @@ async function one(f) {
     const verdict = pos >= 1 && !dead ? (pos >= 2 ? '🔥 TAK' : 'TAK (ryzykownie)') : 'NIE';
     out.push(`  AGRESYWNIE — ${tr} strzeli: ${verdict}${why.length ? ' · ' + why.join(' · ') : ''}`);
   }
+  // Heurystyka Chrisa (2026-11-23): po golu kontaktowym (przegrywający zmniejsza stratę albo wyrównuje)
+  // obie drużyny idą na maksa — mecz się otwiera, kolejny gol bardziej prawdopodobny.
+  {
+    let h = 0, a = 0, contact = null;
+    for (const e of ev.response.filter(e => e.type === 'Goal' && !/Missed/.test(e.detail))) {
+      const home = e.team.name === H, behind = home ? h < a : a < h;
+      if (home) h++; else a++;
+      contact = behind ? { min: e.time.elapsed, team: e.team.name } : null;
+    }
+    if (contact && el - contact.min <= 15)
+      out.push(`  🔥 GOL KONTAKTOWY ${contact.min}' (${contact.team}) — mecz się otwiera: padnie jeszcze gol: TAK`);
+  }
   const want = /Team Score a Goal|Team Goals|Which team will score|Both Teams to Score$|Last Team to Score|Match Goals/;
   for (const r of od.response) for (const b of r.odds) if (want.test(b.name))
     out.push(`  Kurs ${b.name}: ` + b.values.filter(v => !v.suspended).slice(0, 6).map(v => `${v.value}${v.handicap ? ' ' + v.handicap : ''} @${v.odd}`).join(' | '));
