@@ -56,7 +56,13 @@ async function one(f) {
   // miał 1 strzał i 0 celnych). API daje tylko sumy z całego meczu, więc różnicę liczymy między skanami.
   {
     const snap = n => ({ el, shots: +S[n]?.['Total Shots'] || 0, sot: +S[n]?.['Shots on Goal'] || 0, cor: +S[n]?.['Corner Kicks'] || 0, xg: xg(n) || 0 });
-    const prev = CACHE[id];
+    // Preferuj oś czasu z tools/sledz.mjs: odczyt sprzed ~10 min (najpóźniejszy z el <= teraz-10)
+    let prev = CACHE[id];
+    try {
+      const tl = JSON.parse(readFileSync(new URL('./.sledz.json', import.meta.url), 'utf8'))[id]?.t || [];
+      const old = tl.filter(x => x.el <= el - 10).pop();
+      if (old) prev = { el: old.el, [H]: old[H], [A]: old[A] };
+    } catch {}
     if (prev && prev.el < el) {
       for (const n of [H, A]) {
         const a = prev[n], b = snap(n); if (!a) continue;
