@@ -21,6 +21,14 @@ async function af(path) {
   return j;
 }
 
+// Odsetek: przegrywający strzeli jeszcze gola (research/analiza-tez.mjs, 3849 meczów 2025)
+const HIST = { 1: { 55: .46, 60: .43, 65: .39, 70: .35, 75: .31, 80: .26 }, 2: { 55: .44, 60: .39, 65: .35, 70: .30, 75: .25, 80: .21 }, 3: { 55: .40, 60: .34, 65: .30, 70: .25, 75: .20, 80: .15 } };
+function histTrail(el, diff, ldRed) {
+  if (el < 53) return null;
+  const m = [55, 60, 65, 70, 75, 80].reduce((b, x) => Math.abs(x - el) < Math.abs(b - el) ? x : b, 55);
+  const p = HIST[Math.min(diff, 3)][m];
+  return ldRed && el >= 70 && diff <= 2 ? p + 0.10 : p;
+}
 const pois = lam => 1 - Math.exp(-lam);
 const pct = x => Math.round(x * 100) + '%';
 
@@ -98,7 +106,10 @@ async function one(f) {
     const diff = Math.abs(gh - ga), why = [];
     const xt = xg(tr), xl = xg(ld);
     if (xt != null && xl != null && xt >= 0.8 * xl) why.push(`xG ${xt} vs ${xl} — gra lepiej niż wynik`);
-    if (diff >= 2 && el >= 60) why.push(`prowadzący +${diff} po 60' — odpuszcza`);
+    // Teza "prowadzący +2/+3 odpuszcza" NIE potwierdziła się na 3849 meczach 2025 (im większa strata, tym rzadziej
+    // przegrywający strzela) — nie jest już sygnałem. Potwierdziła się czerwona kartka prowadzącego od 75'.
+    const ldRed = ev.response.some(e => /Red/.test(e.detail) && e.team.name === ld) && !ev.response.some(e => /Red/.test(e.detail) && e.team.name === tr);
+    if (ldRed && el >= 70) why.push(`prowadzący gra w osłabieniu (historycznie +10 pkt proc.)`);
     if (diff === 1 && el >= 75) why.push(`1 gol różnicy w ${el}' — rzuca się do przodu`);
     const hasStats = S[tr] && S[tr]['Shots on Goal'] != null, sot = hasStats ? +S[tr]['Shots on Goal'] : null;
     if (hasStats && sot === 0 && el >= 40) why.push(`ale 0 celnych strzałów`);
@@ -106,6 +117,8 @@ async function one(f) {
     const pos = why.filter(w => !w.startsWith('ale') && !w.startsWith('BRAK')).length, dead = hasStats && sot === 0 && el >= 40;
     const verdict = pos >= 1 && !dead ? (pos >= 2 ? '🔥 TAK' : 'TAK (ryzykownie)') : 'NIE';
     out.push(`  AGRESYWNIE — ${tr} strzeli: ${verdict}${why.length ? ' · ' + why.join(' · ') : ''}`);
+    const hp = histTrail(el, diff, ldRed);
+    if (hp) out.push(`  Historia (3849 meczów, 10 lig, 2025): przegrywający strzela w ${Math.round(hp * 100)}% → uczciwy kurs ${(1 / hp).toFixed(2)}`);
   }
   // Heurystyka Chrisa (2026-11-23): po golu kontaktowym (przegrywający zmniejsza stratę albo wyrównuje)
   // obie drużyny idą na maksa — mecz się otwiera, kolejny gol bardziej prawdopodobny.
@@ -116,8 +129,11 @@ async function one(f) {
       if (home) h++; else a++;
       contact = behind ? { min: e.time.elapsed, team: e.team.name } : null;
     }
+    // Historia 2025: efekt słaby/niestabilny; wyraźny tylko 70-75' przy 1 golu różnicy (70% vs 56%, n=96).
     if (contact && el - contact.min <= 15)
-      out.push(`  🔥 GOL KONTAKTOWY ${contact.min}' (${contact.team}) — mecz się otwiera: padnie jeszcze gol: TAK`);
+      out.push(`  GOL KONTAKTOWY ${contact.min}' (${contact.team}) — ` + (Math.abs(gh - ga) === 1 && el >= 68 && el <= 78
+        ? '🔥 70-75\' przy 1 golu różnicy: historycznie gol pada częściej (70% vs 56%)'
+        : 'historycznie efekt słaby — nie traktuj jako pewniaka'));
   }
   const want = /Team Score a Goal|Team Goals|Which team will score|Both Teams to Score$|Last Team to Score|Match Goals/;
   for (const r of od.response) for (const b of r.odds) if (want.test(b.name))
