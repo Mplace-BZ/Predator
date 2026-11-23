@@ -94,9 +94,10 @@ async function one(f) {
     if (xt != null && xl != null && xt >= 0.8 * xl) why.push(`xG ${xt} vs ${xl} — gra lepiej niż wynik`);
     if (diff >= 2 && el >= 60) why.push(`prowadzący +${diff} po 60' — odpuszcza`);
     if (diff === 1 && el >= 75) why.push(`1 gol różnicy w ${el}' — rzuca się do przodu`);
-    const sot = S[tr]?.['Shots on Goal'] ?? 0;
-    if (sot === 0 && el >= 40) why.push(`ale 0 celnych strzałów`);
-    const pos = why.filter(w => !w.startsWith('ale')).length, dead = sot === 0 && el >= 40;
+    const hasStats = S[tr] && S[tr]['Shots on Goal'] != null, sot = hasStats ? +S[tr]['Shots on Goal'] : null;
+    if (hasStats && sot === 0 && el >= 40) why.push(`ale 0 celnych strzałów`);
+    if (!hasStats) why.push('BRAK STATYSTYK z meczu — typ tylko z wyniku i czasu');
+    const pos = why.filter(w => !w.startsWith('ale') && !w.startsWith('BRAK')).length, dead = hasStats && sot === 0 && el >= 40;
     const verdict = pos >= 1 && !dead ? (pos >= 2 ? '🔥 TAK' : 'TAK (ryzykownie)') : 'NIE';
     out.push(`  AGRESYWNIE — ${tr} strzeli: ${verdict}${why.length ? ' · ' + why.join(' · ') : ''}`);
   }
