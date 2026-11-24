@@ -12,7 +12,7 @@ const NO_STS = ['Russia', 'Belarus', 'Iran'];
 const DIR = new URL('../sciaga/', import.meta.url); mkdirSync(DIR, { recursive: true });
 const SF = new URL('portfel.json', DIR), HF = new URL('portfel.html', DIR);
 const load = () => existsSync(SF) ? JSON.parse(readFileSync(SF, 'utf8')) : { start: 100, bets: [] };
-const save = s => writeFileSync(SF, JSON.stringify(s, null, 1));
+const save = s => { writeFileSync(SF, JSON.stringify(s, null, 1)); writeFileSync(new URL('portfel.js', DIR), 'window.PORTFEL=' + JSON.stringify(s) + ';'); }; // .js czyta ściąga (oznacza mecze AI BOT)
 const af = async p => { for (let k = 0; k < 3; k++) { try { return (await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json()).response || []; } catch { await new Promise(r => setTimeout(r, 8000)); } } return []; };
 const zl = x => x.toFixed(2).replace('.', ',') + ' zł', k2 = x => (+x).toFixed(2).replace('.', ',');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -109,7 +109,7 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
 </style></head><body>
 <div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span></div>
 <div class="wrap">
-<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">LIKE</a><a href="index.html#moje">MINE</a><a href="index.html#hist">HISTORY</a><a class="on" href="portfel.html">AI BOT</a></div>
+<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a class="on" href="portfel.html">AI BOT</a><a href="wiki.html">WIKI</a></div>
 <div class="kpi"><div><small>Pula teraz</small><b class="${bal.total > s.start ? 'up' : bal.total < s.start ? 'down' : ''}">${zl(bal.total)}</b></div><div><small>Wolne środki</small><b>${zl(bal.free)}</b></div><div><small>W grze</small><b>${zl(bal.open)}</b></div><div><small>Trafione</small><b>${won}/${done.length}</b></div></div>
 <div class="card">${s.bets.length ? `<table><tr><th>#</th><th>Godz.</th><th>Mecz</th><th>Zakład i powód</th><th>Wynik przy wejściu</th><th>Kurs</th><th>Stawka</th><th>Teraz</th><th>Status</th><th>Zysk</th></tr>${[...s.bets].reverse().map(row).join('')}</table>` : '<div class="empty">Jeszcze nic nie zagrałem. Czekam na okazję zgodną z regułami.</div>'}</div>
 <div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Bez AKO.<br><b>Test przyspieszony (start 23:00, 60 minut gry):</b> cel 200 zł. Połowa puli (50 zł) jest nietykalna, drugą połową gram ostro — kilka zakładów na jeden scenariusz, wyższe kursy.<br>

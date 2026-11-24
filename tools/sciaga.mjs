@@ -178,6 +178,7 @@ footer{padding-bottom:45vh}}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
 .pills button{background:#0d2f3c;color:var(--text);border:2px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;cursor:pointer}
 .pills a.bot{background:#0d2f3c;color:var(--text);border:1px solid #2b6577;border-radius:8px;padding:8px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none;margin-left:auto}.pills a.bot:hover{border-color:var(--text)}
+.botb{align-self:flex-start;background:color-mix(in srgb,#FFB347 12%,transparent);border:1px solid color-mix(in srgb,#FFB347 45%,transparent);border-radius:6px;padding:2px 8px;font-weight:700;font-size:11px}.botb.won{background:color-mix(in srgb,#4ADE80 14%,transparent);border-color:color-mix(in srgb,#4ADE80 50%,transparent)}.botb.lost{background:none;border-color:var(--line);opacity:.6}
 .pills button.on{background:var(--red);border-color:#0b5cff}.pills small{opacity:.75;font-weight:600;margin-left:4px}
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
@@ -243,7 +244,7 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 <div class="pills">
 <button data-f="all" class="on">ALL<small>${rows.length}</small></button>
 ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${{ must: 'MUST', szansa: 'CHANCE', ryzyko: 'RISK', reszta: 'REST' }[k]}<small>${cnt(k)}</small></button>`).join('')}
-<button data-f="fav">☆ LIKE</button><button data-f="moje">💰 MINE</button><button data-f="hist">📒 HISTORY</button><a class="bot" href="portfel.html" title="Portfel Claude — wirtualna pula, moje typy i rozliczenie">AI BOT</a>
+<button data-f="fav">☆ FAVOURITE</button><button data-f="moje">💰 MY BETS</button><button data-f="hist">📒 HISTORY</button><a class="bot" href="portfel.html" title="Portfel Claude — wirtualna pula, moje typy i rozliczenie">AI BOT</a><a class="bot" href="wiki.html" style="margin-left:0" title="Nasza wiki typowania: liczby, lekcje, tezy">WIKI</a>
 </div>
 ${groups.map(league).join('')}
 <section id="hist" class="lg hide"></section>
@@ -443,6 +444,11 @@ let curF='all';function applyFilter(){const f=curF,H=f==='hist';document.getElem
 rows.forEach(m=>m.classList.toggle('hide',H||(m.classList.contains('fin')&&f!=='moje')||!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
 document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));}
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));curF=b.dataset.f;applyFilter();});
+function botMark(){const P=window.PORTFEL;if(!P)return;document.querySelectorAll('.botb').forEach(x=>x.remove());let n=0;
+P.bets.forEach(b=>{if(b.status==='open')n++;const m=document.querySelector('.m[data-fid="'+b.fid+'"]'),pl=m&&m.querySelector('.plan');if(!pl)return;const s=document.createElement('span');s.className='botb '+b.status;s.title=b.note||'';s.textContent='AI BOT: '+b.label+' · kurs '+b.odd.toFixed(2).replace('.',',')+' · '+b.stake+' zł'+(b.status==='won'?' · trafiony':b.status==='lost'?' · pudło':'');pl.prepend(s);});
+const a=document.querySelector('.pills a.bot');if(a)a.innerHTML='AI BOT'+(n?'<small>'+n+'</small>':'');}
+function botLoad(){const s=document.createElement('script');s.src='portfel.js?t='+Date.now();s.onload=()=>{botMark();s.remove();};s.onerror=()=>s.remove();document.head.appendChild(s);}
+botLoad();setInterval(botLoad,30000);
 {const hb=document.querySelector('.pills [data-f="'+location.hash.slice(1).replace(/[^a-z]/g,'')+'"]');if(hb)hb.click();}
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 // Kalkulator: szansa gola z Poissona (śr. goli × pozostałe minuty), podatek 12% od stawki
