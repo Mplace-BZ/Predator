@@ -194,6 +194,15 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.tb{background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer}
+.cm{position:fixed;inset:0;background:rgba(0,10,15,.7);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}
+.cb{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(460px,94vw);padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.ch{font-weight:800;font-size:16px;display:flex;justify-content:space-between;margin-bottom:12px}.ch button{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer}
+.cb label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--dim);margin-bottom:10px}
+.cb input,.cb select{background:#0d2f3c;border:1px solid #2c4f5c;border-radius:8px;color:#fff;font:700 15px inherit;padding:8px 10px;outline:none}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.cg label:first-child{grid-column:1/3}
+.cr{border-top:1px solid var(--line);padding-top:12px;font-size:13px}.cr .v{font-size:20px;font-weight:900;margin-bottom:8px}.cr .ok{color:var(--pos)}.cr .ko{color:var(--red)}
+.cr table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}.cr td,.cr th{padding:4px 6px;text-align:left;border-top:1px solid var(--line)}.cr th{color:var(--dim);font-weight:600}.cr .now td{color:#fff;font-weight:800}
 .h2{font-size:10px;color:var(--dim);letter-spacing:.02em}
 .dep{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);background:#0d2f3c;border-radius:8px;padding:4px 10px}.dep input{width:70px;background:transparent;border:0;border-bottom:1px solid #2c4f5c;color:#fff;font:800 15px/1.2 inherit;text-align:right;outline:none}
 .fm{display:inline-flex;gap:2px;margin-left:8px;vertical-align:middle}.fm i{width:5px;height:5px;border-radius:1px;background:#3a5a66}.fm i.W{background:var(--pos)}.fm i.L{background:var(--red)}.fm i.D{background:#8ba0a8}
@@ -219,7 +228,7 @@ footer{padding-bottom:45vh}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
-<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
+<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="calcbtn" class="tb">🧮 Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
 <aside class="side"><h3><span>👉</span><span class="tx">POSTAW NA — podpowiedzi na żywo</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
@@ -230,6 +239,15 @@ ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="$
 </div>
 ${groups.map(league).join('')}
 <section id="hist" class="lg hide"></section>
+<div id="calc" class="cm hide"><div class="cb">
+<div class="ch">🧮 Czy się opłaca? <button id="cx" title="Zamknij">✕</button></div>
+<label>Mecz na żywo <select id="cm"><option value="">— wpisz ręcznie —</option></select></label>
+<div class="cg"><label>Zakład <select id="ct"><option value="m">Padnie gol w meczu</option><option value="h">Gol gospodarzy</option><option value="a">Gol gości</option></select></label>
+<label>Stawka (zł) <input id="cs" inputmode="decimal" value="10"></label>
+<label>Kurs w STS <input id="co" inputmode="decimal" placeholder="np. 2,0"></label>
+<label>Minuta <input id="cmin" inputmode="numeric" placeholder="np. 79"></label>
+<label>Śr. goli drużyn <input id="cg" inputmode="decimal" value="2,7"></label></div>
+<div id="cr" class="cr"></div></div></div>
 <footer>Kursy przedmeczowe — na żywo sprawdzaj w STS. MUSI = drużyna w Lidze Mistrzów walczy o top 24, TOP 8 = walczy o 1/8. Odśwież: w czacie „odśwież ściągę”.</footer>
 </main>
 </div>
@@ -387,6 +405,25 @@ rows.forEach(m=>m.classList.toggle('hide',H||(m.classList.contains('fin')&&f!=='
 document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));}
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));curF=b.dataset.f;applyFilter();});
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
+// Kalkulator: szansa gola z Poissona (śr. goli × pozostałe minuty), podatek 12% od stawki
+(()=>{const $=id=>document.getElementById(id),num=v=>parseFloat(String(v).replace(',','.')),zl=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(2).replace('.',',')+' zł',k2=x=>x.toFixed(2).replace('.',',');
+  const open=()=>{const sel=$('cm');sel.length=1;document.querySelectorAll('.m.live').forEach(m=>{const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a+' ('+m.querySelector('.time').firstChild.textContent+')';sel.append(o);});
+    const d=+(localStorage.getItem('sciaga_dep')||0);$('cs').value=Math.max(10,Math.round(d*0.1))||10;$('calc').classList.remove('hide');calc();};
+  $('calcbtn').onclick=open;$('cx').onclick=()=>$('calc').classList.add('hide');$('calc').onclick=e=>{if(e.target.id==='calc')$('calc').classList.add('hide');};
+  $('cm').onchange=()=>{const m=document.querySelector('.m[data-fid="'+$('cm').value+'"]');if(m){$('cmin').value=parseInt(m.querySelector('.time').textContent)||'';if(m.dataset.g)$('cg').value=String(m.dataset.g).replace('.',',');
+    const sp=m.querySelectorAll('.odds span');if(sp[3]&&/\d/.test(sp[3].lastChild.textContent)&&$('ct').value==='m')$('co').value=sp[3].lastChild.textContent;}calc();};
+  ['ct','cs','co','cmin','cg'].forEach(i=>$(i).oninput=calc);$('ct').onchange=calc;
+  function share(){const m=document.querySelector('.m[data-fid="'+$('cm').value+'"]'),t=$('ct').value;if(t==='m')return 1;const gh=+(m&&m.dataset.gfh)||1,ga=+(m&&m.dataset.gfa)||1;return t==='h'?gh/(gh+ga):ga/(gh+ga);}
+  function chance(min){const R=Math.max(1,93-min);return 1-Math.exp(-(num($('cg').value)||2.7)*R/90*share());}
+  function calc(){const st=num($('cs').value)||10,od=num($('co').value),min=num($('cmin').value);const r=$('cr');
+    if(!(min>=0)){r.innerHTML='<span style="color:var(--dim)">Wybierz mecz albo wpisz minutę.</span>';return;}
+    const p=chance(min),need=1/(p*0.88),win=st*0.88*(od||0)-st;let h='';
+    if(od>1){const ev=p*win-(1-p)*st,ok=ev>0;h+='<div class="v '+(ok?'ok':'ko')+'">'+(ok?'✅ Opłaca się':'❌ Nie opłaca się')+'</div>'
+      +'Szansa na gol: <b>'+Math.round(p*100)+'%</b><br>Wygrasz na czysto: <b>'+zl(win)+'</b> · przegrasz: <b>'+zl(-st)+'</b><br>Średnio na zakład: <b class="'+(ok?'ok':'ko')+'">'+zl(ev)+'</b><br>';}
+    else h+='Szansa na gol: <b>'+Math.round(p*100)+'%</b><br>';
+    h+='Opłaca się od kursu: <b style="color:var(--warn)">'+k2(need)+'</b>'+(need<1.9?' · Twoje minimum 1,90':'');
+    h+='<table><tr><th>Minuta</th><th>Szansa</th><th>Graj od kursu</th></tr>';for(let mm=Math.floor(min/5)*5;mm<=90;mm+=5){const q=chance(Math.max(mm,min));h+='<tr'+(mm===Math.floor(min/5)*5?' class="now"':'')+'><td>'+Math.max(mm,min)+"'</td><td>"+Math.round(q*100)+'%</td><td>'+k2(Math.max(1/(q*0.88),1.9))+'</td></tr>';}
+    r.innerHTML=h+'</table>';}})();
 </script>
 </body></html>`;
 mkdirSync(new URL('../sciaga/', import.meta.url), { recursive: true });
