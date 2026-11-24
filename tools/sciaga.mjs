@@ -162,7 +162,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .sr b.last{background:#163d4b;color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
 .live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
-.m.goal{background:color-mix(in srgb,var(--red) 22%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
+.m.goal{opacity:1!important;background:color-mix(in srgb,var(--red) 38%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
 @media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i,.sc.hd::before{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
@@ -237,7 +237,11 @@ async function live(){
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
   }catch(e){document.getElementById('lb').textContent='● na żywo: brak połączenia, ponawiam';}
 }
-live();setInterval(live,30000);
+live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,30000);
+// Symulacja gola (otwórz stronę z #gol na końcu adresu): pierwszy mecz w grze, +1 dla gospodarzy
+function simGol(){const m=document.querySelector('.m.live')||document.querySelector('.m');const sr=m.querySelectorAll('.sr');const b=sr[0].querySelector('b');b.textContent=(+b.textContent||0)+1;
+sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);
+document.title='⚽ GOL! '+m.dataset.h+' '+b.textContent+':'+sr[1].querySelector('b').textContent+' '+m.dataset.a+' (symulacja)';m.scrollIntoView({block:'center'});}
 const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]'));
 const rows=[...document.querySelectorAll('.m')];
 rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★';
