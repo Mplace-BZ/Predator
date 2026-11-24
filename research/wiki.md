@@ -39,6 +39,8 @@ Bukmacher zwykle daje kurs niższy niż w kolumnie „graj od”. Dlatego zwykł
 | Kto goni u siebie, ten strzeli | TAK | Gość prowadzi jednym golem w przerwie: następnego gola strzela goniący gospodarz w 45%, prowadzący gość w 35%. |
 | Kto goni na wyjeździe, ten strzeli | SŁABO | Gospodarz prowadzi jednym golem w przerwie: goniący gość strzela następnego w 36%, gospodarz w 43%. |
 | Gospodarz prowadzi 2:0 w przerwie, gość się odegra | NIE | Goniący gość strzela następnego tylko w 30%, prowadzący w 53%. |
+| „Dzień strzelecki”: gospodarz strzelił 2 gole w 1. połowie, więc strzeli też w 2. | TAK | Gospodarz bez gola w 1. połowie strzela w 2. w 55% meczów, z jednym golem w 59%, przy prowadzeniu 2:0 w 64%. U gości tego efektu nie ma (zawsze 50%). |
+| Gospodarz prowadzi 2:0 w 75. minucie i dobije z kontry | TAK, przy dobrym kursie | Strzela jeszcze w 33% meczów, czyli opłaca się od kursu 3,44. Bukmacher dawał na Chapecoense 5,50–7,00. |
 | Gol honorowy przy wysokim wyniku | NIE | Sprawdzone 2026-11-22, nie opłaca się. |
 | Czerwona kartka prowadzącego, więc rywal strzeli | TAK | Sprawdzone 2026-11-22, jedna z lepszych sytuacji. |
 
@@ -84,6 +86,11 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Lekcja dla Claude:** w 65. minucie baza mówiła, że prowadzący 2:0 gospodarz strzela następnego gola w 38% meczów, a kurs był 4,00. To daje 0,38 × 4,00 × 0,88 = 1,34, czyli zakład wyraźnie na plus. Widziałem to, napisałem „historia po Twojej stronie” i nie zagrałem. **Gdy liczby z bazy i przeczucie Chrisa mówią to samo, a kurs jest powyżej progu, gram.**
 - **Lekcja o kontrze:** gdy goniący rzuca wszystko do przodu (24 strzały, 10 rożnych), gol prowadzącego z kontry w końcówce jest realny i bukmacher płaci za niego najlepiej.
 - Wynik dopiszę po meczu.
+
+### Reguły-kandydatki do testu na sucho
+
+- **Kontra gospodarza:** gospodarz prowadzi 2:0 po 60. minucie, rywal ciśnie, kurs na „następny gol: gospodarz” co najmniej 4,00 → gram. Zastrzeżenie: w bazie prowadzący gospodarz to zwykle mocniejsza drużyna, więc dla słabeusza szansa jest trochę niższa.
+- **Zgoda bazy i Chrisa:** liczby z bazy i przeczucie Chrisa mówią to samo, kurs powyżej progu → gram bez dyskusji.
 
 ## 6. Źródła danych
 
