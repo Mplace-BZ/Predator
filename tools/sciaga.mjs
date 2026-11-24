@@ -146,9 +146,10 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 </div>`;
 const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span></div>${g.rs.map(row).join('')}</section>`;
 
+const FAV = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M8 38C8 24 20 16 30 2c2 9 6 12 11 8 2 6 7 8 13 3 0 7 4 10 8 14 2 10-4 20-16 26L20 58z" fill="#FF5A1F"/><path d="M16 36c2-9 10-14 16-22 1 6 4 8 8 5 2 5 6 6 10 3 1 6 4 9 6 12 0 7-5 13-14 17L22 54z" fill="#FFB347"/><circle cx="25" cy="40" r="20" fill="#fff" stroke="#00141e" stroke-width="2.6"/><path d="M25 31l7.6 5.5-2.9 9h-9.4l-2.9-9z" fill="#00141e"/><path d="M25 20v11M32.6 36.5l10-3.5M29.7 45.5l6 8.5M20.3 45.5l-6 8.5M17.4 36.5l-10-3.5" stroke="#00141e" stroke-width="2.3" fill="none"/></svg>';
 const updated = new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' });
 const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ściąga ${DATE}</title>
+<title>Ściąga ${DATE}</title><link rel="icon" href="data:image/svg+xml,${encodeURIComponent(FAV)}">
 <style>
 :root{--bg:#001e28;--panel:#00141e;--lh:#0b2a36;--line:#0e3442;--text:#e6eef0;--dim:#8ba0a8;--red:#ff0046;--acc:#FF5A1F;--pos:#4ADE80;--warn:#FFB347}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 Manrope,system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
