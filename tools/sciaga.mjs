@@ -111,7 +111,7 @@ const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" al
 const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
-<div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
+<div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}<button class="dot dm" title="Gol w meczu (dowolna drużyna): 1 klik = interesuje, 2 = śledzę, 3 = obstawiłem, 4 = wyłącz"></button></div>
 <div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 60 36" width="60" height="36"><path d="M10 27 A20 20 0 0 1 50 27" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><line x1="30" y1="3" x2="30" y2="9" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><text x="21" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">H</text><text x="34" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">V</text><g class="nd" style="transform:rotate(0deg);transform-origin:30px 27px;transition:transform .8s"><line x1="30" y1="27" x2="30" y2="11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="30" cy="27" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
@@ -173,7 +173,7 @@ footer{padding-bottom:45vh}}
 #hist table{width:100%;border-collapse:collapse;font-size:12px}#hist td,#hist th{padding:8px 12px;border-top:1px solid var(--line);text-align:left}#hist th{color:var(--dim);font-weight:600;font-size:11px}
 #hist .hr{background:none;border:0;padding:0;font:inherit;cursor:pointer;color:inherit}#hist .ok{color:var(--pos);font-weight:800}#hist .ko{color:var(--red);font-weight:800}#hist .wait{color:var(--dim)}#hist .empty{padding:14px 12px;color:var(--dim)}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
-.dot:focus{outline:none}.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
+.teams{position:relative}.dot.dm{position:absolute;right:0;top:50%;transform:translateY(-50%);margin:0}.dot:focus{outline:none}.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}.team:has(.dot.r) .tn{color:var(--red)}
 .gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.na{opacity:.45;position:relative}.gg.na::after{content:'?';position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
@@ -307,7 +307,7 @@ rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySele
 s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();}});
 // Znaczniki drużyn: puste → pomarańczowy (obserwuj) → zielony (gram) → puste
 const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g','r'];
-document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((tm,i)=>{const b=tm.querySelector('.dot'),k=m.dataset.fid+'|'+i;
+document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.dot').forEach((b,i)=>{if(b.classList.contains('dm'))i='m';const k=m.dataset.fid+'|'+i;
   const show=()=>{b.classList.toggle('o',dots[k]==='o');b.classList.toggle('g',dots[k]==='g');b.classList.toggle('r',dots[k]==='r');};show();
   b.onclick=e=>{e.stopPropagation();const was=dots[k];dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%4];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();
     if(dots[k]==='r')betAdd(m,i);else if(was==='r')betDel(m.dataset.fid+'|'+i);};}));
@@ -318,7 +318,7 @@ function betDel(id){betsSave(bets().filter(x=>!(x.id===id&&!x.fin)));}
 function betResolve(f){const b=bets();let ch=0;for(const x of b)if(x.fid==f.fixture.id&&!x.fin){x.fin=[f.goals.home,f.goals.away];ch=1;}if(ch)betsSave(b);}
 document.addEventListener('click',e=>{const b=e.target.closest('.hr');if(!b)return;const all=bets(),g=all.filter(x=>x.fid==b.dataset.fid),cur=g[0].hand;g.forEach(x=>x.hand=cur===true?false:cur===false?null:true);betsSave(all);drawHist();});
 function drawHist(){const b=bets(),by={};b.forEach(x=>(by[x.fid]||=[]).push(x));const list=Object.values(by).reverse();
-  let ok=0,done=0;const rowsH=list.map(g=>{const x=g[0],both=g.length>1&&new Set(g.map(y=>y.side)).size>1,who=both?'Gol w meczu':'Gol '+(x.side?x.a:x.h);
+  let ok=0,done=0;const rowsH=list.map(g=>{const x=g.find(y=>y.side==='m')||g[0],both=x.side==='m'||(g.length>1&&new Set(g.map(y=>y.side)).size>1),who=both?'Gol w meczu':'Gol '+(x.side?x.a:x.h);
     const late=x.late||/Koniec/.test(x.min);let res='<span class="wait">trwa</span>';const auto=x.fin&&!late?(both?(x.fin[0]+x.fin[1]>x.sc[0]+x.sc[1]):(x.fin[x.side]>x.sc[x.side])):null,hit=x.hand!=null?x.hand:auto;
     if(hit!=null){done++;if(hit)ok++;res=hit?'<span class="ok">✅ TAK</span>':'<span class="ko">❌ NIE</span>';}else if(late||x.fin)res='<span class="wait">? kliknij</span>';
     res='<button class="hr" data-fid="'+x.fid+'" title="Kliknij, żeby poprawić: TAK / NIE">'+res+'</button>';
