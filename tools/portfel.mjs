@@ -52,6 +52,11 @@ async function bet(fid, market, stake, note) {
   if (!f || !o) throw new Error('brak meczu albo kursów na żywo');
   const gh = f.goals.home, ga = f.goals.away, el = f.fixture.status.elapsed;
   if (o.teams.home.goals !== gh || o.teams.away.goals !== ga) throw new Error('kursy nie pasują do wyniku — odrzucam');
+  // Bramka „ważny mecz za kilka dni” (lekcja 2026-11-24: Palmeiras 4 dni przed finałem Copa Libertadores): bez --mimo zakład jest odrzucany
+  for (const t of [f.teams.home, f.teams.away]) for (const x of await af(`/fixtures?team=${t.id}&next=2`)) {
+    const days = (new Date(x.fixture.date) - Date.now()) / 864e5, big = /libertadores|sudamericana|champions|europa|conference|cup|copa|coppa|pokal|puchar|final/i.test(x.league.name + ' ' + (x.league.round || ''));
+    if (days <= 5 && big) { const msg = `UWAGA: ${t.name} gra za ${Math.ceil(days)} dni ${x.league.name} (${x.league.round || ''}) — ${x.teams.home.name} – ${x.teams.away.name}. Możliwy rezerwowy skład.`; if (!process.argv.includes('--mimo')) throw new Error(msg + ' Dodaj --mimo, żeby zagrać mimo to.'); console.log(msg); }
+  }
   const lo = liveOdds(o, gh + ga), [kind, side, line] = market.split(':'), DC = { '1x': 'Home or Draw', x2: 'Away or Draw', '12': 'Home or Away' };
   const odd = +(kind === 'tg' ? lo.tg(side, line) : kind === 'dc' ? lo.dc[DC[side]] : kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
   if (!odd) throw new Error('rynek zawieszony albo niedostępny');

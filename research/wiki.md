@@ -22,6 +22,8 @@ Baza: 3849 meczów z 2025 roku, 10 lig. Kolumna „graj od kursu” uwzględnia 
 | 70' | 55% | 2,07 | 18% | 6,30 |
 | 80' | 41% | 2,77 | 9% | 12,60 |
 
+**Kiedy padają gole** (10 689 goli): 1–15 min 12,6% · 16–30 min 13,3% · 31–45 min z doliczonym 18,6% · 46–60 min 16,5% · 61–75 min 15,4% · 76–90 min z doliczonym 23,5%. W połowie meczów pada gol po 75. minucie.
+
 Bukmacher zwykle daje kurs niższy niż w kolumnie „graj od”. Dlatego zwykły mecz omijamy, a gramy tylko taki, który ma konkretny powód być lepszy od średniej (punkty 3 i 4).
 
 ## 3. Tezy sprawdzone na liczbach
@@ -49,7 +51,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Zasada nr 1 Chrisa: faworyt przegrywa albo remisuje, więc gramy faworyta.** Potwierdzona 2026-11-24: Real 0:1 → 5:1, City 0:1 → 2:2, Rangers 0:1 → 3:2.
 - **Słabszy strzelił pierwszy, więc mocniejszy musi się otworzyć i padają gole.**
 - **Jaka to stawka:** Liga Mistrzów i mecz, w którym ktoś MUSI wygrać, to inna gra niż środek tabeli zwykłej ligi.
-- **Ważny mecz za kilka dni:** drużyna może oszczędzać skład (ściąga pokazuje to jako rotację).
+- **Ważny mecz za kilka dni:** drużyna może oszczędzać skład. Potwierdzone 2026-11-24 na Palmeiras (finał Copa Libertadores za 4 dni). Sprawdzać ZAWSZE przed zakładem na faworyta.
 - **Odbicie po porażce w pucharach:** mocna drużyna wraca do ligi i chce się pokazać. Do sprawdzenia na liczbach.
 - **Tabela:** kto walczy o tytuł, kto o utrzymanie, kto gra o nic.
 - **Na boisku:** czerwone kartki, strzały celne, rożne, pogoda.
@@ -70,6 +72,8 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - 23:01, ten sam mecz: Palmeiras 2+ gole (3,40) i Palmeiras lub remis (4,50). Test zasady nr 1 na meczu, w którym faworyt goni na wyjeździe. Liczby z punktu 3 mówią, że to najsłabszy wariant tej zasady.
 - 23:15, 55. minuta, nadal 2:0. Obserwacja: po przerwie Palmeiras przez 10 minut nie oddał żadnego strzału (dalej 12, jak w przerwie), a Chapecoense dołożyła strzał celny i 2 rożne. **Lekcja: 12 strzałów w 1. połowie nie znaczy, że nacisk wróci po przerwie. Przed zakładem na goniącego czekać 5–10 minut i sprawdzić, czy faktycznie strzela.**
 - 23:21, ok. 62. minuta, 2:0. **Typ Chrisa do sprawdzenia:** Chapecoense strzeli trzeciego gola z kontry, bo Palmeiras musi się odkryć (kurs na „następny gol: Chapecoense” ok. 3,25). Historia ogólna jest po jego stronie: gospodarz prowadzący 2:0 strzela następnego gola w 53% meczów, goniący gość tylko w 30%.
+- 23:28, 68. minuta, 2:0. **Największa lekcja wieczoru:** Palmeiras gra za 4 dni (2026-11-28) finał Copa Libertadores z Estudiantes, a 2026-12-06 finał Pucharu Brazylii. Nie sprawdziłem tego przed zakładem, choć Chris wymienił „ważny mecz za kilka dni” jako punkt z listy. Stąd dominacja bez strzałów celnych (16 strzałów, 2 celne). **Od teraz portfel sam odrzuca zakład, gdy któraś drużyna ma puchar albo finał w ciągu 5 dni.**
+- Granica Chrisa do sprawdzenia: goniący faworyt musi strzelić do 75. minuty, inaczej nie zdąży z drugim golem.
 - Wynik dopiszę po meczu.
 
 ## 6. Do sprawdzenia
