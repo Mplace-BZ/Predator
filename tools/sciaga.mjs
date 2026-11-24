@@ -140,7 +140,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 60 36" width="60" height="36"><path d="M10 27 A20 20 0 0 1 50 27" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><line x1="30" y1="3" x2="30" y2="9" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><text x="21" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">H</text><text x="34" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">V</text><g class="nd" style="transform:rotate(0deg);transform-origin:30px 27px;transition:transform .8s"><line x1="30" y1="27" x2="30" y2="11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="30" cy="27" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
-<div class="ow"><div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div><div class="lvo hide"><div class="lvr"></div><div class="lvc"><span class="cv"></span><input class="cst" inputmode="decimal" value="10" title="Stawka — zmień, przeliczy się"> zł <button class="ccb" title="Otwórz kalkulator">🧮</button></div></div></div>
+<div class="ow"><div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div><div class="lvo hide"><div class="lvr"></div><div class="lvc"><span class="cv"></span><input class="cst" inputmode="decimal" value="10" title="Stawka — zmień, przeliczy się"> zł <button class="ccb" title="Otwórz kalkulator"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg></button></div></div></div>
 <div class="wx">${wxs(r.wx)}</div>
 <div class="plan">${r.h2h ? `<span class="h2" title="Ostatnie ${r.h2h.n} meczów między nimi: bilans ${esc(r.H)} (wygrane-remisy-porażki) i średnia goli">H2H ${r.h2h.w}-${r.h2h.d}-${r.h2h.l} · Ø ${r.h2h.avg.toFixed(1).replace('.', ',')} gola</span>` : ''}${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
 </div>`;
@@ -196,7 +196,7 @@ footer{padding-bottom:45vh}}
 .hide{display:none!important}
 .ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{white-space:nowrap}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
 .lvc{display:flex;align-items:center;gap:5px;margin-top:3px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
-.cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;font-size:14px;padding:0}
+.cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;padding:0;color:#fff;opacity:.85;display:inline-flex}.ccb:hover{opacity:1}
 .tb{background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer}
 .cm{position:fixed;inset:0;background:rgba(0,10,15,.7);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}
 .cb{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(460px,94vw);padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -231,7 +231,7 @@ footer{padding-bottom:45vh}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
-<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="calcbtn" class="tb">🧮 Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
+<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="calcbtn" class="tb"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg> Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
 <aside class="side"><h3><span>👉</span><span class="tx">POSTAW NA — podpowiedzi na żywo</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
@@ -243,7 +243,7 @@ ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="$
 ${groups.map(league).join('')}
 <section id="hist" class="lg hide"></section>
 <div id="calc" class="cm hide"><div class="cb">
-<div class="ch">🧮 Czy się opłaca? <button id="cx" title="Zamknij">✕</button></div>
+<div class="ch"><span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg> Czy się opłaca?</span> <button id="cx" title="Zamknij">✕</button></div>
 <label>Mecz na żywo <select id="cm"><option value="">— wpisz ręcznie —</option></select></label>
 <div class="cg"><label>Zakład <select id="ct"><option value="m">Padnie gol w meczu</option><option value="h">Gol gospodarzy</option><option value="a">Gol gości</option></select></label>
 <label>Stawka (zł) <input id="cs" inputmode="decimal" value="10"></label>
@@ -421,7 +421,7 @@ document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.tog
   function calc(){const st=num($('cs').value)||10,od=num($('co').value),min=num($('cmin').value);const r=$('cr');
     if(!(min>=0)){r.innerHTML='<span style="color:var(--dim)">Wybierz mecz albo wpisz minutę.</span>';return;}
     const p=chance(min),need=1/(p*0.88),win=st*0.88*(od||0)-st;let h='';
-    if(od>1){const ev=p*win-(1-p)*st,ok=ev>0;h+='<div class="v '+(ok?'ok':'ko')+'">'+(ok?'✅ Opłaca się':'❌ Nie opłaca się')+'</div>'
+    if(od>1){const ev=p*win-(1-p)*st,ok=ev>0;h+='<div class="v '+(ok?'ok':'ko')+'">'+(ok?'✓ Opłaca się':'✗ Nie opłaca się')+'</div>'
       +'Szansa na gol: <b>'+Math.round(p*100)+'%</b><br>Wygrasz na czysto: <b>'+zl(win)+'</b> · przegrasz: <b>'+zl(-st)+'</b><br>Średnio na zakład: <b class="'+(ok?'ok':'ko')+'">'+zl(ev)+'</b><br>';}
     else h+='Szansa na gol: <b>'+Math.round(p*100)+'%</b><br>';
     h+='Opłaca się od kursu: <b style="color:var(--warn)">'+k2(need)+'</b>'+(need<1.9?' · Twoje minimum 1,90':'');
@@ -431,7 +431,7 @@ document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.tog
 function miniCalc(m){const od=+m.dataset.go,el=+m.dataset.el,cv=m.querySelector('.cv'),st=parseFloat(String(m.querySelector('.cst').value).replace(',','.'))||10;if(!cv)return;
   const p=1-Math.exp(-(+m.dataset.g||2.7)*Math.max(1,93-el)/90),need=1/(p*0.88),f=x=>x.toFixed(2).replace('.',',');
   if(!od){cv.className='cv';cv.textContent='szansa '+Math.round(p*100)+'% · od '+f(need);return;}
-  const ev=p*(st*0.88*od-st)-(1-p)*st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=(ev>0?'✅ ':'❌ ')+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł śr. · od '+f(need);}
+  const ev=p*(st*0.88*od-st)-(1-p)*st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=(ev>0?'✓ ':'✗ ')+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł śr. · od '+f(need);}
 document.addEventListener('input',e=>{if(e.target.classList.contains('cst'))miniCalc(e.target.closest('.m'));});
 document.addEventListener('click',e=>{const b=e.target.closest('.ccb');if(!b)return;const m=b.closest('.m');document.getElementById('calcbtn').click();const c=document.getElementById('cm');c.value=m.dataset.fid;if(c.value!==m.dataset.fid){const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a;c.append(o);c.value=m.dataset.fid;}c.onchange();document.getElementById('cs').value=m.querySelector('.cst').value;document.getElementById('cmin').value=m.dataset.el||'';if(m.dataset.go)document.getElementById('co').value=String(m.dataset.go).replace('.',',');document.getElementById('cs').oninput();});
 </script>
