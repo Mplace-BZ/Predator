@@ -85,6 +85,8 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **90. minuta: 3:0 dla Chapecoense. Chris miał rację dwa razy:** trzeci gol w meczu (kurs 2,75 w 88. minucie, 10 zł dałoby 24,20 zł) i gol Chapecoense z kontry (kurs 3,75 w 62. minucie, 10 zł dałoby 33,00 zł). Claude w obu przypadkach nie zagrał.
 - **Lekcja dla Claude:** w 65. minucie baza mówiła, że prowadzący 2:0 gospodarz strzela następnego gola w 38% meczów, a kurs był 4,00. To daje 0,38 × 4,00 × 0,88 = 1,34, czyli zakład wyraźnie na plus. Widziałem to, napisałem „historia po Twojej stronie” i nie zagrałem. **Gdy liczby z bazy i przeczucie Chrisa mówią to samo, a kurs jest powyżej progu, gram.**
 - **Lekcja o kontrze:** gdy goniący rzuca wszystko do przodu (24 strzały, 10 rożnych), gol prowadzącego z kontry w końcówce jest realny i bukmacher płaci za niego najlepiej.
+- **Koniec: Chapecoense 3:0 Palmeiras. Wszystkie 4 zakłady przegrane (−55 zł), pula 45 zł.** Powody w kolejności ważności: rezerwowy skład Palmeiras (nie sprawdziłem), zakład „jeszcze 2 gole” poniżej progu kursu, trzy zakłady na ten sam scenariusz, spóźniony zakład w 90+2.
+- 23:58, Coquimbo 0:1 La Calera, przerwa. Chris podesłał kartę FootyStats ze statystykami na żywo, których nie mam w api-football: strzały 9:2, groźne ataki 36:13, posiadanie 60:40 dla Coquimbo. Faworyt dominuje i przegrywa po jedynym celnym strzale rywala. Etap 1: Coquimbo 2+ gole (2,38, 15 zł) i wygrana Coquimbo (3,20, 10 zł). Etap 2 (20 zł): po wyrównaniu przed 65. minutą gram „kolejny gol”, jeśli kurs będzie co najmniej 1,90 (baza: przy 1:1 w 60. minucie kolejny gol pada w 71%).
 - Wynik dopiszę po meczu.
 
 ### Reguły-kandydatki do testu na sucho
@@ -95,6 +97,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 ## 6. Źródła danych
 
 - **api-football (mamy, plan Ultra):** wyniki i statystyki na żywo, kursy na żywo, wyjściowe składy (ok. 40 minut przed meczem), kontuzje, najbliższe mecze drużyny, H2H, tabela.
+- **FootyStats na żywo:** karta meczu pokazuje w trakcie gry strzały, ataki i groźne ataki, także dla meczów, których api-football nie pokrywa statystykami (np. Puchar Chile).
 - **AiScore (Chris ogląda ręcznie):** ataki i groźne ataki, pasek przebiegu meczu. Tego w naszym źródle nie ma.
 - **FootyStats (publiczne karty meczów, za darmo, bez logowania):** xG u siebie i na wyjeździe, gole w przedziałach minut, kto strzela pierwszy, ostatnio używany skład, kontuzje. Adres: footystats.org/kraj/gospodarz-vs-gość-h2h-stats. Logowanie automatem blokuje ich zabezpieczenie i nie jest potrzebne. Płatne API (29,99 funta miesięcznie) dałoby to samo maszynowo plus historię z kursami.
 - **Uwaga na FootyStats:** pokazuje „ostatnio używany skład”, a nie skład na dziś. Przy Palmeiras 2026-11-24 pokazał gwiazdy i kurs 1,38, a na boisko wyszły rezerwy. Prawdziwy skład jest tylko w api-football, 40 minut przed meczem.
