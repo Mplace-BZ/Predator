@@ -289,7 +289,7 @@ document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((
   b.onclick=e=>{e.stopPropagation();dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%4];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();};}));
 function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
-rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r,.dot.g'):m.dataset.tier===f))));
+rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
 document.querySelectorAll('.lg').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 </script>
