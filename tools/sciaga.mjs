@@ -298,8 +298,8 @@ async function live(){
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
         const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60),ex?ex+1:0);
-        const ann=+(localStorage.getItem('sciaga_add_'+id+(h2?'_2':'_1'))||0);m.dataset.add=h2?(ann||mins):'';m.dataset.ex=ex||0;
-        t.insertAdjacentHTML('beforeend','<small class="add'+(ann?' ann':'')+'" data-k="sciaga_add_'+id+(h2?'_2':'_1')+'" title="'+(ann?'Ogłoszone przez sędziego (wpisane przez Ciebie)':'Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s')+(ex?' · już gra się '+ex+' min doliczonego':'')+'. Kliknij, żeby wpisać czas z tablicy.">+'+(ann||mins)+'</small>');}
+        const ann=+(localStorage.getItem('sciaga_add_'+f.fixture.id+(h2?'_2':'_1'))||0);m.dataset.add=h2?(ann||mins):'';m.dataset.ex=ex||0;
+        t.insertAdjacentHTML('beforeend','<small class="add'+(ann?' ann':'')+'" data-k="sciaga_add_'+f.fixture.id+(h2?'_2':'_1')+'" title="'+(ann?'Ogłoszone przez sędziego (wpisane przez Ciebie)':'Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s')+(ex?' · już gra się '+ex+' min doliczonego':'')+'. Kliknij, żeby wpisać czas z tablicy.">+'+(ann||mins)+'</small>');}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
@@ -360,7 +360,7 @@ async function live(){
     if(typeof applyFilter==='function')applyFilter();
     document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
-  }catch(e){document.getElementById('lb').textContent='● na żywo: brak połączenia, ponawiam';}
+  }catch(e){document.getElementById('lb').textContent='● na żywo: '+(/fetch|network/i.test(e.message)?'brak połączenia, ponawiam':'błąd strony ('+e.message+') — napisz Claude');console.error(e);}
 }
 // Panel podpowiedzi na telefonie: przesuwany palcem, zwijany, pozycja zapamiętana
 (()=>{const sd=document.querySelector('.side'),h=sd.querySelector('h3'),mn=sd.querySelector('.mn'),PK='sciaga_panel',narrow=()=>matchMedia('(max-width:1100px)').matches;
