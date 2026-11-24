@@ -9,12 +9,12 @@ const DATE = ARGS.find(a => /^\d{4}-\d\d-\d\d$/.test(a)) || new Date().toLocaleD
 const LEAGUES = { 2: ['eu', 'EUROPA', 'Liga Mistrzów'], 135: ['it', 'WŁOCHY', 'Serie A'], 136: ['it', 'WŁOCHY', 'Serie B'], 40: ['gb-eng', 'ANGLIA', 'Championship'], 39: ['gb-eng', 'ANGLIA', 'Premier League'], 41: ['gb-eng', 'ANGLIA', 'League One'], 179: ['gb-sct', 'SZKOCJA', 'Premiership'], 3: ['eu', 'EUROPA', 'Liga Europy'], 848: ['eu', 'EUROPA', 'Liga Konferencji'] };
 let last = 0;
 const CF = new URL('./.sciaga-cache.json', import.meta.url), cache = existsSync(CF) ? JSON.parse(readFileSync(CF, 'utf8')) : {};
-const TTL = p => /^\/(standings|predictions|odds)\?/.test(p) ? 6 * 3600e3 : /^\/fixtures\?date/.test(p) ? 5 * 60e3 : 0;
+const TTL = p => /^\/(standings|predictions|odds|injuries|fixtures\?team)/.test(p) ? 6 * 3600e3 : /^\/fixtures\?date/.test(p) ? 5 * 60e3 : 0;
 async function af(p) {
   const ttl = TTL(p), c = cache[p]; if (ttl && c && Date.now() - c.ts < ttl) return c.j;
-  const w = last + 250 - Date.now(); if (w > 0) await new Promise(r => setTimeout(r, w)); last = Date.now();
+  const w = last + 400 - Date.now(); if (w > 0) await new Promise(r => setTimeout(r, w)); last = Date.now();
   const j = await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
-  const err = j.errors && Object.keys(j.errors).length; if (err) { console.error('API błąd:', JSON.stringify(j.errors)); if (/limit/i.test(JSON.stringify(j.errors))) { console.error('STOP: wyczerpany limit API — nie nadpisuję ściągi.'); process.exit(2); } }
+  const err = j.errors && Object.keys(j.errors).length; if (err) { console.error('API błąd:', JSON.stringify(j.errors)); const es = JSON.stringify(j.errors); if (/per minute/i.test(es)) { await new Promise(r => setTimeout(r, 61e3)); return af(p); } if (/limit/i.test(es)) { console.error('STOP: wyczerpany dzienny limit API — nie nadpisuję ściągi.'); process.exit(2); } }
   if (ttl && !err) { cache[p] = { ts: Date.now(), j }; writeFileSync(CF, JSON.stringify(cache)); }
   return j;
 }
@@ -27,9 +27,9 @@ async function weather(city, iso) {
     const g = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city.split(',')[0])}&count=10`)).json();
     const eu = (g.results || []).filter(r => r.latitude > 34 && r.latitude < 72 && r.longitude > -25 && r.longitude < 45);
     const p = (eu.length ? eu : g.results || []).sort((a, b) => (b.population || 0) - (a.population || 0))[0]; if (!p) return null;
-    const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&hourly=temperature_2m,precipitation,wind_speed_10m&timezone=UTC&start_date=${iso.slice(0, 10)}&end_date=${iso.slice(0, 10)}`)).json();
+    const w = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&hourly=temperature_2m,precipitation,wind_speed_10m,cloud_cover&timezone=UTC&start_date=${iso.slice(0, 10)}&end_date=${iso.slice(0, 10)}`)).json();
     const i = new Date(iso).getUTCHours();
-    return { t: Math.round(w.hourly.temperature_2m[i]), rain: w.hourly.precipitation[i], wind: Math.round(w.hourly.wind_speed_10m[i]) };
+    return { t: Math.round(w.hourly.temperature_2m[i]), rain: w.hourly.precipitation[i], wind: Math.round(w.hourly.wind_speed_10m[i]), cloud: w.hourly.cloud_cover?.[i] ?? 50, night: i < 7 || i > 16 };
   } catch { return null; }
 }
 
@@ -49,7 +49,7 @@ const table = {};
 for (const lg of [...new Set(fx.map(f => `${f.league.id}|${f.league.season}`))]) {
   const [id, season] = lg.split('|');
   const st = (await af(`/standings?league=${id}&season=${season}`)).response?.[0]?.league?.standings || [];
-  for (const grp of st) for (const t of grp) table[`${id}|${t.team.id}`] = { rank: t.rank, n: grp.length, pts: t.points, form: t.form || '' };
+  for (const grp of st) for (const t of grp) table[`${id}|${t.team.id}`] = { rank: t.rank, n: grp.length, pts: t.points, form: t.form || '', desc: t.description || '', grp: grp };
 }
 
 // 3. Kto MUSI (Liga Mistrzów: top 8 = 1/8, 9-24 = baraż, 25+ = odpada)
@@ -77,6 +77,14 @@ for (const f of fx) {
   const tH = table[`${f.league.id}|${H.id}`], tA = table[`${f.league.id}|${A.id}`];
   const mH = must(f.league.id, H.id), mA = must(f.league.id, A.id);
   const wx = await weather(f.fixture.venue?.city || '', f.fixture.date);
+  // Następny mecz drużyny: ważny mecz w ciągu 4 dni = ryzyko rotacji składu
+  const nextBig = async tm => { const nx = (await af(`/fixtures?team=${tm.id}&next=2`)).response || []; const n = nx.find(x => x.fixture.id !== f.fixture.id && x.fixture.timestamp > f.fixture.timestamp);
+    if (!n) return null; const days = (n.fixture.timestamp - f.fixture.timestamp) / 86400; const big = [2, 3, 848].includes(n.league.id) || n.league.type === 'Cup';
+    return days <= 4 && big && n.league.id !== f.league.id ? `za ${Math.max(1, Math.round(days))} dni: ${n.league.name}` : null; };
+  const rH = await nextBig(H), rA = await nextBig(A);
+  // Braki kadrowe (kontuzje, zawieszenia) — tylko do mojej analizy, w ściądze w dymku
+  const inj = (await af(`/injuries?fixture=${f.fixture.id}`)).response || [];
+  const injOf = tm => inj.filter(x => x.team.id === tm.id).map(x => x.player.name);
 
   // Koszyk: MUSZĄ > RYZYKO > SZANSA > reszta
   let tier = 'reszta', plan = '';
@@ -92,13 +100,21 @@ for (const f of fx) {
     tier = 'szansa';
     plan = '0:0 lub 1:1 po 55\' → padnie gol (~1,9)';
   }
-  rows.push({ fid: f.fixture.id, time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
+  rows.push({ rH, rA, iH: injOf(H), iA: injOf(A), fid: f.fixture.id, time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
 }
 
 // 4. HTML — wygląd w stylu listy wyników (ligi z flagami, wiersz = mecz), filtr koszyków na górze
 const f2 = x => (x == null ? '–' : x.toFixed(2).replace('.', ','));
 const f1 = x => (x == null ? '–' : x.toFixed(1).replace('.', ','));
-const wxs = w => !w ? '' : `${w.rain >= 0.5 ? '🌧' : w.wind >= 30 ? '💨' : ''} ${w.t}°`;
+const IC = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  part: '<path d="M8 4.5v1M3.5 9h1M4.9 5.9l.7.7M11.1 5.9l-.7.7"/><path d="M5.6 11.3A3 3 0 1 1 10.7 8"/><path d="M7 19h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 12.5 3.25 3.25 0 0 0 7 19z"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 11.5 3.25 3.25 0 0 0 7 18z"/>',
+  rain: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 7.5 3.25 3.25 0 0 0 7 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8"/>' };
+const wxIcon = w => w.rain >= 0.3 ? 'rain' : w.wind >= 30 ? 'wind' : w.cloud >= 70 ? 'cloud' : w.cloud >= 25 ? 'part' : w.night ? 'moon' : 'sun';
+const wxs = w => !w ? '' : `<span title="${w.rain >= 0.3 ? 'deszcz ' + w.rain + ' mm · ' : ''}wiatr ${w.wind} km/h · zachmurzenie ${w.cloud}%">${w.t}° <svg class="wi" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${IC[wxIcon(w)]}</svg></span>`;
 const goalsCls = g => (g == null ? '' : g >= 3.2 ? 'hot' : g >= 2.7 ? 'warm' : '');
 const TIER = { must: ['🔥', 'MUSZĄ'], szansa: ['🟢', 'SZANSA'], ryzyko: ['🎲', 'RYZYKO'], reszta: ['👀', 'RESZTA'] };
 const cnt = k => rows.filter(r => r.tier === k).length;
@@ -107,11 +123,13 @@ const cnt = k => rows.filter(r => r.tier === k).length;
 const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
-const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"><span class="nm">${esc(name)}</span></span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="1 klik = interesuje mnie (pomarańczowy), 2 = śledzę (zielony), 3 = obstawiłem (czerwony), 4 = wyłącz"></button></div>`;
-const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
+const zone = t => { if (!t) return ''; const d = t.desc.toLowerCase(); return /relegation/.test(d) ? 'SPADEK' : t.rank === 1 && !/champions league|knockout|round of 16/.test(d) ? 'LIDER' : ''; };
+const formH = t => t && t.form ? `<span class="fm" title="Forma: ostatnie 5 meczów (od najstarszego)">${[...t.form.slice(-5)].map(c => `<i class="${c}"></i>`).join('')}</span>` : '';
+const team = (name, logo, t, m, rot, inj) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"${inj && inj.length ? ` title="Nie zagrają (${inj.length}): ${esc(inj.join(', '))}"` : ''}><span class="nm">${esc(name)}</span>${formH(t)}${zone(t) ? `<span class="zn">${zone(t)}</span>` : ''}${rot ? `<span class="zn rot" title="${esc(rot)} — możliwa rotacja składu">ROTACJA?</span>` : ''}</span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="1 klik = interesuje mnie (pomarańczowy), 2 = śledzę (zielony), 3 = obstawiłem (czerwony), 4 = wyłącz"></button></div>`;
+const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-g="${r.avgGoals ?? ''}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
-<div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}<button class="dot dm" title="Gol w meczu (dowolna drużyna): 1 klik = interesuje, 2 = śledzę, 3 = obstawiłem, 4 = wyłącz"></button></div>
+<div class="teams">${team(r.H, r.hLogo, r.tH, r.mH, r.rH, r.iH)}${team(r.A, r.aLogo, r.tA, r.mA, r.rA, r.iA)}<button class="dot dm" title="Gol w meczu (dowolna drużyna): 1 klik = interesuje, 2 = śledzę, 3 = obstawiłem, 4 = wyłącz"></button></div>
 <div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 60 36" width="60" height="36"><path d="M10 27 A20 20 0 0 1 50 27" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><line x1="30" y1="3" x2="30" y2="9" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><text x="21" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">H</text><text x="34" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">V</text><g class="nd" style="transform:rotate(0deg);transform-origin:30px 27px;transition:transform .8s"><line x1="30" y1="27" x2="30" y2="11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="30" cy="27" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
@@ -141,7 +159,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .side.hot h3{background:var(--acc);color:#fff}.side .empty b{color:var(--text)}
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9;background:var(--acc);color:#fff;font-weight:900;font-size:18px;padding:14px 22px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:pulse 1.2s infinite;cursor:pointer;max-width:92vw}
 .toast small{display:block;font-weight:600;font-size:12px;opacity:.9}
-.hint .ht{display:flex;align-items:flex-start;justify-content:space-between}.hint .hc{font-size:10px;font-weight:500;color:var(--dim);letter-spacing:.02em}.hint .hm{color:var(--dim)}.hint .ha{font-size:18px;font-weight:900;margin:2px 0 4px;color:#fff}.hint .hw{color:var(--text);opacity:.8}
+.hint .ht{display:flex;align-items:flex-start;justify-content:space-between}.hint .hc{font-size:10px;font-weight:500;color:var(--dim);letter-spacing:.02em}.hint .hk{margin-top:6px;font-size:12px;color:#fff}.hint .hk b{color:var(--warn)}.odds.lv span{color:#fff}.odds.lv i{color:var(--red)}.hint .hm{color:var(--dim)}.hint .ha{font-size:18px;font-weight:900;margin:2px 0 4px;color:#fff}.hint .hw{color:var(--text);opacity:.8}
 .side h3{display:flex;align-items:center;gap:8px}.side .mn{display:none;margin-left:auto;background:none;border:0;color:inherit;font-size:18px;cursor:pointer;padding:0 4px}
 @media(max-width:1100px){.wrap{grid-template-columns:1fr}
 .side{position:fixed;right:10px;bottom:10px;top:auto;width:min(340px,calc(100vw - 20px));max-height:45vh;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid var(--line)}
@@ -158,7 +176,7 @@ footer{padding-bottom:45vh}}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
 .teams{display:grid;grid-template-columns:18px minmax(0,max-content) auto auto 1fr;column-gap:8px;align-items:center}.team{display:contents}.team>*{height:24px;display:flex;align-items:center}.team img{height:18px;align-self:center}
-.pos,.musi{justify-self:start;height:auto!important}.pos:empty,.musi:empty{visibility:hidden;padding:0}.dot{justify-self:end;height:8px!important}.team img{width:18px;height:18px;object-fit:contain}.tn{min-width:0}.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pos,.musi{justify-self:start;height:auto!important}.pos:empty,.musi:empty{visibility:hidden;padding:0}.dot{justify-self:end;height:8px!important}.team img{width:18px;height:18px;object-fit:contain}.tn{min-width:0;display:flex;align-items:center}.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pos{color:var(--dim);font-size:11px;background:#0d2f3c;border-radius:4px;padding:1px 0;width:24px;justify-content:center;text-align:center}
 .musi{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;letter-spacing:.05em}.musi.soft{background:#0b5cff}
 .g{text-align:center;font-weight:800;font-size:16px}.g small{display:block;font-size:10px;font-weight:500;color:var(--dim)}.g.hot{color:var(--acc)}.g.warm{color:var(--warn)}
@@ -169,6 +187,9 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.fm{display:inline-flex;gap:2px;margin-left:8px;vertical-align:middle}.fm i{width:5px;height:5px;border-radius:1px;background:#3a5a66}.fm i.W{background:var(--pos)}.fm i.L{background:var(--red)}.fm i.D{background:#8ba0a8}
+.zn{margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:4px;padding:0 4px}.zn.rot{color:var(--dim);border-color:#2c4f5c}
+.wi{vertical-align:middle;margin-left:2px}.wx span{white-space:nowrap;display:inline-flex;align-items:center;gap:2px}
 #hist{padding:0}#hist .hh{display:flex;gap:16px;align-items:baseline;background:var(--lh);padding:10px 12px;font-size:13px}#hist .hh b{font-size:18px}
 #hist table{width:100%;border-collapse:collapse;font-size:12px}#hist td,#hist th{padding:8px 12px;border-top:1px solid var(--line);text-align:left}#hist th{color:var(--dim);font-weight:600;font-size:11px}
 #hist .hr{background:none;border:0;padding:0;font:inherit;cursor:pointer;color:inherit}#hist .ok{color:var(--pos);font-weight:800}#hist .ko{color:var(--red);font-weight:800}#hist .wait{color:var(--dim)}#hist .empty{padding:14px 12px;color:var(--dim)}
@@ -209,20 +230,21 @@ const H_KEY='sciaga_hints_${DATE}',hints=JSON.parse(localStorage.getItem(H_KEY)|
 function beep(){try{const c=new AudioContext(),o=c.createOscillator();o.frequency.value=880;o.connect(c.destination);o.start();o.stop(c.currentTime+.25);}catch(e){}}
 const TAGS={'🔥':['','🔥 GRAJ TERAZ'],'🟢':['k-szansa','🟢 OKAZJA'],'🎲':['k-ryzyko','🎲 RYZYKO']};
 function drawHints(){const live=hints.filter(h=>Date.now()-h.ts<1200000);if(!live.length){document.getElementById('hl').innerHTML='<div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div>';document.querySelector('.side').classList.remove('hot');return;}const age=h=>Date.now()-h.ts;document.querySelector('.side').classList.toggle('hot',hints.some(h=>age(h)<180000));
-document.getElementById('hl').innerHTML=live.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+' · 10-20 zł · kurs ok. 1,9</div></div>'}).join('');}
+document.getElementById('hl').innerHTML=live.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+'</div><div class="hk">'+(h.fair?'graj od kursu <b>'+h.fair+'</b>'+(h.now?' · teraz '+h.now:''):'sprawdź kurs')+' · 10 zł</div></div>'}).join('');}
 setInterval(drawHints,15000);
 function toast(h,ms=90000){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),ms);}
-function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
+function hint(id,icon,act,why,m,label,fair,now){if(fired.has(id))return;if(fair&&now&&now<fair*0.95)return;fired.add(id);hints.unshift({id,icon,act,why,fair:fair?fair.toFixed(2).replace('.',','):'',now:now?now.toFixed(2).replace('.',','):'',match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
 drawHints();
 const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
-const TAB=Math.random().toString(36).slice(2);
+const TAB=Math.random().toString(36).slice(2);let tick=0;
 async function live(){
   try{
     const LK='sciaga_leader',now=Date.now(),ld=JSON.parse(localStorage.getItem(LK)||'null');let out;
     if(!ld||ld.id===TAB||now-ld.ts>40000){localStorage.setItem(LK,JSON.stringify({id:TAB,ts:now}));out=[];
       for(let i=0;i<FIDS.length;i+=20){const j=await (await fetch('${B}/fixtures?ids='+FIDS.slice(i,i+20).join('-'),{headers:{'x-apisports-key':KEY}})).json();
         if(j.errors&&Object.keys(j.errors).length){document.getElementById('lb').textContent='● API: '+(/limit/i.test(JSON.stringify(j.errors))?'wyczerpany dzienny limit':'błąd');return;}out.push(...(j.response||[]));}
-      try{localStorage.setItem('sciaga_live',JSON.stringify({ts:now,out}));}catch(e){}}
+      try{localStorage.setItem('sciaga_live',JSON.stringify({ts:now,out}));}catch(e){}
+      if((tick++)%2===0){try{const oj=await (await fetch('${B}/odds/live',{headers:{'x-apisports-key':KEY}})).json();const om={};(oj.response||[]).forEach(o=>{const b=id=>(o.odds.find(x=>x.id===id)||{}).values||[];om[o.fixture.id]={ft:b(59),mg:b(25)};});localStorage.setItem('sciaga_odds',JSON.stringify(om));}catch(e){}}}
     else{const c=JSON.parse(localStorage.getItem('sciaga_live')||'null');if(!c)return;out=c.out;}
     let nLive=0,goals=[];
     for(const f of out){const m=document.querySelector('.m[data-fid="'+f.fixture.id+'"]');if(!m)continue;
@@ -254,30 +276,40 @@ async function live(){
       if(isLive&&st!=='HT'&&el){
         const gh=f.goals.home,ga=f.goals.away,H=f.teams.home.name,A=f.teams.away.name,label=H+' '+gh+':'+ga+' '+A+' ('+el+"')",id=f.fixture.id,tier=m.dataset.tier;
         // 1. Nacisk: w 5 min celny + 2 strzały albo 3 rożne
+        // Kursy na żywo w kafelkach: 1 · X · 2 i „+gol” = kolejny gol w meczu (Over aktualna liczba goli + 0,5)
+        const OD=JSON.parse(localStorage.getItem('sciaga_odds')||'{}')[id],nextLine=(gh+ga+0.5).toFixed(1);let goOdd=null;
+        if(OD){const sp=m.querySelectorAll('.odds span'),v=(arr,val,hc)=>{const x=arr.find(y=>y.value===val&&(hc==null||+y.handicap===+hc));return x&&!x.suspended?(+x.odd).toFixed(2).replace('.',','):'🔒';};
+          const go=OD.mg.find(y=>y.value==='Over'&&+y.handicap===+nextLine);goOdd=go&&!go.suspended?+go.odd:null;
+          [v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)].forEach((t,k)=>{if(sp[k])sp[k].lastChild.textContent=t;});
+          if(sp[3])sp[3].querySelector('i').textContent='+gol';m.querySelector('.odds').classList.add('lv');}
+        // Uczciwy kurs: szansa gola w pozostałym czasie z Poissona (średnia goli drużyn × pozostałe minuty, presja jako waga)
+        const R=Math.max(2,93-el),avgG=+m.dataset.g||2.6,lamT=avgG*R/90;
+        const fairGoal=1/(1-Math.exp(-lamT)),fairTeam=i=>{const sh=Math.min(.8,Math.max(.25,(window._pt&&window._pt[id]&&window._pt[id].tot>=3)?window._pt[id].p[i]/window._pt[id].tot:.5));return 1/(1-Math.exp(-lamT*sh*1.1));};
+        const fx2=x=>x.toFixed(2).replace('.',',');
         for(const t of (f.statistics||[])){const g=Object.fromEntries(t.statistics.map(x=>[x.type,x.value]));const now={el,sh:+g['Total Shots']||0,so:+g['Shots on Goal']||0,co:+g['Corner Kicks']||0};
           const h=(hist[id+'|'+t.team.id]||=[]);h.push(now);const b=h.filter(x=>x.el<=el-5).pop();
-          if(b&&el<=85){const d={sh:now.sh-b.sh,so:now.so-b.so,co:now.co-b.co};if((d.so>=1&&d.sh>=2)||d.co>=3)hint(id+'n'+Math.floor(el/10),'🔥','Gol '+t.team.name,'naciska: od '+b.el+"' strzały +"+d.sh+', celne +'+d.so+', rożne +'+d.co,m,label);}}
+          if(b&&el<=85){const d={sh:now.sh-b.sh,so:now.so-b.so,co:now.co-b.co};if((d.so>=1&&d.sh>=2)||d.co>=3)hint(id+'n'+Math.floor(el/10),'🔥','Gol '+t.team.name,'naciska: od '+b.el+"' strzały +"+d.sh+', celne +'+d.so+', rożne +'+d.co,m,label,fairTeam(t.team.id===f.teams.home.id?0:1));}}
         // Presja (ostatnie 10 min): strzały + 2×celne + rożne; bez statystyk: gole z ostatnich 15 min ×3
         const sides=[f.teams.home,f.teams.away],pres=sides.map(tm=>{const h=hist[id+'|'+tm.id];if(h&&h.length){const now=h[h.length-1],b=h.filter(x=>x.el<=el-10).pop()||(now.el-h[0].el>=5?h[0]:{sh:0,so:0,co:0});return (now.sh-b.sh)+2*(now.so-b.so)+(now.co-b.co);}
           return (f.events||[]).filter(e=>e.type==='Goal'&&e.team.id===tm.id&&e.time.elapsed>=el-15).length*3;});
         // Zegar presji: -90° = gospodarze 100%, 0° = równo, +90° = goście 100%
-        const na0=!(f.statistics||[]).length,tot=na0?0:pres[0]+pres[1],v=tot?(pres[1]-pres[0])/tot:0,gg=m.querySelector('.gg');
+        const na0=!(f.statistics||[]).length,tot=na0?0:pres[0]+pres[1],_s=((window._pt||={})[id]={tot:na0?0:pres[0]+pres[1],p:pres}),v=tot?(pres[1]-pres[0])/tot:0,gg=m.querySelector('.gg');
         gg.querySelector('.nd').style.transform='rotate('+Math.round(v*90)+'deg)';gg.classList.toggle('on',tot>0);const na=!(f.statistics||[]).length;gg.classList.toggle('na',na);gg.classList.toggle('hot',tot>=4&&Math.abs(v)>=0.4);
         gg.title=na?'Brak statystyk w API dla tego meczu — nie wiadomo, kto naciska':'Presja (10 min): '+H+' '+pres[0]+' · '+A+' '+pres[1]+' (strzały + 2×celne + rożne)';
         // 2. MUSI, a nie wygrywa po 60'
         const press=i=>!na0&&tot>=3&&pres[i]/tot>=0.55;
-        const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if((home?gh<=ga:ga<=gh)&&press(home?0:1))hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
+        const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if((home?gh<=ga:ga<=gh)&&press(home?0:1))hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label,fairTeam(home?0:1));}
         // 3. Ryzyko: faworyt z wyjazdu prowadzi → gol gospodarza
-        if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh&&press(0))hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, a '+H+' naciska ('+pres[0]+' vs '+pres[1]+')',m,label);
+        if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh&&press(0))hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, a '+H+' naciska ('+pres[0]+' vs '+pres[1]+')',m,label,fairTeam(0));
         // 4. Szansa: 0:0 lub 1:1 po 55'
-        if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label);
+        if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label,fairGoal,goOdd);
         // 6. Rywal w dziesiątkę, a drużyna z 11 nie prowadzi (Arsenal U19 vs Dortmund 2026-11-24)
         if(el>=50&&el<=85){[0,1].forEach(i=>{const me=sides[i],op=sides[1-i],my=i?ga:gh,their=i?gh:ga;const opRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===op.id),meRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===me.id);
-          if(opRed&&!meRed&&my<=their&&their-my<=1)hint(id+'x'+i+my+their,'🔥','Gol '+me.name,op.name+' gra w dziesiątkę, a jest '+gh+':'+ga,m,label);});}
+          if(opRed&&!meRed&&my<=their&&their-my<=1)hint(id+'x'+i+my+their,'🔥','Gol '+me.name,op.name+' gra w dziesiątkę, a jest '+gh+':'+ga,m,label,fairTeam(i));});}
         // 7. Końcówka otwartego meczu: kolejny gol (kurs po 80' zwykle 1,9-2,5, w doliczonym nawet 3)
-        if(el>=78&&el<=88&&(gh+ga>=3||tot>=6))hint(id+'l'+(gh+ga),'🟢','Padnie kolejny gol','otwarty mecz ('+(gh+ga)+' goli'+(tot?', presja '+tot:'')+'), graj tylko przy kursie ≥2,2',m,label);
+        if(el>=78&&el<=88&&(gh+ga>=3||tot>=6))hint(id+'l'+(gh+ga),'🟢','Padnie kolejny gol','otwarty mecz ('+(gh+ga)+' goli'+(tot?', presja '+tot:'')+')',m,label,fairGoal,goOdd);
         // 5. Czerwona dla prowadzącego od 70'
-        if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label);}
+        if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label,fairTeam(gh>ga?1:0));}
       }
       const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
       m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('beforeend','<span class="rc" title="Czerwona kartka"></span>');});
