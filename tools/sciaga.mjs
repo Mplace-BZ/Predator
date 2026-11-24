@@ -101,7 +101,7 @@ const cnt = k => rows.filter(r => r.tier === k).length;
 const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
-const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span>${t ? `<span class="pos" title="Miejsce w tabeli">${t.rank}.</span>` : ''}${m ? `<span class="musi ${/MUSI/.test(m) ? '' : 'soft'}">${/MUSI/.test(m) ? 'MUSI' : 'TOP 8'}</span>` : ''}<button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
+const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span><span class="pos" title="Miejsce w tabeli">${t ? t.rank + '.' : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
 const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
@@ -151,11 +151,12 @@ footer{padding-bottom:45vh}}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
-.team{display:flex;align-items:center;gap:8px;height:24px}.team img{width:18px;height:18px;object-fit:contain}.tn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.teams{display:grid;grid-template-columns:18px minmax(0,max-content) auto auto 1fr;column-gap:8px;align-items:center}.team{display:contents}.team>*{height:24px;display:flex;align-items:center}.team img{height:18px;align-self:center}
+.pos,.musi{justify-self:start;height:auto!important}.pos:empty,.musi:empty{visibility:hidden;padding:0}.dot{justify-self:end;height:8px!important}.team img{width:18px;height:18px;object-fit:contain}.tn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pos{color:var(--dim);font-size:11px;background:#0d2f3c;border-radius:4px;padding:1px 5px}
 .musi{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;letter-spacing:.05em}.musi.soft{background:#0b5cff}
 .g{text-align:center;font-weight:800;font-size:16px}.g small{display:block;font-size:10px;font-weight:500;color:var(--dim)}.g.hot{color:var(--acc)}.g.warm{color:var(--warn)}
-.odds{display:flex;gap:4px}.odds span{flex:1;background:#0d2f3c;border-radius:4px;text-align:center;padding:4px 0;font-weight:700;font-size:13px}.odds i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:500}
+.odds{display:flex;gap:4px;margin-left:10px}.odds span{flex:1;background:#0d2f3c;border-radius:4px;text-align:center;padding:4px 0;font-weight:700;font-size:13px}.odds i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:500}
 .wx{color:var(--dim);font-size:12px;text-align:center}
 .plan{display:flex;flex-direction:column;gap:4px;font-size:12px}.pt{color:var(--text);font-weight:600}
 .badge{align-self:flex-start;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.05em}
@@ -172,7 +173,7 @@ footer{padding-bottom:45vh}}
 .sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
 .sr b.last{background:#163d4b;color:#fff}.time small{display:block;font-size:10px;font-weight:600;color:var(--warn);margin-top:2px;white-space:nowrap}
 .live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
-.rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
+.rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:6px;flex:none}
 .m.goal{opacity:1!important;background:color-mix(in srgb,var(--red) 38%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
 @media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 60px 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/7;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
@@ -217,7 +218,7 @@ async function live(){
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
         const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60));
-        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">d. ~'+mins+" min</small>");}
+        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">+'+mins+" min</small>");}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
@@ -254,7 +255,7 @@ async function live(){
         if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label);}
       }
       const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
-      m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('afterend','<span class="rc" title="Czerwona kartka"></span>');});
+      m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('beforeend','<span class="rc" title="Czerwona kartka"></span>');});
     }
     document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
