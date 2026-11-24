@@ -159,7 +159,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .hide{display:none!important}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
 .sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
-.sr b.last{background:var(--acc);color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
+.sr b.last{background:#163d4b;color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
 .live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
 .m.goal{background:color-mix(in srgb,var(--red) 22%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
