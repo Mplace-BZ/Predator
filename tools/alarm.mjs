@@ -6,14 +6,15 @@
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
 const names = process.argv.slice(2).map(s => s.toLowerCase());
 const af = async p => (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
-const state = {}; // id -> { score, reds, hist: { team: [{el,shots,sot,cor}] } }
+const state = {}; let seen = false; // czekamy, aż mecze wystartują // id -> { score, reds, hist: { team: [{el,shots,sot,cor}] } }
 
 function fire(msg) { console.log('ALARM: ' + msg); process.exit(0); }
 
 for (let i = 0; i < 180; i++) {
   const live = (await af('/fixtures?live=all')).response || [];
   const hits = live.filter(f => names.some(n => (f.teams.home.name + ' ' + f.teams.away.name).toLowerCase().includes(n)));
-  if (!hits.length && i > 2) fire('wszystkie śledzone mecze zakończone');
+  if (hits.length) seen = true;
+  if (!hits.length && seen) fire('wszystkie śledzone mecze zakończone');
   for (const f of hits) {
     const id = f.fixture.id, el = f.fixture.status.elapsed, sc = `${f.goals.home}:${f.goals.away}`;
     const label = `${f.teams.home.name} ${sc} ${f.teams.away.name} (${el}')`;
