@@ -161,6 +161,8 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
+.m.fv{opacity:1!important;background:#0a3040}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}.m.fv .odds span,.m.fv .pos,.m.fv .sr b.last{background:#14495c}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
 .sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
 .sr b.last{background:#163d4b;color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
@@ -257,8 +259,9 @@ sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classLi
 document.title='⚽ GOL! '+m.dataset.h+' '+b.textContent+':'+sr[1].querySelector('b').textContent+' '+m.dataset.a+' (symulacja)';m.scrollIntoView({block:'center'});}
 const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]'));
 const rows=[...document.querySelectorAll('.m')];
-rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★';
-s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';}});
+rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★',m.classList.add('fv');
+s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();}});
+function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
 rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):m.dataset.tier===f))));
 document.querySelectorAll('.lg').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
