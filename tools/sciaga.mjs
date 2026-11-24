@@ -106,7 +106,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
-<div class="sc"><b>–</b><b>–</b></div>
+<div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli w ich meczach">${f1(r.avgGoals)}<small>gole Ø</small></div>
 <div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
 <div class="wx">${wxs(r.wx)}</div>
@@ -142,7 +142,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
 .lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}
-.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 24px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
@@ -157,12 +157,14 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
-.sc{display:flex;flex-direction:column;text-align:center;font-weight:800;font-size:15px;color:var(--dim)}.sc b{height:24px;line-height:24px}
+.sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
+.sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
+.sr b.last{background:var(--acc);color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
 .live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
 .m.goal{background:color-mix(in srgb,var(--red) 22%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
-@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 22px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
+@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i,.sc.hd::before{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
@@ -200,7 +202,17 @@ async function live(){
       const isLive=['1H','2H','ET','P','LIVE','BT'].includes(st)||st==='HT',isFin=['FT','AET','PEN'].includes(st);
       m.classList.toggle('live',isLive);m.classList.toggle('fin',isFin);if(isLive)nLive++;
       const t=m.querySelector('.time');t.textContent=st==='HT'?'Przerwa':isLive?(el+(ex?'+'+ex:'')+"'"):isFin?'Koniec':t.dataset.t;
-      if(f.goals.home!=null){const sc=m.querySelectorAll('.sc b');sc[0].textContent=f.goals.home;sc[1].textContent=f.goals.away;}
+      if(f.goals.home!=null){
+        const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
+        // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
+        const gl=(f.events||[]).filter(e=>e.type==='Goal'&&!/Missed/.test(e.detail));
+        const cnt=flip=>{const c={home:0,away:0};gl.forEach(e=>{let sd=e.team.id===f.teams.home.id?'home':'away';if(flip&&/Own/.test(e.detail))sd=sd==='home'?'away':'home';c[sd]++;});return c;};
+        const flip=!(cnt(false).home===f.goals.home&&cnt(false).away===f.goals.away);
+        let last=null;if(gl.length){const e=gl[gl.length-1];last=e.team.id===f.teams.home.id?'home':'away';if(flip&&/Own/.test(e.detail))last=last==='home'?'away':'home';}
+        m.querySelector('.sc').classList.toggle('hd',ht.home!=null);
+        sides.forEach((sd,i)=>{const [a,b]=sr[i].querySelectorAll('i'),t=sr[i].querySelector('b');t.textContent=f.goals[sd];t.classList.toggle('last',last===sd);
+          a.textContent=ht[sd]??'';b.textContent=ht[sd]!=null&&!['1H','HT'].includes(st)?f.goals[sd]-ht[sd]:'';});
+      }
       const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);}
       prev[f.fixture.id]=key;
       if(isLive&&st!=='HT'&&el){
