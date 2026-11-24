@@ -68,6 +68,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 
 - 22:54, Chapecoense 2:0 Palmeiras w przerwie: „jeszcze 2 gole” po kursie 2,00. Po sprawdzeniu w bazie: taki zakład w przerwie trafia w 46%, więc opłaca się dopiero od kursu 2,47. **Lekcja: tego zakładu nie gram bez wyjątkowego powodu.**
 - 23:01, ten sam mecz: Palmeiras 2+ gole (3,40) i Palmeiras lub remis (4,50). Test zasady nr 1 na meczu, w którym faworyt goni na wyjeździe. Liczby z punktu 3 mówią, że to najsłabszy wariant tej zasady.
+- 23:15, 55. minuta, nadal 2:0. Obserwacja: po przerwie Palmeiras przez 10 minut nie oddał żadnego strzału (dalej 12, jak w przerwie), a Chapecoense dołożyła strzał celny i 2 rożne. **Lekcja: 12 strzałów w 1. połowie nie znaczy, że nacisk wróci po przerwie. Przed zakładem na goniącego czekać 5–10 minut i sprawdzić, czy faktycznie strzela.**
 - Wynik dopiszę po meczu.
 
 ## 6. Do sprawdzenia
