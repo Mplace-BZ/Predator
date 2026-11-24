@@ -88,7 +88,12 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Koniec: Chapecoense 3:0 Palmeiras. Wszystkie 4 zakłady przegrane (−55 zł), pula 45 zł.** Powody w kolejności ważności: rezerwowy skład Palmeiras (nie sprawdziłem), zakład „jeszcze 2 gole” poniżej progu kursu, trzy zakłady na ten sam scenariusz, spóźniony zakład w 90+2.
 - 23:58, Coquimbo 0:1 La Calera, przerwa. Chris podesłał kartę FootyStats ze statystykami na żywo, których nie mam w api-football: strzały 9:2, groźne ataki 36:13, posiadanie 60:40 dla Coquimbo. Faworyt dominuje i przegrywa po jedynym celnym strzale rywala. Etap 1: Coquimbo 2+ gole (2,38, 15 zł) i wygrana Coquimbo (3,20, 10 zł). Etap 2 (20 zł): po wyrównaniu przed 65. minutą gram „kolejny gol”, jeśli kurs będzie co najmniej 1,90 (baza: przy 1:1 w 60. minucie kolejny gol pada w 71%).
 - 00:33, gol Coquimbo w 71', 1:1. Etap 2 odpuszczony (wyrównanie po 65', kurs 1,62 poniżej progu). **Typ Chrisa do rozliczenia:** trzeci gol w meczu, gdy kurs przekroczy 2,20, 10 zł. Claude nie gra: przy świeżym wyrównaniu w 70.–75. minucie kolejny gol pada w ok. 50%, próg przy 2,20 to 52%, a portfel ma już 25 zł na gola Coquimbo.
-- Wynik dopiszę po meczu.
+- **Koniec: Coquimbo 1:1 La Calera (gol z karnego w 71'), Coquimbo awansuje 3:1 w dwumeczu. Oba zakłady przegrane (−25 zł).** Zasada nr 1 zadziałała połowicznie: faworyt wyrównał, ale prowadząc w dwumeczu nie miał po co ryzykować o więcej.
+
+**Bilans testu (100 zł → 20 zł, 0 z 6 zakładów trafionych):**
+- Wszystkie 6 zakładów było na jeden scenariusz: „faworyt odrabia”. Oba mecze tego scenariusza nie spełniły w pełni.
+- Typy Chrisa tego wieczoru: 2 z 2 trafione (trzeci gol Chapecoense, gol Chapecoense z kontry). Typ na trzeciego gola w Coquimbo: nietrafiony.
+- **Najważniejsze lekcje:** (1) przed zakładem na faworyta: skład, kalendarz, dwumecz — portfel sprawdza to teraz sam; (2) jeden scenariusz = jeden zakład, nie trzy; (3) gdy baza i przeczucie Chrisa mówią to samo, a kurs jest powyżej progu, gram; (4) faworyt prowadzący w dwumeczu nie musi wygrać rewanżu.
 
 ### Reguły-kandydatki do testu na sucho
 
