@@ -257,7 +257,7 @@ mn.onclick=e=>{e.stopPropagation();st.min=!st.min;localStorage.setItem(PK,JSON.s
 let d=null;h.addEventListener('pointerdown',e=>{if(!narrow()||e.target===mn)return;const r=sd.getBoundingClientRect();d={dx:e.clientX-r.left,dy:e.clientY-r.top};h.setPointerCapture(e.pointerId);});
 h.addEventListener('pointermove',e=>{if(!d)return;st.x=e.clientX-d.dx;st.y=e.clientY-d.dy;put();});
 h.addEventListener('pointerup',()=>{if(d){d=null;localStorage.setItem(PK,JSON.stringify(st));}});})();
-live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,30000);
+live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,15000);
 // Symulacja gola (otwórz stronę z #gol na końcu adresu): pierwszy mecz w grze, +1 dla gospodarzy
 function simGol(){const m=document.querySelector('.m.live')||document.querySelector('.m');const sr=m.querySelectorAll('.sr');const b=sr[0].querySelector('b');b.textContent=(+b.textContent||0)+1;
 sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);
