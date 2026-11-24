@@ -1,16 +1,22 @@
 #!/usr/bin/env node
 // Ściąga meczowa na dziś: 3 koszyki (MUSZĄ / SZANSA / RYZYKO), lokalny plik HTML.
 // Użycie: node tools/sciaga.mjs [YYYY-MM-DD]  → sciaga/index.html (poza gitem — repo jest publiczne)
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
 const ARGS = process.argv.slice(2), PLUS = (ARGS.find(a => a.startsWith('--plus=')) || '').slice(7).split(',').filter(Boolean);
 const DATE = ARGS.find(a => /^\d{4}-\d\d-\d\d$/.test(a)) || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
 // [kod flagi flagcdn | null = logo ligi, KRAJ, nazwa ligi]
 const LEAGUES = { 2: ['eu', 'EUROPA', 'Liga Mistrzów'], 135: ['it', 'WŁOCHY', 'Serie A'], 136: ['it', 'WŁOCHY', 'Serie B'], 40: ['gb-eng', 'ANGLIA', 'Championship'], 39: ['gb-eng', 'ANGLIA', 'Premier League'], 41: ['gb-eng', 'ANGLIA', 'League One'], 179: ['gb-sct', 'SZKOCJA', 'Premiership'], 3: ['eu', 'EUROPA', 'Liga Europy'], 848: ['eu', 'EUROPA', 'Liga Konferencji'] };
 let last = 0;
+const CF = new URL('./.sciaga-cache.json', import.meta.url), cache = existsSync(CF) ? JSON.parse(readFileSync(CF, 'utf8')) : {};
+const TTL = p => /^\/(standings|predictions|odds)\?/.test(p) ? 6 * 3600e3 : /^\/fixtures\?date/.test(p) ? 5 * 60e3 : 0;
 async function af(p) {
+  const ttl = TTL(p), c = cache[p]; if (ttl && c && Date.now() - c.ts < ttl) return c.j;
   const w = last + 250 - Date.now(); if (w > 0) await new Promise(r => setTimeout(r, w)); last = Date.now();
-  return (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
+  const j = await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
+  const err = j.errors && Object.keys(j.errors).length; if (err) { console.error('API błąd:', JSON.stringify(j.errors)); if (/limit/i.test(JSON.stringify(j.errors))) { console.error('STOP: wyczerpany limit API — nie nadpisuję ściągi.'); process.exit(2); } }
+  if (ttl && !err) { cache[p] = { ts: Date.now(), j }; writeFileSync(CF, JSON.stringify(cache)); }
+  return j;
 }
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const num = x => (x == null || x === '' ? null : +x);
@@ -32,7 +38,7 @@ let fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
   .filter(f => LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
   ;
 // --plus=id,id → dodatkowe mecze spoza listy lig (np. test na żywo)
-if (PLUS.length) for (const f of (await af(`/fixtures?ids=${PLUS.join('-')}`)).response || []) {
+if (PLUS.length) for (const f of (await af(`/fixtures?ids=${PLUS.join('-')}&timezone=Europe/Warsaw`)).response || []) {
   LEAGUES[f.league.id] ||= [null, (f.league.country === 'World' ? 'ŚWIAT' : f.league.country).toUpperCase(), f.league.name];
   if (!fx.some(x => x.fixture.id === f.fixture.id)) fx.push(f);
 }
@@ -165,7 +171,7 @@ footer{padding-bottom:45vh}}
 .hide{display:none!important}
 #hist{padding:0}#hist .hh{display:flex;gap:16px;align-items:baseline;background:var(--lh);padding:10px 12px;font-size:13px}#hist .hh b{font-size:18px}
 #hist table{width:100%;border-collapse:collapse;font-size:12px}#hist td,#hist th{padding:8px 12px;border-top:1px solid var(--line);text-align:left}#hist th{color:var(--dim);font-weight:600;font-size:11px}
-#hist .ok{color:var(--pos);font-weight:800}#hist .ko{color:var(--red);font-weight:800}#hist .wait{color:var(--dim)}#hist .empty{padding:14px 12px;color:var(--dim)}
+#hist .hr{background:none;border:0;padding:0;font:inherit;cursor:pointer;color:inherit}#hist .ok{color:var(--pos);font-weight:800}#hist .ko{color:var(--red);font-weight:800}#hist .wait{color:var(--dim)}#hist .empty{padding:14px 12px;color:var(--dim)}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
 .dot:focus{outline:none}.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}.team:has(.dot.r) .tn{color:var(--red)}
@@ -202,16 +208,22 @@ ${groups.map(league).join('')}
 const H_KEY='sciaga_hints_${DATE}',hints=JSON.parse(localStorage.getItem(H_KEY)||'[]'),fired=new Set(hints.map(h=>h.id)),hist={};
 function beep(){try{const c=new AudioContext(),o=c.createOscillator();o.frequency.value=880;o.connect(c.destination);o.start();o.stop(c.currentTime+.25);}catch(e){}}
 const TAGS={'🔥':['','🔥 GRAJ TERAZ'],'🟢':['k-szansa','🟢 OKAZJA'],'🎲':['k-ryzyko','🎲 RYZYKO']};
-function drawHints(){if(!hints.length)return;const age=h=>Date.now()-h.ts;document.querySelector('.side').classList.toggle('hot',hints.some(h=>age(h)<180000));
-document.getElementById('hl').innerHTML=hints.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+' · 10-20 zł · kurs ok. 1,9</div></div>'}).join('');}
+function drawHints(){const live=hints.filter(h=>Date.now()-h.ts<1200000);if(!live.length){document.getElementById('hl').innerHTML='<div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div>';document.querySelector('.side').classList.remove('hot');return;}const age=h=>Date.now()-h.ts;document.querySelector('.side').classList.toggle('hot',hints.some(h=>age(h)<180000));
+document.getElementById('hl').innerHTML=live.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+' · 10-20 zł · kurs ok. 1,9</div></div>'}).join('');}
 setInterval(drawHints,15000);
 function toast(h,ms=90000){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),ms);}
 function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
 drawHints();
 const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
+const TAB=Math.random().toString(36).slice(2);
 async function live(){
   try{
-    const out=[];for(let i=0;i<FIDS.length;i+=20){const j=await (await fetch('${B}/fixtures?ids='+FIDS.slice(i,i+20).join('-'),{headers:{'x-apisports-key':KEY}})).json();out.push(...(j.response||[]));}
+    const LK='sciaga_leader',now=Date.now(),ld=JSON.parse(localStorage.getItem(LK)||'null');let out;
+    if(!ld||ld.id===TAB||now-ld.ts>40000){localStorage.setItem(LK,JSON.stringify({id:TAB,ts:now}));out=[];
+      for(let i=0;i<FIDS.length;i+=20){const j=await (await fetch('${B}/fixtures?ids='+FIDS.slice(i,i+20).join('-'),{headers:{'x-apisports-key':KEY}})).json();
+        if(j.errors&&Object.keys(j.errors).length){document.getElementById('lb').textContent='● API: '+(/limit/i.test(JSON.stringify(j.errors))?'wyczerpany dzienny limit':'błąd');return;}out.push(...(j.response||[]));}
+      try{localStorage.setItem('sciaga_live',JSON.stringify({ts:now,out}));}catch(e){}}
+    else{const c=JSON.parse(localStorage.getItem('sciaga_live')||'null');if(!c)return;out=c.out;}
     let nLive=0,goals=[];
     for(const f of out){const m=document.querySelector('.m[data-fid="'+f.fixture.id+'"]');if(!m)continue;
       const st=f.fixture.status.short,el=f.fixture.status.elapsed,ex=f.fixture.status.extra;
@@ -246,7 +258,7 @@ async function live(){
           const h=(hist[id+'|'+t.team.id]||=[]);h.push(now);const b=h.filter(x=>x.el<=el-5).pop();
           if(b&&el<=85){const d={sh:now.sh-b.sh,so:now.so-b.so,co:now.co-b.co};if((d.so>=1&&d.sh>=2)||d.co>=3)hint(id+'n'+Math.floor(el/10),'🔥','Gol '+t.team.name,'naciska: od '+b.el+"' strzały +"+d.sh+', celne +'+d.so+', rożne +'+d.co,m,label);}}
         // Presja (ostatnie 10 min): strzały + 2×celne + rożne; bez statystyk: gole z ostatnich 15 min ×3
-        const sides=[f.teams.home,f.teams.away],pres=sides.map(tm=>{const h=hist[id+'|'+tm.id];if(h&&h.length){const now=h[h.length-1],b=h.filter(x=>x.el<=el-10).pop()||h[0];return (now.sh-b.sh)+2*(now.so-b.so)+(now.co-b.co);}
+        const sides=[f.teams.home,f.teams.away],pres=sides.map(tm=>{const h=hist[id+'|'+tm.id];if(h&&h.length){const now=h[h.length-1],b=h.filter(x=>x.el<=el-10).pop()||(now.el-h[0].el>=5?h[0]:{sh:0,so:0,co:0});return (now.sh-b.sh)+2*(now.so-b.so)+(now.co-b.co);}
           return (f.events||[]).filter(e=>e.type==='Goal'&&e.team.id===tm.id&&e.time.elapsed>=el-15).length*3;});
         // Zegar presji: -90° = gospodarze 100%, 0° = równo, +90° = goście 100%
         const na0=!(f.statistics||[]).length,tot=na0?0:pres[0]+pres[1],v=tot?(pres[1]-pres[0])/tot:0,gg=m.querySelector('.gg');
@@ -270,6 +282,7 @@ async function live(){
       const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
       m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('beforeend','<span class="rc" title="Czerwona kartka"></span>');});
     }
+    if(typeof applyFilter==='function')applyFilter();
     document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
   }catch(e){document.getElementById('lb').textContent='● na żywo: brak połączenia, ponawiam';}
@@ -300,19 +313,23 @@ document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((
     if(dots[k]==='r')betAdd(m,i);else if(was==='r')betDel(m.dataset.fid+'|'+i);};}));
 // Historia: każda czerwona kropka = zapis (mecz, drużyna, minuta i wynik w chwili zakładu); po końcu meczu: czy ta drużyna (albo ktokolwiek, gdy obie czerwone) strzeliła później
 const BK='sciaga_bets',bets=()=>JSON.parse(localStorage.getItem(BK)||'[]'),betsSave=b=>localStorage.setItem(BK,JSON.stringify(b));
-function betAdd(m,i){const b=bets(),sc=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0);b.push({id:m.dataset.fid+'|'+i,fid:m.dataset.fid,side:i,date:'${DATE}',lg:m.dataset.lg,h:m.dataset.h,a:m.dataset.a,min:m.querySelector('.time').firstChild.textContent,sc,ts:Date.now()});betsSave(b);}
+function betAdd(m,i){const b=bets(),sc=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0);b.push({id:m.dataset.fid+'|'+i,fid:m.dataset.fid,side:i,date:'${DATE}',lg:m.dataset.lg,h:m.dataset.h,a:m.dataset.a,min:m.querySelector('.time').firstChild.textContent,sc,ts:Date.now(),late:m.classList.contains('fin')});betsSave(b);}
 function betDel(id){betsSave(bets().filter(x=>!(x.id===id&&!x.fin)));}
 function betResolve(f){const b=bets();let ch=0;for(const x of b)if(x.fid==f.fixture.id&&!x.fin){x.fin=[f.goals.home,f.goals.away];ch=1;}if(ch)betsSave(b);}
+document.addEventListener('click',e=>{const b=e.target.closest('.hr');if(!b)return;const all=bets(),g=all.filter(x=>x.fid==b.dataset.fid),cur=g[0].hand;g.forEach(x=>x.hand=cur===true?false:cur===false?null:true);betsSave(all);drawHist();});
 function drawHist(){const b=bets(),by={};b.forEach(x=>(by[x.fid]||=[]).push(x));const list=Object.values(by).reverse();
   let ok=0,done=0;const rowsH=list.map(g=>{const x=g[0],both=g.length>1&&new Set(g.map(y=>y.side)).size>1,who=both?'Gol w meczu':'Gol '+(x.side?x.a:x.h);
-    let res='<span class="wait">trwa</span>';if(x.fin){done++;const hit=both?(x.fin[0]+x.fin[1]>x.sc[0]+x.sc[1]):(x.fin[x.side]>x.sc[x.side]);if(hit)ok++;res=hit?'<span class="ok">✅ TAK</span>':'<span class="ko">❌ NIE</span>';}
-    return '<tr><td>'+x.date+'</td><td>'+x.h+' – '+x.a+'<br><span class="wait">'+x.lg+'</span></td><td>'+who+'</td><td>'+x.min+' · '+x.sc.join(':')+'</td><td>'+(x.fin?x.fin.join(':'):'–')+'</td><td>'+res+'</td></tr>';}).join('');
-  document.getElementById('hist').innerHTML='<div class="hh">📒 Historia zakładów <span>trafione <b>'+ok+'/'+done+'</b>'+(done?' ('+Math.round(ok/done*100)+'%)':'')+'</span></div>'+(list.length?'<table><tr><th>Data</th><th>Mecz</th><th>Typ</th><th>Wejście</th><th>Koniec</th><th>Wynik</th></tr>'+rowsH+'</table>':'<div class="empty">Pusto. Zaznacz 🔴 przy drużynie, na którą postawiłeś — zapiszę minutę i wynik, a po meczu sprawdzę, czy trafiłeś.</div>');}
+    const late=x.late||/Koniec/.test(x.min);let res='<span class="wait">trwa</span>';const auto=x.fin&&!late?(both?(x.fin[0]+x.fin[1]>x.sc[0]+x.sc[1]):(x.fin[x.side]>x.sc[x.side])):null,hit=x.hand!=null?x.hand:auto;
+    if(hit!=null){done++;if(hit)ok++;res=hit?'<span class="ok">✅ TAK</span>':'<span class="ko">❌ NIE</span>';}else if(late||x.fin)res='<span class="wait">? kliknij</span>';
+    res='<button class="hr" data-fid="'+x.fid+'" title="Kliknij, żeby poprawić: TAK / NIE">'+res+'</button>';
+    return '<tr><td>'+x.date+'</td><td>'+x.h+' – '+x.a+'<br><span class="wait">'+x.lg+'</span></td><td>'+who+'</td><td>'+(late?'<span class="wait">zaznaczone po meczu</span>':x.min+' · '+x.sc.join(':'))+'</td><td>'+(x.fin?x.fin.join(':'):'–')+'</td><td>'+res+'</td></tr>';}).join('');
+  document.getElementById('hist').innerHTML='<div class="hh">📒 Historia zakładów <span>trafione <b>'+ok+'/'+done+'</b>'+(done?' ('+Math.round(ok/done*100)+'%)':'')+'</span></div>'+(list.length?'<table><tr><th>Data</th><th>Mecz</th><th>Typ</th><th>Wejście</th><th>Koniec</th><th>Wynik</th></tr>'+rowsH+'</table><div class="empty">Wynik liczę sam: czy po Twoim wejściu padł gol tej drużyny (albo jakikolwiek, gdy obie kropki są czerwone). Inny zakład, np. „6. gol”, albo kropka po meczu? Kliknij wynik i popraw.</div>':'<div class="empty">Pusto. Zaznacz 🔴 przy drużynie, na którą postawiłeś — zapiszę minutę i wynik, a po meczu sprawdzę, czy trafiłeś.</div>');}
 function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
-document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
-const H=f==='hist';document.getElementById('hist').classList.toggle('hide',!H);if(H)drawHist();
-rows.forEach(m=>m.classList.toggle('hide',H||!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
-document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
+// Filtr: zakończone mecze chowamy wszędzie poza „Moje zakłady”
+let curF='all';function applyFilter(){const f=curF,H=f==='hist';document.getElementById('hist').classList.toggle('hide',!H);if(H)drawHist();
+rows.forEach(m=>m.classList.toggle('hide',H||(m.classList.contains('fin')&&f!=='moje')||!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
+document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));}
+document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));curF=b.dataset.f;applyFilter();});
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 </script>
 </body></html>`;
