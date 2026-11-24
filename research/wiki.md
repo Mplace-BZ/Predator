@@ -79,6 +79,10 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - Granica Chrisa do sprawdzenia: goniący faworyt musi strzelić do 75. minuty, inaczej nie zdąży z drugim golem.
 - 23:42, Coquimbo 0:1 La Calera (41'), ćwierćfinał Pucharu Chile. Na oko zasada nr 1: faworyt (1,53 przed meczem) przegrywa u siebie. Po sprawdzeniu: to rewanż, pierwszy mecz Coquimbo wygrało 2:0, więc w dwumeczu prowadzi 2:1 i **nie musi gonić**. Gonić musi La Calera. Do tego mecz bez statystyk i bez składów w naszym źródle. Żaden kurs nie pokrywał ryzyka po podatku. **Nie gram.** Typ bez stawki do rozliczenia: La Calera nie odrobi, Coquimbo strzeli w 2. połowie.
 - **Lekcja: w pucharach najpierw sprawdzić, czy to dwumecz i jaki jest wynik łączny. „Faworyt przegrywa” nic nie znaczy, jeśli faworyt i tak awansuje.** Portfel pokazuje teraz wynik dwumeczu przed zakładem.
+- 23:48, 88. minuta, 2:0. **Pojedynek typów:** Chris gra „trzeci gol w meczu” po kursie 2,75 (10 zł dałoby 24,20 zł). Claude nie gra: szansa ok. 30%, opłaca się od kursu 3,80. Rozliczenie po gwizdku.
+- **90. minuta: 3:0 dla Chapecoense. Chris miał rację dwa razy:** trzeci gol w meczu (kurs 2,75 w 88. minucie, 10 zł dałoby 24,20 zł) i gol Chapecoense z kontry (kurs 3,75 w 62. minucie, 10 zł dałoby 33,00 zł). Claude w obu przypadkach nie zagrał.
+- **Lekcja dla Claude:** w 65. minucie baza mówiła, że prowadzący 2:0 gospodarz strzela następnego gola w 38% meczów, a kurs był 4,00. To daje 0,38 × 4,00 × 0,88 = 1,34, czyli zakład wyraźnie na plus. Widziałem to, napisałem „historia po Twojej stronie” i nie zagrałem. **Gdy liczby z bazy i przeczucie Chrisa mówią to samo, a kurs jest powyżej progu, gram.**
+- **Lekcja o kontrze:** gdy goniący rzuca wszystko do przodu (24 strzały, 10 rożnych), gol prowadzącego z kontry w końcówce jest realny i bukmacher płaci za niego najlepiej.
 - Wynik dopiszę po meczu.
 
 ## 6. Źródła danych
