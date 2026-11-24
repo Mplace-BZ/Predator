@@ -6,7 +6,8 @@
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
 const ONLY_PRESS = process.argv.includes('--nacisk'); // tylko nacisk (gole i kartki Chris widzi w STS)
 const names = process.argv.slice(2).filter(a => !a.startsWith('--')).map(s => s.toLowerCase());
-const af = async p => (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
+// Odporne na chwilowy brak sieci: 3 próby co 10 s, potem pusta odpowiedź (alarm nie pada)
+const af = async p => { for (let k = 0; k < 3; k++) { try { return await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json(); } catch { await new Promise(r => setTimeout(r, 10_000)); } } return { response: [] }; };
 const state = {}; let seen = false; // czekamy, aż mecze wystartują // id -> { score, reds, hist: { team: [{el,shots,sot,cor}] } }
 
 function fire(msg) { console.log('ALARM: ' + msg); process.exit(0); }
