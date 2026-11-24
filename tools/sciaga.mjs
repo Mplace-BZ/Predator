@@ -135,7 +135,11 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9;background:var(--acc);color:#fff;font-weight:900;font-size:18px;padding:14px 22px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:pulse 1.2s infinite;cursor:pointer;max-width:92vw}
 .toast small{display:block;font-weight:600;font-size:12px;opacity:.9}
 .hint .hm{color:var(--dim)}.hint .ha{font-size:18px;font-weight:900;margin:2px 0 4px;color:#fff}.hint .hw{color:var(--text);opacity:.8}
-@media(max-width:1100px){.wrap{grid-template-columns:1fr}.side{position:static;order:-1;max-height:260px}}
+.side h3{display:flex;align-items:center;gap:8px}.side .mn{display:none;margin-left:auto;background:none;border:0;color:inherit;font-size:18px;cursor:pointer;padding:0 4px}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}
+.side{position:fixed;right:10px;bottom:10px;top:auto;width:min(340px,calc(100vw - 20px));max-height:45vh;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid var(--line)}
+.side h3{cursor:move;touch-action:none;user-select:none}.side .mn{display:block}.side.min .hl{display:none}.side.min{width:auto}.side.min h3 .tx{display:none}
+footer{padding-bottom:45vh}}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
 .pills button{background:#0d2f3c;color:var(--text);border:2px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;cursor:pointer}
 .pills button.on{background:var(--red);border-color:#0b5cff}.pills small{opacity:.75;font-weight:600;margin-left:4px}
@@ -170,7 +174,7 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
 <div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
-<aside class="side"><h3>👉 POSTAW NA — podpowiedzi na żywo</h3><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
+<aside class="side"><h3><span>👉</span><span class="tx">POSTAW NA — podpowiedzi na żywo</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
 <div class="pills">
 <button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
@@ -190,7 +194,7 @@ function drawHints(){if(!hints.length)return;const age=h=>Date.now()-h.ts;docume
 document.getElementById('hl').innerHTML=hints.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><span class="tag">'+t[1]+'</span><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.clock+' · '+h.lg+' · 10-20 zł · kurs ok. 1,9</div></div>'}).join('');}
 setInterval(drawHints,15000);
 function toast(h){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),90000);}
-function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.title='👉 '+act;}
+function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
 drawHints();
 const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
 async function live(){
@@ -237,6 +241,15 @@ async function live(){
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
   }catch(e){document.getElementById('lb').textContent='● na żywo: brak połączenia, ponawiam';}
 }
+// Panel podpowiedzi na telefonie: przesuwany palcem, zwijany, pozycja zapamiętana
+(()=>{const sd=document.querySelector('.side'),h=sd.querySelector('h3'),mn=sd.querySelector('.mn'),PK='sciaga_panel',narrow=()=>matchMedia('(max-width:1100px)').matches;
+const st=JSON.parse(localStorage.getItem(PK)||'{}');const put=()=>{if(!narrow()){sd.style.left=sd.style.top=sd.style.right=sd.style.bottom='';return;}
+if(st.x!=null){sd.style.left=Math.min(Math.max(0,st.x),innerWidth-60)+'px';sd.style.top=Math.min(Math.max(0,st.y),innerHeight-44)+'px';sd.style.right=sd.style.bottom='auto';}sd.classList.toggle('min',!!st.min);mn.textContent=st.min?'▸':'▾';};
+put();addEventListener('resize',put);
+mn.onclick=e=>{e.stopPropagation();st.min=!st.min;localStorage.setItem(PK,JSON.stringify(st));put();};
+let d=null;h.addEventListener('pointerdown',e=>{if(!narrow()||e.target===mn)return;const r=sd.getBoundingClientRect();d={dx:e.clientX-r.left,dy:e.clientY-r.top};h.setPointerCapture(e.pointerId);});
+h.addEventListener('pointermove',e=>{if(!d)return;st.x=e.clientX-d.dx;st.y=e.clientY-d.dy;put();});
+h.addEventListener('pointerup',()=>{if(d){d=null;localStorage.setItem(PK,JSON.stringify(st));}});})();
 live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,30000);
 // Symulacja gola (otwórz stronę z #gol na końcu adresu): pierwszy mecz w grze, +1 dla gospodarzy
 function simGol(){const m=document.querySelector('.m.live')||document.querySelector('.m');const sr=m.querySelectorAll('.sr');const b=sr[0].querySelector('b');b.textContent=(+b.textContent||0)+1;
