@@ -101,7 +101,7 @@ const cnt = k => rows.filter(r => r.tier === k).length;
 const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
-const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"><span class="nm">${esc(name)}</span></span><span class="pos" title="Miejsce w tabeli">${t ? t.rank + '.' : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
+const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"><span class="nm">${esc(name)}</span></span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
 const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
@@ -153,7 +153,7 @@ footer{padding-bottom:45vh}}
 .time{color:var(--dim);font-weight:700;font-size:14px}
 .teams{display:grid;grid-template-columns:18px minmax(0,max-content) auto auto 1fr;column-gap:8px;align-items:center}.team{display:contents}.team>*{height:24px;display:flex;align-items:center}.team img{height:18px;align-self:center}
 .pos,.musi{justify-self:start;height:auto!important}.pos:empty,.musi:empty{visibility:hidden;padding:0}.dot{justify-self:end;height:8px!important}.team img{width:18px;height:18px;object-fit:contain}.tn{min-width:0}.nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.pos{color:var(--dim);font-size:11px;background:#0d2f3c;border-radius:4px;padding:1px 5px}
+.pos{color:var(--dim);font-size:11px;background:#0d2f3c;border-radius:4px;padding:1px 0;width:24px;justify-content:center;text-align:center}
 .musi{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;letter-spacing:.05em}.musi.soft{background:#0b5cff}
 .g{text-align:center;font-weight:800;font-size:16px}.g small{display:block;font-size:10px;font-weight:500;color:var(--dim)}.g.hot{color:var(--acc)}.g.warm{color:var(--warn)}
 .odds{display:flex;gap:4px;margin-left:10px}.odds span{flex:1;background:#0d2f3c;border-radius:4px;text-align:center;padding:4px 0;font-weight:700;font-size:13px}.odds i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:500}
