@@ -134,7 +134,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .side.hot h3{background:var(--acc);color:#fff}.side .empty b{color:var(--text)}
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9;background:var(--acc);color:#fff;font-weight:900;font-size:18px;padding:14px 22px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:pulse 1.2s infinite;cursor:pointer;max-width:92vw}
 .toast small{display:block;font-weight:600;font-size:12px;opacity:.9}
-.hint .ht{display:flex;align-items:flex-start;justify-content:space-between}.hint .hc{font-size:15px;font-weight:900;color:#fff}.hint .hm{color:var(--dim)}.hint .ha{font-size:18px;font-weight:900;margin:2px 0 4px;color:#fff}.hint .hw{color:var(--text);opacity:.8}
+.hint .ht{display:flex;align-items:flex-start;justify-content:space-between}.hint .hc{font-size:10px;font-weight:500;color:var(--dim);letter-spacing:.02em}.hint .hm{color:var(--dim)}.hint .ha{font-size:18px;font-weight:900;margin:2px 0 4px;color:#fff}.hint .hw{color:var(--text);opacity:.8}
 .side h3{display:flex;align-items:center;gap:8px}.side .mn{display:none;margin-left:auto;background:none;border:0;color:inherit;font-size:18px;cursor:pointer;padding:0 4px}
 @media(max-width:1100px){.wrap{grid-template-columns:1fr}
 .side{position:fixed;right:10px;bottom:10px;top:auto;width:min(340px,calc(100vw - 20px));max-height:45vh;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid var(--line)}
