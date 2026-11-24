@@ -15,6 +15,8 @@ for (let i = 0; i < 240; i++) {
     const f = L[o.fixture.id]; if (!f || skip.has(f.fixture.id) || NO_STS.includes(f.league.country)) continue;
     const st = f.fixture.status.short, el = f.fixture.status.elapsed || 0; if (!['1H', '2H'].includes(st)) continue;
     const gh = f.goals.home, ga = f.goals.away, g = gh + ga; if (Math.abs(gh - ga) >= 3) continue;
+    // Kursy muszą pasować do wyniku: gdy bukmacher ma inny wynik (gol jeszcze nie wpisany / anulowany) — pomijamy
+    if (o.teams?.home?.goals != null && (o.teams.home.goals !== gh || o.teams.away.goals !== ga)) continue;
     const mg = (o.odds.find(b => b.id === 25)?.values || []).find(v => v.value === 'Over' && +v.handicap === g + 0.5 && !v.suspended); if (!mg) continue;
     const odd = +mg.odd, base = 2.7, tempo = el >= 20 ? Math.min(6, g / el * 90) : base, rate = tempo > base ? (base + tempo) / 2 : base;
     const p = 1 - Math.exp(-rate * Math.max(1, 93 - el) / 90), need = 1 / (p * 0.88);
