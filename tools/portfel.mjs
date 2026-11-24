@@ -1,0 +1,125 @@
+#!/usr/bin/env node
+// Portfel Claude — wirtualna pula (domyślnie 100 zł). Uczciwy zapis: kurs i wynik w chwili zakładu pobiera skrypt z API
+// (nie da się wpisać kursu „z głowy”), rozliczenie też robi skrypt. Podatek 12% od stawki jak w STS.
+//   node tools/portfel.mjs scan                      → kandydaci na żywo (kursy, faworyt przedmeczowy, statystyki)
+//   node tools/portfel.mjs bet <fixtureId> <rynek> <stawka> "<dlaczego>"
+//        rynki: over (kolejny gol w meczu) · over2 (jeszcze 2 gole) · next:home|away (kto strzeli następny) · win:home|draw|away
+//   node tools/portfel.mjs watch                     → co 60 s rozlicza i odświeża sciaga/portfel.html; kończy się przy zmianie
+//   node tools/portfel.mjs reset [kwota]
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io', TAX = 0.88;
+const NO_STS = ['Russia', 'Belarus', 'Iran'];
+const DIR = new URL('../sciaga/', import.meta.url); mkdirSync(DIR, { recursive: true });
+const SF = new URL('portfel.json', DIR), HF = new URL('portfel.html', DIR);
+const load = () => existsSync(SF) ? JSON.parse(readFileSync(SF, 'utf8')) : { start: 100, bets: [] };
+const save = s => writeFileSync(SF, JSON.stringify(s, null, 1));
+const af = async p => { for (let k = 0; k < 3; k++) { try { return (await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json()).response || []; } catch { await new Promise(r => setTimeout(r, 8000)); } } return []; };
+const zl = x => x.toFixed(2).replace('.', ',') + ' zł', k2 = x => (+x).toFixed(2).replace('.', ',');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const now = () => new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' }).slice(0, 5);
+const vals = (o, test) => ((o?.odds || []).find(test)?.values || []).filter(v => !v.suspended);
+const liveOdds = (o, g) => ({
+  over: vals(o, b => b.id === 25).find(v => v.value === 'Over' && +v.handicap === g + 0.5)?.odd,
+  over2: vals(o, b => b.id === 25).find(v => v.value === 'Over' && +v.handicap === g + 1.5)?.odd,
+  next: Object.fromEntries(vals(o, b => /which team will score the \d+\w\w goal/i.test(b.name)).map(v => [v.value, v.odd])),
+  ft: Object.fromEntries(vals(o, b => b.id === 59).map(v => [v.value, v.odd])),
+});
+const balance = s => { const staked = s.bets.reduce((a, b) => a + b.stake, 0), back = s.bets.reduce((a, b) => a + (b.payout || 0), 0), open = s.bets.filter(b => b.status === 'open').reduce((a, b) => a + b.stake, 0); return { free: s.start - staked + back, open, total: s.start - staked + back + open, staked, back }; };
+
+async function scan() {
+  const live = await af('/fixtures?live=all'), L = Object.fromEntries(live.map(f => [f.fixture.id, f]));
+  for (const o of await af('/odds/live')) {
+    const f = L[o.fixture.id]; if (!f || NO_STS.includes(f.league.country)) continue;
+    const st = f.fixture.status.short, el = f.fixture.status.elapsed || 0; if (!['1H', '2H', 'HT'].includes(st)) continue;
+    const gh = f.goals.home, ga = f.goals.away; if (o.teams?.home?.goals != null && (o.teams.home.goals !== gh || o.teams.away.goals !== ga)) continue;
+    const lo = liveOdds(o, gh + ga); let extra = '';
+    if (el >= 35 && el <= 82) {
+      const pm = (await af(`/odds?fixture=${f.fixture.id}&bookmaker=8`))[0]?.bookmakers?.[0]?.bets?.find(b => b.id === 1)?.values || [];
+      const pv = n => pm.find(v => v.value === n)?.odd || '-';
+      const s = await af(`/fixtures/statistics?fixture=${f.fixture.id}`);
+      const stat = s.map(t => { const m = Object.fromEntries(t.statistics.map(x => [x.type, x.value])); return `${m['Total Shots'] ?? '-'}/${m['Shots on Goal'] ?? '-'}/${m['Corner Kicks'] ?? '-'} xg${m.expected_goals ?? '-'}`; }).join(' vs ');
+      const reds = f.events.filter(e => e.type === 'Card' && /Red/.test(e.detail)).map(e => 'RED ' + e.team.name).join(',');
+      extra = ` | przedmecz ${pv('Home')}/${pv('Draw')}/${pv('Away')} | ${stat || 'brak stat'} ${reds}`;
+    }
+    console.log(`${f.fixture.id} ${f.league.country}: ${f.league.name} | ${f.teams.home.name} ${gh}:${ga} ${f.teams.away.name} ${st} ${el}' | +gol ${lo.over ?? '-'} +2gole ${lo.over2 ?? '-'} | next 1=${lo.next['1'] ?? '-'} brak=${lo.next['No goal'] ?? '-'} 2=${lo.next['2'] ?? '-'} | 1X2 ${lo.ft.Home ?? '-'}/${lo.ft.Draw ?? '-'}/${lo.ft.Away ?? '-'}${extra}`);
+  }
+}
+
+async function bet(fid, market, stake, note) {
+  const s = load(), f = (await af(`/fixtures?id=${fid}`))[0], o = (await af(`/odds/live?fixture=${fid}`))[0];
+  if (!f || !o) throw new Error('brak meczu albo kursów na żywo');
+  const gh = f.goals.home, ga = f.goals.away, el = f.fixture.status.elapsed;
+  if (o.teams.home.goals !== gh || o.teams.away.goals !== ga) throw new Error('kursy nie pasują do wyniku — odrzucam');
+  const lo = liveOdds(o, gh + ga), [kind, side] = market.split(':');
+  const odd = +(kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
+  if (!odd) throw new Error('rynek zawieszony albo niedostępny');
+  stake = +stake; if (balance(s).free < stake) throw new Error('za mało wolnych środków');
+  const label = kind === 'over' ? `Kolejny gol w meczu (+${gh + ga}.5)` : kind === 'over2' ? `Jeszcze 2 gole (+${gh + ga + 1}.5)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
+  s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
+  save(s); await render(s); console.log(`ZAPISANO #${s.bets.length}: ${f.teams.home.name} ${gh}:${ga} ${f.teams.away.name} (${el}') · ${label} · kurs ${odd} · ${stake} zł · do wygrania ${zl(stake * TAX * odd)}`);
+}
+
+async function settle(s) {
+  const open = s.bets.filter(b => b.status === 'open'); if (!open.length) return [];
+  const fx = await af(`/fixtures?ids=${[...new Set(open.map(b => b.fid))].join('-')}`), changed = [];
+  for (const b of open) {
+    const f = fx.find(x => x.fixture.id === b.fid); if (!f) continue;
+    const st = f.fixture.status.short, fin = ['FT', 'AET', 'PEN'].includes(st), reg = ['AET', 'PEN'].includes(st) && f.score.fulltime.home != null ? f.score.fulltime : f.goals;
+    const h = reg.home, a = reg.away, tot0 = b.at[0] + b.at[1]; b.cur = [h, a]; b.curMin = fin ? 'koniec' : f.fixture.status.elapsed;
+    let res = null;
+    if (b.kind === 'over') res = h + a > tot0 ? true : fin ? false : null;
+    else if (b.kind === 'over2') res = h + a > tot0 + 1 ? true : fin ? false : null;
+    else if (b.kind === 'next') {
+      const dh = h - b.at[0], da = a - b.at[1];
+      if (dh > 0 && da === 0) res = b.side === 'home'; else if (da > 0 && dh === 0) res = b.side === 'away';
+      else if (dh > 0 && da > 0) { // oba strzeliły między odświeżeniami → kolejność z osi zdarzeń
+        const gl = f.events.filter(e => e.type === 'Goal' && !/Missed/.test(e.detail)), e = gl[tot0];
+        if (e) { let sd = e.team.id === f.teams.home.id ? 'home' : 'away'; res = b.side === sd; }
+      } else if (fin) res = false;
+    } else if (b.kind === 'win') res = fin ? (b.side === 'home' ? h > a : b.side === 'away' ? a > h : h === a) : null;
+    if (res !== null) { b.status = res ? 'won' : 'lost'; b.payout = res ? +(b.stake * TAX * b.odd).toFixed(2) : 0; b.end = now(); changed.push(b); }
+  }
+  save(s); return changed;
+}
+
+async function render(s) {
+  const bal = balance(s), done = s.bets.filter(b => b.status !== 'open'), won = done.filter(b => b.status === 'won').length;
+  const row = b => `<tr class="${b.status}"><td>${b.n}</td><td>${b.time}</td><td><b>${esc(b.home)} – ${esc(b.away)}</b><small>${esc(b.league)}</small></td><td><b>${esc(b.label)}</b><small>${esc(b.note)}</small></td>
+<td class="num">${b.at.join(':')}<small>${b.min}'</small></td><td class="num">${k2(b.odd)}</td><td class="num">${zl(b.stake)}</td><td class="num">${b.cur.join(':')}<small>${b.curMin}${typeof b.curMin === 'number' ? "'" : ''}</small></td>
+<td class="st">${b.status === 'open' ? 'GRA' : b.status === 'won' ? '✓ WYGRANY' : '✗ PRZEGRANY'}</td><td class="num pl">${b.status === 'open' ? `<small>do wygrania</small>${zl(b.stake * TAX * b.odd)}` : (b.payout - b.stake >= 0 ? '+' : '−') + zl(Math.abs(b.payout - b.stake))}</td></tr>`;
+  const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="30"><title>Portfel Claude</title>
+<style>
+:root{--bg:#001e28;--panel:#00141e;--lh:#0b2a36;--line:#0e3442;--text:#e6eef0;--dim:#8ba0a8;--red:#ff0046;--acc:#FF5A1F;--pos:#4ADE80;--warn:#FFB347}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Manrope,system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+.top{background:var(--panel);padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}.top h1{margin:0;font-size:18px}.top h1 b{color:var(--acc)}.top a{color:var(--dim);font-size:12px}.top .meta{color:var(--dim);font-size:12px}
+.wrap{max-width:1300px;margin:0 auto;padding:16px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.kpi div{background:var(--panel);border-radius:12px;padding:16px}.kpi small{display:block;color:var(--dim);font-size:11px;letter-spacing:.05em;text-transform:uppercase}.kpi b{font-size:28px}
+.up{color:var(--pos)}.down{color:var(--red)}
+.card{background:var(--panel);border-radius:12px;overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:900px}th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);padding:10px 12px;background:var(--lh);font-weight:600}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}td small{display:block;color:var(--dim);font-size:11px;font-weight:400}.num{white-space:nowrap}
+tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--pos);font-weight:800}tr.lost .st,tr.lost .pl{color:var(--red);font-weight:800}tr.lost td:not(.st):not(.pl){opacity:.6}
+.rules{color:var(--dim);font-size:12px;margin-top:14px;line-height:1.6}.rules b{color:var(--text)}.empty{padding:24px;color:var(--dim)}
+@media(max-width:800px){.kpi{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span><a href="index.html">← ściąga</a></div>
+<div class="wrap">
+<div class="kpi"><div><small>Pula teraz</small><b class="${bal.total > s.start ? 'up' : bal.total < s.start ? 'down' : ''}">${zl(bal.total)}</b></div><div><small>Wolne środki</small><b>${zl(bal.free)}</b></div><div><small>W grze</small><b>${zl(bal.open)}</b></div><div><small>Trafione</small><b>${won}/${done.length}</b></div></div>
+<div class="card">${s.bets.length ? `<table><tr><th>#</th><th>Godz.</th><th>Mecz</th><th>Zakład i powód</th><th>Wynik przy wejściu</th><th>Kurs</th><th>Stawka</th><th>Teraz</th><th>Status</th><th>Zysk</th></tr>${[...s.bets].reverse().map(row).join('')}</table>` : '<div class="empty">Jeszcze nic nie zagrałem. Czekam na okazję zgodną z regułami.</div>'}</div>
+<div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Jeden mecz = jeden zakład, stawka ok. 10% puli, bez AKO.<br>
+<b>Gram tylko trzy schematy:</b> 1) faworyt nie prowadzi po 45' → jego gol albo kolejny gol w meczu · 2) otwarty mecz, obie drużyny muszą → kolejny gol · 3) rywal w dziesiątkę. Kurs co najmniej 1,90.</div>
+</div></body></html>`;
+  writeFileSync(HF, html);
+}
+
+const [cmd, ...a] = process.argv.slice(2);
+if (cmd === 'scan') await scan();
+else if (cmd === 'bet') await bet(a[0], a[1], a[2], a[3] || '');
+else if (cmd === 'reset') { const s = { start: +(a[0] || 100), bets: [] }; save(s); await render(s); console.log('portfel wyzerowany:', zl(s.start)); }
+else if (cmd === 'watch') {
+  for (let i = 0; i < 240; i++) {
+    const s = load(), ch = await settle(s); await render(s); const bal = balance(s);
+    if (ch.length) { for (const b of ch) console.log(`ROZLICZONY #${b.n}: ${b.home} ${b.cur.join(':')} ${b.away} · ${b.label} · ${b.status === 'won' ? 'WYGRANY +' + zl(b.payout - b.stake) : 'PRZEGRANY −' + zl(b.stake)}`); console.log(`PULA: ${zl(bal.total)} (wolne ${zl(bal.free)}, w grze ${zl(bal.open)})`); process.exit(0); }
+    if (!s.bets.some(b => b.status === 'open')) { console.log('brak otwartych zakładów · PULA: ' + zl(bal.total)); process.exit(0); }
+    await new Promise(r => setTimeout(r, 60_000));
+  }
+} else { const s = load(); await settle(s); await render(s); const bal = balance(s); console.log(`PULA ${zl(bal.total)} · wolne ${zl(bal.free)} · w grze ${zl(bal.open)} · zakładów ${s.bets.length}`); }
