@@ -168,7 +168,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
-<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
+<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
 <aside class="side"><h3>👉 POSTAW NA — podpowiedzi na żywo</h3><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
