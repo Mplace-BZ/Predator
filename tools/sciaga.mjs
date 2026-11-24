@@ -28,7 +28,7 @@ async function weather(city, iso) {
 
 // 1. Mecze dnia
 const fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
-  .filter(f => LEAGUES[f.league.id] && ['NS', 'TBD'].includes(f.fixture.status.short))
+  .filter(f => LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
   .sort((a, b) => a.fixture.date.localeCompare(b.fixture.date));
 
 // 2. Tabele
@@ -79,7 +79,7 @@ for (const f of fx) {
     tier = 'szansa';
     plan = '0:0 lub 1:1 po 55\' → padnie gol (~1,9)';
   }
-  rows.push({ time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
+  rows.push({ fid: f.fixture.id, time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
 }
 
 // 4. HTML — wygląd w stylu listy wyników (ligi z flagami, wiersz = mecz), filtr koszyków na górze
@@ -95,10 +95,11 @@ const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
 const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span>${t ? `<span class="pos" title="Miejsce w tabeli">${t.rank}.</span>` : ''}${m ? `<span class="musi ${/MUSI/.test(m) ? '' : 'soft'}">${/MUSI/.test(m) ? 'MUSI' : 'TOP 8'}</span>` : ''}</div>`;
-const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}">
+const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}">
 <button class="star" aria-label="Ulubiony">☆</button>
-<div class="time">${r.time}</div>
+<div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
+<div class="sc"><b>–</b><b>–</b></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli w ich meczach">${f1(r.avgGoals)}<small>gole Ø</small></div>
 <div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
 <div class="wx">${wxs(r.wx)}</div>
@@ -121,7 +122,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
 .lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}
-.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 24px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
@@ -136,11 +137,16 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
-@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx{display:none}.plan{grid-column:2/5;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
+.sc{display:flex;flex-direction:column;text-align:center;font-weight:800;font-size:15px;color:var(--dim)}.sc b{height:24px;line-height:24px}
+.live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
+.rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
+.m.goal{background:color-mix(in srgb,var(--red) 22%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
+.livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
+@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 22px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
-<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
+<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
 <div class="pills">
 <button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
@@ -151,6 +157,28 @@ ${groups.map(league).join('')}
 <footer>Kursy przedmeczowe — na żywo sprawdzaj w STS. MUSI = drużyna w Lidze Mistrzów walczy o top 24, TOP 8 = walczy o 1/8. Odśwież: w czacie „odśwież ściągę”.</footer>
 </div>
 <script>
+// Na żywo: co 30 s pobiera wyniki, minutę i czerwone kartki (api-football, 1-2 zapytania na odświeżenie)
+const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
+async function live(){
+  try{
+    const out=[];for(let i=0;i<FIDS.length;i+=20){const j=await (await fetch('${B}/fixtures?ids='+FIDS.slice(i,i+20).join('-'),{headers:{'x-apisports-key':KEY}})).json();out.push(...(j.response||[]));}
+    let nLive=0,goals=[];
+    for(const f of out){const m=document.querySelector('.m[data-fid="'+f.fixture.id+'"]');if(!m)continue;
+      const st=f.fixture.status.short,el=f.fixture.status.elapsed,ex=f.fixture.status.extra;
+      const isLive=['1H','2H','ET','P','LIVE','BT'].includes(st)||st==='HT',isFin=['FT','AET','PEN'].includes(st);
+      m.classList.toggle('live',isLive);m.classList.toggle('fin',isFin);if(isLive)nLive++;
+      const t=m.querySelector('.time');t.textContent=st==='HT'?'Przerwa':isLive?(el+(ex?'+'+ex:'')+"'"):isFin?'Koniec':t.dataset.t;
+      if(f.goals.home!=null){const sc=m.querySelectorAll('.sc b');sc[0].textContent=f.goals.home;sc[1].textContent=f.goals.away;}
+      const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);}
+      prev[f.fixture.id]=key;
+      const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
+      m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('afterend','<span class="rc" title="Czerwona kartka"></span>');});
+    }
+    document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
+    if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
+  }catch(e){document.getElementById('lb').textContent='● na żywo: brak połączenia, ponawiam';}
+}
+live();setInterval(live,30000);
 const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]'));
 const rows=[...document.querySelectorAll('.m')];
 rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★';
