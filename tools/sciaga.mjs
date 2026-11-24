@@ -194,7 +194,7 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
-.ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{white-space:nowrap}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
+.ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{display:flex;gap:4px}.lvr u{flex:1;text-align:center}.lvr u:last-child{margin-left:8px}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
 .lvc{display:flex;align-items:center;gap:5px;margin-top:3px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
 .cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;padding:0;color:#fff;opacity:.85;display:inline-flex}.ccb:hover{opacity:1}
 .tb{background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer}
@@ -319,9 +319,9 @@ async function live(){
         // 1. Nacisk: w 5 min celny + 2 strzały albo 3 rożne
         // Kursy na żywo w kafelkach: 1 · X · 2 i „+gol” = kolejny gol w meczu (Over aktualna liczba goli + 0,5)
         const OD=JSON.parse(localStorage.getItem('sciaga_odds')||'{}')[id],nextLine=(gh+ga+0.5).toFixed(1);let goOdd=null;
-        if(OD){const sp=[],v=(arr,val,hc)=>{const x=arr.find(y=>y.value===val&&(hc==null||+y.handicap===+hc));return x&&!x.suspended?(+x.odd).toFixed(2).replace('.',','):'🔒';};
+        if(OD){const sp=[],v=(arr,val,hc)=>{const x=arr.find(y=>y.value===val&&(hc==null||+y.handicap===+hc));return x&&!x.suspended?(+x.odd).toFixed(2).replace('.',','):'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-1px;opacity:.6"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';};
           const go=OD.mg.find(y=>y.value==='Over'&&+y.handicap===+nextLine);goOdd=go&&!go.suspended?+go.odd:null;
-          const L=[v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)],lv=m.querySelector('.lvo');lv.classList.remove('hide');lv.querySelector('.lvr').innerHTML='<b>TERAZ</b> 1 <u>'+L[0]+'</u> X <u>'+L[1]+'</u> 2 <u>'+L[2]+'</u> · +gol <u>'+L[3]+'</u>';m.dataset.go=goOdd||'';m.dataset.el=el;miniCalc(m);
+          const L=[v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)],lv=m.querySelector('.lvo');lv.classList.remove('hide');lv.querySelector('.lvr').innerHTML=L.map(x=>'<u>'+x+'</u>').join('');m.dataset.go=goOdd||'';m.dataset.el=el;miniCalc(m);
           }
         // Uczciwy kurs: szansa gola w pozostałym czasie z Poissona (średnia goli drużyn × pozostałe minuty, presja jako waga)
         const R=Math.max(2,93-el),avgG=+m.dataset.g||2.6,lamT=avgG*R/90;
