@@ -38,7 +38,10 @@ let fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
   .filter(f => LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
   ;
 // --plus=id,id → dodatkowe mecze spoza listy lig (np. test na żywo)
+// Kraje, których STS (Polska) nie oferuje
+const NO_STS = ['Russia', 'Belarus', 'Iran'];
 if (PLUS.length) for (const f of (await af(`/fixtures?ids=${PLUS.join('-')}&timezone=Europe/Warsaw`)).response || []) {
+  if (NO_STS.includes(f.league.country)) continue;
   LEAGUES[f.league.id] ||= [null, (f.league.country === 'World' ? 'ŚWIAT' : f.league.country).toUpperCase(), f.league.name];
   if (!fx.some(x => x.fixture.id === f.fixture.id)) fx.push(f);
 }
