@@ -201,7 +201,7 @@ const TAGS={'🔥':['','🔥 GRAJ TERAZ'],'🟢':['k-szansa','🟢 OKAZJA'],'�
 function drawHints(){if(!hints.length)return;const age=h=>Date.now()-h.ts;document.querySelector('.side').classList.toggle('hot',hints.some(h=>age(h)<180000));
 document.getElementById('hl').innerHTML=hints.map(h=>{const t=TAGS[h.icon]||TAGS['🔥'];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+' · 10-20 zł · kurs ok. 1,9</div></div>'}).join('');}
 setInterval(drawHints,15000);
-function toast(h){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),90000);}
+function toast(h,ms=90000){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),ms);}
 function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
 drawHints();
 const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
@@ -230,10 +230,10 @@ async function live(){
         sides.forEach((sd,i)=>{const [a,b]=sr[i].querySelectorAll('i'),t=sr[i].querySelector('b');t.textContent=f.goals[sd];t.classList.toggle('last',last===sd);
           a.textContent=ht[sd]??'';b.textContent=ht[sd]!=null&&!['1H','HT'].includes(st)?f.goals[sd]-ht[sd]:'';});
       }
-      const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);
+      const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),10000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);
         // Gol w meczu oznaczonym na zielono (śledzę) albo czerwono (obstawiłem): sygnał + pasek
         const mine=m.querySelector('.dot.r')?'💰':m.querySelector('.dot.g')?'⚽':'';
-        if(mine){const g=(f.events||[]).filter(e=>e.type==='Goal').pop();beep();toast({icon:mine,act:'GOL'+(g?' '+g.team.name:'')+' — '+key,match:f.teams.home.name+' '+key+' '+f.teams.away.name+' ('+el+"')",why:mine==='💰'?'Twój zakład':'śledzony mecz'});}}
+        if(mine){const g=(f.events||[]).filter(e=>e.type==='Goal').pop();beep();toast({icon:mine,act:'GOL'+(g?' '+g.team.name:'')+' — '+key,match:f.teams.home.name+' '+key+' '+f.teams.away.name+' ('+el+"')",why:mine==='💰'?'Twój zakład':'śledzony mecz'},10000);}}
       prev[f.fixture.id]=key;
       if(isLive&&st!=='HT'&&el){
         const gh=f.goals.home,ga=f.goals.away,H=f.teams.home.name,A=f.teams.away.name,label=H+' '+gh+':'+ga+' '+A+' ('+el+"')",id=f.fixture.id,tier=m.dataset.tier;
@@ -276,7 +276,7 @@ h.addEventListener('pointerup',()=>{if(d){d=null;localStorage.setItem(PK,JSON.st
 live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,15000);
 // Symulacja gola (otwórz stronę z #gol na końcu adresu): pierwszy mecz w grze, +1 dla gospodarzy
 function simGol(){const m=document.querySelector('.m.live')||document.querySelector('.m');const sr=m.querySelectorAll('.sr');const b=sr[0].querySelector('b');b.textContent=(+b.textContent||0)+1;
-sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);
+sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),10000);
 document.title='⚽ GOL! '+m.dataset.h+' '+b.textContent+':'+sr[1].querySelector('b').textContent+' '+m.dataset.a+' (symulacja)';m.scrollIntoView({block:'center'});}
 const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]'));
 const rows=[...document.querySelectorAll('.m')];
