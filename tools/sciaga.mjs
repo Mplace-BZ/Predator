@@ -166,7 +166,7 @@ footer{padding-bottom:45vh}}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
 .dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}
-.gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
+.gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.na{opacity:.3}.gg.na .nd{display:none}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
 .m.fv{opacity:1!important;background:color-mix(in srgb,#fff 4%,var(--panel))}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
@@ -243,8 +243,8 @@ async function live(){
           return (f.events||[]).filter(e=>e.type==='Goal'&&e.team.id===tm.id&&e.time.elapsed>=el-15).length*3;});
         // Zegar presji: -90° = gospodarze 100%, 0° = równo, +90° = goście 100%
         const tot=pres[0]+pres[1],v=tot?(pres[1]-pres[0])/tot:0,gg=m.querySelector('.gg');
-        gg.querySelector('.nd').style.transform='rotate('+Math.round(v*90)+'deg)';gg.classList.toggle('on',tot>0);gg.classList.toggle('hot',tot>=4&&Math.abs(v)>=0.4);
-        gg.title='Presja (10 min): '+H+' '+pres[0]+' · '+A+' '+pres[1]+' (strzały + 2×celne + rożne)';
+        gg.querySelector('.nd').style.transform='rotate('+Math.round(v*90)+'deg)';gg.classList.toggle('on',tot>0);const na=!(f.statistics||[]).length;gg.classList.toggle('na',na);gg.classList.toggle('hot',tot>=4&&Math.abs(v)>=0.4);
+        gg.title=na?'Brak statystyk w API dla tego meczu — wskazówka tylko z ostatnich goli':'Presja (10 min): '+H+' '+pres[0]+' · '+A+' '+pres[1]+' (strzały + 2×celne + rożne)';
         // 2. MUSI, a nie wygrywa po 60'
         const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if(home?gh<=ga:ga<=gh)hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
         // 3. Ryzyko: faworyt z wyjazdu prowadzi → gol gospodarza
