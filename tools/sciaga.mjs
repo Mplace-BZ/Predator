@@ -9,7 +9,7 @@ const DATE = ARGS.find(a => /^\d{4}-\d\d-\d\d$/.test(a)) || new Date().toLocaleD
 const LEAGUES = { 2: ['eu', 'EUROPA', 'Liga Mistrzów'], 135: ['it', 'WŁOCHY', 'Serie A'], 136: ['it', 'WŁOCHY', 'Serie B'], 40: ['gb-eng', 'ANGLIA', 'Championship'], 39: ['gb-eng', 'ANGLIA', 'Premier League'], 41: ['gb-eng', 'ANGLIA', 'League One'], 179: ['gb-sct', 'SZKOCJA', 'Premiership'], 3: ['eu', 'EUROPA', 'Liga Europy'], 848: ['eu', 'EUROPA', 'Liga Konferencji'] };
 let last = 0;
 const CF = new URL('./.sciaga-cache.json', import.meta.url), cache = existsSync(CF) ? JSON.parse(readFileSync(CF, 'utf8')) : {};
-const TTL = p => /^\/(standings|predictions|odds|injuries|fixtures\?team)/.test(p) ? 6 * 3600e3 : /^\/fixtures\?date/.test(p) ? 5 * 60e3 : 0;
+const TTL = p => /^\/(standings|predictions|odds|injuries|fixtures\?team|fixtures\/headtohead)/.test(p) ? 6 * 3600e3 : /^\/fixtures\?date/.test(p) ? 5 * 60e3 : 0;
 async function af(p) {
   const ttl = TTL(p), c = cache[p]; if (ttl && c && Date.now() - c.ts < ttl) return c.j;
   const w = last + 400 - Date.now(); if (w > 0) await new Promise(r => setTimeout(r, w)); last = Date.now();
@@ -75,6 +75,10 @@ for (const f of fx) {
   const o1 = num(bet(1).find(v => v.value === 'Home')?.odd), ox = num(bet(1).find(v => v.value === 'Draw')?.odd), o2 = num(bet(1).find(v => v.value === 'Away')?.odd);
   const ou = num(bet(5).find(v => v.value === 'Over 2.5')?.odd), btts = num(bet(8).find(v => v.value === 'Yes')?.odd);
   const hl = pr?.teams.home.league, al = pr?.teams.away.league;
+  const gfH = num(hl?.goals?.for?.average?.total), gfA = num(al?.goals?.for?.average?.total);
+  // H2H: ostatnie 5 meczów między nimi (bilans gospodarza i średnia goli)
+  const hh = ((await af(`/fixtures/headtohead?h2h=${f.teams.home.id}-${f.teams.away.id}&last=5`)).response || []).filter(x => x.goals.home != null);
+  const h2h = hh.length ? (() => { let w = 0, d = 0, l = 0, g = 0; for (const x of hh) { const my = x.teams.home.id === f.teams.home.id ? x.goals.home : x.goals.away, th = x.teams.home.id === f.teams.home.id ? x.goals.away : x.goals.home; g += my + th; my > th ? w++ : my < th ? l++ : d++; } return { w, d, l, n: hh.length, avg: g / hh.length }; })() : null;
   const hGF = num(hl?.goals.for.average.home), hGA = num(hl?.goals.against.average.home), aGF = num(al?.goals.for.average.away), aGA = num(al?.goals.against.average.away);
   const avgGoals = [hGF, hGA, aGF, aGA].every(x => x != null) ? (hGF + aGA + aGF + hGA) / 2 : null;
   const tH = table[`${f.league.id}|${H.id}`], tA = table[`${f.league.id}|${A.id}`];
@@ -103,7 +107,7 @@ for (const f of fx) {
     tier = 'szansa';
     plan = '0:0 lub 1:1 po 55\' → padnie gol (~1,9)';
   }
-  rows.push({ rH, rA, iH: injOf(H), iA: injOf(A), fid: f.fixture.id, time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
+  rows.push({ gfH, gfA, h2h, rH, rA, iH: injOf(H), iA: injOf(A), fid: f.fixture.id, time: f.fixture.date.slice(11, 16), lid: f.league.id, flag, country, lname, H: H.name, A: A.name, hLogo: H.logo, aLogo: A.logo, tH, tA, mH, mA, avgGoals, o1, ox, o2, ou, btts, wx, tier, plan });
 }
 
 // 4. HTML — wygląd w stylu listy wyników (ligi z flagami, wiersz = mecz), filtr koszyków na górze
@@ -129,7 +133,7 @@ for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) group
 const zone = t => { if (!t) return ''; const d = t.desc.toLowerCase(); return /relegation/.test(d) ? 'SPADEK' : t.rank === 1 && !/champions league|knockout|round of 16/.test(d) ? 'LIDER' : ''; };
 const formH = t => t && t.form ? `<span class="fm" title="Forma: ostatnie 5 meczów (od najstarszego)">${[...t.form.slice(-5)].map(c => `<i class="${c}"></i>`).join('')}</span>` : '';
 const team = (name, logo, t, m, rot, inj) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"${inj && inj.length ? ` title="Nie zagrają (${inj.length}): ${esc(inj.join(', '))}"` : ''}><span class="nm">${esc(name)}</span>${formH(t)}${zone(t) ? `<span class="zn">${zone(t)}</span>` : ''}${rot ? `<span class="zn rot" title="${esc(rot)} — możliwa rotacja składu">ROTACJA?</span>` : ''}</span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="1 klik = interesuje mnie (pomarańczowy), 2 = śledzę (zielony), 3 = obstawiłem (czerwony), 4 = wyłącz"></button></div>`;
-const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-g="${r.avgGoals ?? ''}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
+const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-g="${r.avgGoals ?? ''}" data-gfh="${r.gfH ?? ''}" data-gfa="${r.gfA ?? ''}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH, r.rH, r.iH)}${team(r.A, r.aLogo, r.tA, r.mA, r.rA, r.iA)}<button class="dot dm" title="Gol w meczu (dowolna drużyna): 1 klik = interesuje, 2 = śledzę, 3 = obstawiłem, 4 = wyłącz"></button></div>
@@ -138,7 +142,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
 <div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
 <div class="wx">${wxs(r.wx)}</div>
-<div class="plan">${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
+<div class="plan">${r.h2h ? `<span class="h2" title="Ostatnie ${r.h2h.n} meczów między nimi: bilans ${esc(r.H)} (wygrane-remisy-porażki) i średnia goli">H2H ${r.h2h.w}-${r.h2h.d}-${r.h2h.l} · Ø ${r.h2h.avg.toFixed(1).replace('.', ',')} gola</span>` : ''}${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
 </div>`;
 const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span></div>${g.rs.map(row).join('')}</section>`;
 
@@ -190,6 +194,7 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.h2{font-size:10px;color:var(--dim);letter-spacing:.02em}
 .dep{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);background:#0d2f3c;border-radius:8px;padding:4px 10px}.dep input{width:70px;background:transparent;border:0;border-bottom:1px solid #2c4f5c;color:#fff;font:800 15px/1.2 inherit;text-align:right;outline:none}
 .fm{display:inline-flex;gap:2px;margin-left:8px;vertical-align:middle}.fm i{width:5px;height:5px;border-radius:1px;background:#3a5a66}.fm i.W{background:var(--pos)}.fm i.L{background:var(--red)}.fm i.D{background:#8ba0a8}
 .zn{margin-left:6px;font-size:9px;font-weight:800;letter-spacing:.05em;color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:4px;padding:0 4px}.zn.rot{color:var(--dim);border-color:#2c4f5c}
@@ -238,7 +243,8 @@ function drawHints(){const live=hints.filter(h=>Date.now()-h.ts<1200000);if(!liv
 document.getElementById('hl').innerHTML=live.map(h=>{const t=TAGS[lvlOf(h)];return '<div class="hint '+t[0]+(age(h)<180000?' new':age(h)>900000?' old':'')+'"><div class="ht"><span class="tag">'+t[1]+'</span><span class="hc">'+(h.res===true?'<b class="rs ok">✓ TRAFIONA</b> ':h.res===false?'<b class="rs ko">✗ PUDŁO</b> ':'')+h.clock+'</span></div><div class="ha">'+h.act+'</div><div class="hw">'+h.match+'</div><div class="hw">'+h.why+'</div><div class="hm">'+h.lg+'</div><div class="hk">'+(h.fair?'graj od kursu <b>'+h.fair+'</b>'+(h.now?' · teraz '+h.now:''):'sprawdź kurs')+' · <b class="stk">'+stake(h)+'</b><span class="vt"><button class="vu'+(h.vote===1?' on':'')+'" data-hid="'+h.id+'" data-v="1" title="Dobra podpowiedź — zarobiliśmy"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 3 2l-1 5h6a2 2 0 0 1 2 2.3l-1.4 6.5A2 2 0 0 1 17.6 20H7"/></svg></button><button class="vd'+(h.vote===-1?' on':'')+'" data-hid="'+h.id+'" data-v="-1" title="Zła podpowiedź — straciliśmy"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 3 2l-1 5h6a2 2 0 0 1 2 2.3l-1.4 6.5A2 2 0 0 1 17.6 20H7"/></svg></button></span></div></div>'}).join('');}
 setInterval(drawHints,15000);
 function toast(h,ms=90000){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast';d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),ms);}
-function hint(id,icon,act,why,m,label,fair,now,lvl){lvl=lvl||(fair&&now?(now/fair-1>=0.15?'g':'y'):icon==='🎲'?'r':'y');if(fired.has(id))return;if(fair&&now&&now<fair*0.95)return;fired.add(id);const sc0=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0),side=/^Gol /.test(act)?(act.slice(4)===m.dataset.a?1:0):'m';hints.unshift({lvl,fid:m.dataset.fid,side,sc0,id,icon,act,why,fair:fair?fair.toFixed(2).replace('.',','):'',now:now?now.toFixed(2).replace('.',','):'',match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
+function hint(id,icon,act,why,m,label,fair,now,lvl){
+  if(/^Gol /.test(act)){const nm=act.slice(4),gf=+(nm===m.dataset.a?m.dataset.gfa:m.dataset.gfh);if(gf&&gf<1.0){why+=' · ale '+nm+' strzela tylko '+gf.toFixed(1).replace('.',',')+' gola/mecz';act='Padnie gol w meczu';id+='w';lvl=lvl==='g'?'y':lvl;const el0=parseInt(m.querySelector('.time').textContent)||60,lam=(+m.dataset.g||2.6)*Math.max(2,93-el0)/90;fair=1/(1-Math.exp(-lam));}}lvl=lvl||(fair&&now?(now/fair-1>=0.15?'g':'y'):icon==='🎲'?'r':'y');if(fired.has(id))return;if(fair&&now&&now<fair*0.95)return;fired.add(id);const sc0=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0),side=/^Gol /.test(act)?(act.slice(4)===m.dataset.a?1:0):'m';hints.unshift({lvl,fid:m.dataset.fid,side,sc0,id,icon,act,why,fair:fair?fair.toFixed(2).replace('.',','):'',now:now?now.toFixed(2).replace('.',','):'',match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();toast(hints[0]);document.querySelector('.side').classList.remove('min');document.title='👉 '+act;}
 (()=>{const seed=${existsSync(new URL('../sciaga/oceny.json', import.meta.url)) ? readFileSync(new URL('../sciaga/oceny.json', import.meta.url), 'utf8') : '[]'};const log=JSON.parse(localStorage.getItem('sciaga_hintauto')||'[]');seed.forEach(x=>{if(!log.some(y=>y.id===x.id))log.push(x);});localStorage.setItem('sciaga_hintauto',JSON.stringify(log));})();
 function hintResolve(f){let ch=0;const log=JSON.parse(localStorage.getItem('sciaga_hintauto')||'[]');
   for(const h of hints)if(h.fid==f.fixture.id&&h.res==null&&h.sc0){const fin=[f.goals.home,f.goals.away];h.res=h.side==='m'?(fin[0]+fin[1]>h.sc0[0]+h.sc0[1]):(fin[h.side]>h.sc0[h.side]);ch=1;
