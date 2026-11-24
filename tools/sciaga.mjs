@@ -165,12 +165,12 @@ footer{padding-bottom:45vh}}
 .m.fv{opacity:1!important;background:#0a3040}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}.m.fv .odds span,.m.fv .pos,.m.fv .sr b.last{background:#14495c}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
 .sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
-.sr b.last{background:#163d4b;color:#fff}.sc.hd::before{content:'1p 2p';font-size:9px;color:var(--dim);text-align:right;padding-right:28px;margin-top:-12px;height:12px;letter-spacing:.04em}
+.sr b.last{background:#163d4b;color:#fff}.time small{display:block;font-size:10px;font-weight:600;color:var(--warn);margin-top:2px;white-space:nowrap}
 .live .time{color:var(--red)}.live .sc{color:var(--red)}.fin .sc{color:var(--text)}.fin .time{font-size:12px}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
 .m.goal{opacity:1!important;background:color-mix(in srgb,var(--red) 38%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
-@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i,.sc.hd::before{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
+@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
@@ -208,6 +208,11 @@ async function live(){
       const isLive=['1H','2H','ET','P','LIVE','BT'].includes(st)||st==='HT',isFin=['FT','AET','PEN'].includes(st);
       m.classList.toggle('live',isLive);m.classList.toggle('fin',isFin);if(isLive)nLive++;
       const t=m.querySelector('.time');t.textContent=st==='HT'?'Przerwa':isLive?(el+(ex?'+'+ex:'')+"'"):isFin?'Koniec':t.dataset.t;
+      // Szacunek doliczonego czasu (metoda Chrisa): zmiany w tej samej minucie = 1 okno × 30 s; gol 45 s, VAR 60 s, czerwona 30 s
+      if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
+        const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
+        const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60));
+        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">dolicz. ~'+mins+"'</small>");}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
