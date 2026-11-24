@@ -73,8 +73,15 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - 23:15, 55. minuta, nadal 2:0. Obserwacja: po przerwie Palmeiras przez 10 minut nie oddał żadnego strzału (dalej 12, jak w przerwie), a Chapecoense dołożyła strzał celny i 2 rożne. **Lekcja: 12 strzałów w 1. połowie nie znaczy, że nacisk wróci po przerwie. Przed zakładem na goniącego czekać 5–10 minut i sprawdzić, czy faktycznie strzela.**
 - 23:21, ok. 62. minuta, 2:0. **Typ Chrisa do sprawdzenia:** Chapecoense strzeli trzeciego gola z kontry, bo Palmeiras musi się odkryć (kurs na „następny gol: Chapecoense” ok. 3,25). Historia ogólna jest po jego stronie: gospodarz prowadzący 2:0 strzela następnego gola w 53% meczów, goniący gość tylko w 30%.
 - 23:28, 68. minuta, 2:0. **Największa lekcja wieczoru:** Palmeiras gra za 4 dni (2026-11-28) finał Copa Libertadores z Estudiantes, a 2026-12-06 finał Pucharu Brazylii. Nie sprawdziłem tego przed zakładem, choć Chris wymienił „ważny mecz za kilka dni” jako punkt z listy. Stąd dominacja bez strzałów celnych (16 strzałów, 2 celne). **Od teraz portfel sam odrzuca zakład, gdy któraś drużyna ma puchar albo finał w ciągu 5 dni.**
+- Sprawdzone po fakcie w składach: **Palmeiras wystawił 0 z 11 podstawowych zawodników** (żaden z wyjściowej jedenastki nie zaczynał nawet 3 z ostatnich 5 meczów ligowych). Chapecoense 8 z 11. Faworyt z tabeli nie był tego dnia faworytem na boisku. **Portfel odrzuca teraz zakład, gdy drużyna ma mniej niż 6 podstawowych w wyjściowej jedenastce.**
 - Granica Chrisa do sprawdzenia: goniący faworyt musi strzelić do 75. minuty, inaczej nie zdąży z drugim golem.
 - Wynik dopiszę po meczu.
+
+## 6. Źródła danych
+
+- **api-football (mamy, plan Ultra):** wyniki i statystyki na żywo, kursy na żywo, wyjściowe składy (ok. 40 minut przed meczem), kontuzje, najbliższe mecze drużyny, H2H, tabela.
+- **AiScore (Chris ogląda ręcznie):** ataki i groźne ataki, pasek przebiegu meczu. Tego w naszym źródle nie ma.
+- **FootyStats (29,99 funta miesięcznie, nie mamy):** średnie sezonowe xG i groźnych ataków, historia meczów z kursami i minutami goli. Nie ma danych na żywo (wyniki co 20 minut), kontuzji ani najbliższych meczów drużyny. Przydatne tylko do jednorazowego sprawdzenia zasady nr 1 na historii.
 
 ## 6. Do sprawdzenia
 

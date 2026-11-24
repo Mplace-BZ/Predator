@@ -4,7 +4,8 @@
 //   node tools/portfel.mjs scan                      → kandydaci na żywo (kursy, faworyt przedmeczowy, statystyki)
 //   node tools/portfel.mjs bet <fixtureId> <rynek> <stawka> "<dlaczego>"
 //        rynki: over (kolejny gol w meczu) · over2 (jeszcze 2 gole) · tg:home|away:1.5 (gole drużyny powyżej) · dc:1x|x2|12 (podwójna szansa) · next:home|away (kto strzeli następny) · win:home|draw|away
-//   node tools/portfel.mjs watch                     → co 60 s rozlicza i odświeża sciaga/portfel.html; kończy się przy zmianie
+//   node tools/portfel.mjs sklad <fixtureId>   // ilu podstawowych w wyjściowej 11
+//        node tools/portfel.mjs watch                     → co 60 s rozlicza i odświeża sciaga/portfel.html; kończy się przy zmianie
 //   node tools/portfel.mjs reset [kwota]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io', TAX = 0.88;
@@ -47,11 +48,23 @@ async function scan() {
   }
 }
 
+// Skład: ilu zawodników z wyjściowej 11 zaczynało co najmniej połowę z ostatnich 5 meczów tych rozgrywek (lekcja 2026-11-24: Palmeiras 0/11 przed finałem Copa Libertadores)
+async function sklad(f) {
+  const out = [];
+  for (const t of await af(`/fixtures/lineups?fixture=${f.fixture.id}`)) {
+    const last = (await af(`/fixtures?team=${t.team.id}&last=8`)).filter(x => x.fixture.id !== f.fixture.id && x.league.id === f.league.id).slice(0, 5), cnt = {}; let n = 0;
+    for (const x of last) { const l = (await af(`/fixtures/lineups?fixture=${x.fixture.id}`)).find(y => y.team.id === t.team.id); if (!l) continue; n++; for (const p of l.startXI) cnt[p.player.id] = (cnt[p.player.id] || 0) + 1; }
+    if (n >= 3) out.push({ name: t.team.name, reg: t.startXI.filter(p => (cnt[p.player.id] || 0) >= Math.ceil(n / 2)).length, n });
+  }
+  return out;
+}
 async function bet(fid, market, stake, note) {
   const s = load(), f = (await af(`/fixtures?id=${fid}`))[0], o = (await af(`/odds/live?fixture=${fid}`))[0];
   if (!f || !o) throw new Error('brak meczu albo kursów na żywo');
   const gh = f.goals.home, ga = f.goals.away, el = f.fixture.status.elapsed;
   if (o.teams.home.goals !== gh || o.teams.away.goals !== ga) throw new Error('kursy nie pasują do wyniku — odrzucam');
+  // Bramka „rezerwowy skład”: mniej niż 6 podstawowych w wyjściowej 11 → odrzucam (chyba że --mimo)
+  const xi = await sklad(f); for (const t of xi) { const msg = `SKŁAD: ${t.name} — ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`; console.log(msg); if (t.reg < 6 && !process.argv.includes('--mimo')) throw new Error(msg + ' — rezerwowy skład. Dodaj --mimo, żeby zagrać mimo to.'); }
   // Bramka „ważny mecz za kilka dni” (lekcja 2026-11-24: Palmeiras 4 dni przed finałem Copa Libertadores): bez --mimo zakład jest odrzucany
   for (const t of [f.teams.home, f.teams.away]) for (const x of await af(`/fixtures?team=${t.id}&next=2`)) {
     const days = (new Date(x.fixture.date) - Date.now()) / 864e5, big = /libertadores|sudamericana|champions|europa|conference|cup|copa|coppa|pokal|puchar|final/i.test(x.league.name + ' ' + (x.league.round || ''));
@@ -63,7 +76,7 @@ async function bet(fid, market, stake, note) {
   stake = +stake; if (balance(s).free < stake) throw new Error('za mało wolnych środków');
   const tn = side === 'home' ? f.teams.home.name : f.teams.away.name;
   const label = kind === 'tg' ? `${tn}: powyżej ${String(line).replace('.', ',')} gola w meczu` : kind === 'dc' ? `Podwójna szansa: ${side === '1x' ? f.teams.home.name + ' lub remis' : side === 'x2' ? f.teams.away.name + ' lub remis' : 'nie będzie remisu'}` : kind === 'over' ? `Kolejny gol w meczu (+${gh + ga}.5)` : kind === 'over2' ? `Jeszcze 2 gole (+${gh + ga + 1}.5)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
-  s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', line: line ? +line : undefined, label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
+  s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', line: line ? +line : undefined, xi: xi.map(t => `${t.name} ${t.reg}/11`).join(' · '), label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
   save(s); await render(s); console.log(`ZAPISANO #${s.bets.length}: ${f.teams.home.name} ${gh}:${ga} ${f.teams.away.name} (${el}') · ${label} · kurs ${odd} · ${stake} zł · do wygrania ${zl(stake * TAX * odd)}`);
 }
 
@@ -125,6 +138,7 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
 
 const [cmd, ...a] = process.argv.slice(2);
 if (cmd === 'scan') await scan();
+else if (cmd === 'sklad') { const f = (await af(`/fixtures?id=${a[0]}`))[0]; for (const t of await sklad(f)) console.log(`${t.name}: ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`); }
 else if (cmd === 'bet') await bet(a[0], a[1], a[2], a[3] || '');
 else if (cmd === 'reset') { const s = { start: +(a[0] || 100), bets: [] }; save(s); await render(s); console.log('portfel wyzerowany:', zl(s.start)); }
 else if (cmd === 'watch') {
