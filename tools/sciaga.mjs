@@ -101,7 +101,7 @@ const cnt = k => rows.filter(r => r.tier === k).length;
 const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
-const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"><span class="nm">${esc(name)}</span></span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
+const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn"><span class="nm">${esc(name)}</span></span><span class="pos" title="Miejsce w tabeli">${t ? t.rank : ''}</span><span class="musi ${m && !/MUSI/.test(m) ? 'soft' : ''}">${m ? (/MUSI/.test(m) ? 'MUSI' : 'TOP 8') : ''}</span><button class="dot" title="1 klik = interesuje mnie (pomarańczowy), 2 = śledzę (zielony), 3 = obstawiłem (czerwony), 4 = wyłącz"></button></div>`;
 const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
@@ -164,8 +164,8 @@ footer{padding-bottom:45vh}}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
-.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}
-.team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}
+.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
+.team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}.team:has(.dot.r) .tn{color:var(--red)}
 .gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.na{opacity:.45;position:relative}.gg.na::after{content:'?';position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
 .m.fv{opacity:1!important;background:color-mix(in srgb,#fff 4%,var(--panel))}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}
@@ -187,7 +187,7 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 <div class="pills">
 <button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
 ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${TIER[k][1]}<small>${cnt(k)}</small></button>`).join('')}
-<button data-f="fav">☆ ULUBIONE</button>
+<button data-f="fav">☆ ULUBIONE</button><button data-f="moje">💰 MOJE ZAKŁADY</button>
 </div>
 ${groups.map(league).join('')}
 <footer>Kursy przedmeczowe — na żywo sprawdzaj w STS. MUSI = drużyna w Lidze Mistrzów walczy o top 24, TOP 8 = walczy o 1/8. Odśwież: w czacie „odśwież ściągę”.</footer>
@@ -230,7 +230,10 @@ async function live(){
         sides.forEach((sd,i)=>{const [a,b]=sr[i].querySelectorAll('i'),t=sr[i].querySelector('b');t.textContent=f.goals[sd];t.classList.toggle('last',last===sd);
           a.textContent=ht[sd]??'';b.textContent=ht[sd]!=null&&!['1H','HT'].includes(st)?f.goals[sd]-ht[sd]:'';});
       }
-      const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);}
+      const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);
+        // Gol w meczu oznaczonym na zielono (śledzę) albo czerwono (obstawiłem): sygnał + pasek
+        const mine=m.querySelector('.dot.r')?'💰':m.querySelector('.dot.g')?'⚽':'';
+        if(mine){const g=(f.events||[]).filter(e=>e.type==='Goal').pop();beep();toast({icon:mine,act:'GOL'+(g?' '+g.team.name:'')+' — '+key,match:f.teams.home.name+' '+key+' '+f.teams.away.name+' ('+el+"')",why:mine==='💰'?'Twój zakład':'śledzony mecz'});}}
       prev[f.fixture.id]=key;
       if(isLive&&st!=='HT'&&el){
         const gh=f.goals.home,ga=f.goals.away,H=f.teams.home.name,A=f.teams.away.name,label=H+' '+gh+':'+ga+' '+A+' ('+el+"')",id=f.fixture.id,tier=m.dataset.tier;
@@ -280,13 +283,13 @@ const rows=[...document.querySelectorAll('.m')];
 rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★',m.classList.add('fv');
 s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();}});
 // Znaczniki drużyn: puste → pomarańczowy (obserwuj) → zielony (gram) → puste
-const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g'];
+const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g','r'];
 document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((tm,i)=>{const b=tm.querySelector('.dot'),k=m.dataset.fid+'|'+i;
-  const show=()=>{b.classList.toggle('o',dots[k]==='o');b.classList.toggle('g',dots[k]==='g');};show();
-  b.onclick=e=>{e.stopPropagation();dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%3];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();};}));
+  const show=()=>{b.classList.toggle('o',dots[k]==='o');b.classList.toggle('g',dots[k]==='g');b.classList.toggle('r',dots[k]==='r');};show();
+  b.onclick=e=>{e.stopPropagation();dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%4];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();};}));
 function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
-rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):m.dataset.tier===f))));
+rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r,.dot.g'):m.dataset.tier===f))));
 document.querySelectorAll('.lg').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 </script>
