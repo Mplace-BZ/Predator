@@ -162,7 +162,7 @@ footer{padding-bottom:45vh}}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
-.m.fv{opacity:1!important;background:#0a3040}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}.m.fv .odds span,.m.fv .pos,.m.fv .sr b.last{background:#14495c}
+.m.fv{opacity:1!important;background:color-mix(in srgb,#fff 4%,var(--panel))}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
 .sr i{font-style:normal;font-size:11px;font-weight:600;color:var(--dim);width:18px;text-align:center}.sr b{width:24px;text-align:center;border-radius:4px;line-height:20px}
 .sr b.last{background:#163d4b;color:#fff}.time small{display:block;font-size:10px;font-weight:600;color:var(--warn);margin-top:2px;white-space:nowrap}
