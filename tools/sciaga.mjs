@@ -163,6 +163,9 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+#hist{padding:0}#hist .hh{display:flex;gap:16px;align-items:baseline;background:var(--lh);padding:10px 12px;font-size:13px}#hist .hh b{font-size:18px}
+#hist table{width:100%;border-collapse:collapse;font-size:12px}#hist td,#hist th{padding:8px 12px;border-top:1px solid var(--line);text-align:left}#hist th{color:var(--dim);font-weight:600;font-size:11px}
+#hist .ok{color:var(--pos);font-weight:800}#hist .ko{color:var(--red);font-weight:800}#hist .wait{color:var(--dim)}#hist .empty{padding:14px 12px;color:var(--dim)}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
 .dot:focus{outline:none}.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}.team:has(.dot.r) .tn{color:var(--red)}
@@ -187,9 +190,10 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 <div class="pills">
 <button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
 ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${TIER[k][1]}<small>${cnt(k)}</small></button>`).join('')}
-<button data-f="fav">☆ ULUBIONE</button><button data-f="moje">💰 MOJE ZAKŁADY</button>
+<button data-f="fav">☆ ULUBIONE</button><button data-f="moje">💰 MOJE ZAKŁADY</button><button data-f="hist">📒 HISTORIA</button>
 </div>
 ${groups.map(league).join('')}
+<section id="hist" class="lg hide"></section>
 <footer>Kursy przedmeczowe — na żywo sprawdzaj w STS. MUSI = drużyna w Lidze Mistrzów walczy o top 24, TOP 8 = walczy o 1/8. Odśwież: w czacie „odśwież ściągę”.</footer>
 </main>
 </div>
@@ -234,7 +238,7 @@ async function live(){
         // Gol w meczu oznaczonym na zielono (śledzę) albo czerwono (obstawiłem): sygnał + pasek
         const mine=m.querySelector('.dot.r')?'💰':m.querySelector('.dot.g')?'⚽':'';
         if(mine){const g=(f.events||[]).filter(e=>e.type==='Goal').pop();beep();toast({icon:mine,act:'GOL'+(g?' '+g.team.name:'')+' — '+key,match:f.teams.home.name+' '+key+' '+f.teams.away.name+' ('+el+"')",why:mine==='💰'?'Twój zakład':'śledzony mecz'},10000);}}
-      prev[f.fixture.id]=key;
+      prev[f.fixture.id]=key;if(isFin)betResolve(f);
       if(isLive&&st!=='HT'&&el){
         const gh=f.goals.home,ga=f.goals.away,H=f.teams.home.name,A=f.teams.away.name,label=H+' '+gh+':'+ga+' '+A+' ('+el+"')",id=f.fixture.id,tier=m.dataset.tier;
         // 1. Nacisk: w 5 min celny + 2 strzały albo 3 rożne
@@ -255,6 +259,11 @@ async function live(){
         if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh&&press(0))hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, a '+H+' naciska ('+pres[0]+' vs '+pres[1]+')',m,label);
         // 4. Szansa: 0:0 lub 1:1 po 55'
         if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label);
+        // 6. Rywal w dziesiątkę, a drużyna z 11 nie prowadzi (Arsenal U19 vs Dortmund 2026-11-24)
+        if(el>=50&&el<=85){[0,1].forEach(i=>{const me=sides[i],op=sides[1-i],my=i?ga:gh,their=i?gh:ga;const opRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===op.id),meRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===me.id);
+          if(opRed&&!meRed&&my<=their&&their-my<=1)hint(id+'x'+i+my+their,'🔥','Gol '+me.name,op.name+' gra w dziesiątkę, a jest '+gh+':'+ga,m,label);});}
+        // 7. Końcówka otwartego meczu: kolejny gol (kurs po 80' zwykle 1,9-2,5, w doliczonym nawet 3)
+        if(el>=78&&el<=88&&(gh+ga>=3||tot>=6))hint(id+'l'+(gh+ga),'🟢','Padnie kolejny gol','otwarty mecz ('+(gh+ga)+' goli'+(tot?', presja '+tot:'')+'), graj tylko przy kursie ≥2,2',m,label);
         // 5. Czerwona dla prowadzącego od 70'
         if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label);}
       }
@@ -287,11 +296,23 @@ s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSO
 const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g','r'];
 document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((tm,i)=>{const b=tm.querySelector('.dot'),k=m.dataset.fid+'|'+i;
   const show=()=>{b.classList.toggle('o',dots[k]==='o');b.classList.toggle('g',dots[k]==='g');b.classList.toggle('r',dots[k]==='r');};show();
-  b.onclick=e=>{e.stopPropagation();dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%4];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();};}));
+  b.onclick=e=>{e.stopPropagation();const was=dots[k];dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%4];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();
+    if(dots[k]==='r')betAdd(m,i);else if(was==='r')betDel(m.dataset.fid+'|'+i);};}));
+// Historia: każda czerwona kropka = zapis (mecz, drużyna, minuta i wynik w chwili zakładu); po końcu meczu: czy ta drużyna (albo ktokolwiek, gdy obie czerwone) strzeliła później
+const BK='sciaga_bets',bets=()=>JSON.parse(localStorage.getItem(BK)||'[]'),betsSave=b=>localStorage.setItem(BK,JSON.stringify(b));
+function betAdd(m,i){const b=bets(),sc=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0);b.push({id:m.dataset.fid+'|'+i,fid:m.dataset.fid,side:i,date:'${DATE}',lg:m.dataset.lg,h:m.dataset.h,a:m.dataset.a,min:m.querySelector('.time').firstChild.textContent,sc,ts:Date.now()});betsSave(b);}
+function betDel(id){betsSave(bets().filter(x=>!(x.id===id&&!x.fin)));}
+function betResolve(f){const b=bets();let ch=0;for(const x of b)if(x.fid==f.fixture.id&&!x.fin){x.fin=[f.goals.home,f.goals.away];ch=1;}if(ch)betsSave(b);}
+function drawHist(){const b=bets(),by={};b.forEach(x=>(by[x.fid]||=[]).push(x));const list=Object.values(by).reverse();
+  let ok=0,done=0;const rowsH=list.map(g=>{const x=g[0],both=g.length>1&&new Set(g.map(y=>y.side)).size>1,who=both?'Gol w meczu':'Gol '+(x.side?x.a:x.h);
+    let res='<span class="wait">trwa</span>';if(x.fin){done++;const hit=both?(x.fin[0]+x.fin[1]>x.sc[0]+x.sc[1]):(x.fin[x.side]>x.sc[x.side]);if(hit)ok++;res=hit?'<span class="ok">✅ TAK</span>':'<span class="ko">❌ NIE</span>';}
+    return '<tr><td>'+x.date+'</td><td>'+x.h+' – '+x.a+'<br><span class="wait">'+x.lg+'</span></td><td>'+who+'</td><td>'+x.min+' · '+x.sc.join(':')+'</td><td>'+(x.fin?x.fin.join(':'):'–')+'</td><td>'+res+'</td></tr>';}).join('');
+  document.getElementById('hist').innerHTML='<div class="hh">📒 Historia zakładów <span>trafione <b>'+ok+'/'+done+'</b>'+(done?' ('+Math.round(ok/done*100)+'%)':'')+'</span></div>'+(list.length?'<table><tr><th>Data</th><th>Mecz</th><th>Typ</th><th>Wejście</th><th>Koniec</th><th>Wynik</th></tr>'+rowsH+'</table>':'<div class="empty">Pusto. Zaznacz 🔴 przy drużynie, na którą postawiłeś — zapiszę minutę i wynik, a po meczu sprawdzę, czy trafiłeś.</div>');}
 function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
-rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
-document.querySelectorAll('.lg').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
+const H=f==='hist';document.getElementById('hist').classList.toggle('hide',!H);if(H)drawHist();
+rows.forEach(m=>m.classList.toggle('hide',H||!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
+document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));});
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 </script>
 </body></html>`;
