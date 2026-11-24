@@ -50,6 +50,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 
 - **Zasada nr 1 Chrisa: faworyt przegrywa albo remisuje, więc gramy faworyta.** Potwierdzona 2026-11-24: Real 0:1 → 5:1, City 0:1 → 2:2, Rangers 0:1 → 3:2.
 - **Słabszy strzelił pierwszy, więc mocniejszy musi się otworzyć i padają gole.**
+- **Dwumecz:** w pucharach liczy się wynik łączny, nie wynik tego meczu. Kto prowadzi w dwumeczu, nie musi gonić.
 - **Jaka to stawka:** Liga Mistrzów i mecz, w którym ktoś MUSI wygrać, to inna gra niż środek tabeli zwykłej ligi.
 - **Ważny mecz za kilka dni:** drużyna może oszczędzać skład. Potwierdzone 2026-11-24 na Palmeiras (finał Copa Libertadores za 4 dni). Sprawdzać ZAWSZE przed zakładem na faworyta.
 - **Odbicie po porażce w pucharach:** mocna drużyna wraca do ligi i chce się pokazać. Do sprawdzenia na liczbach.
@@ -75,6 +76,8 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - 23:28, 68. minuta, 2:0. **Największa lekcja wieczoru:** Palmeiras gra za 4 dni (2026-11-28) finał Copa Libertadores z Estudiantes, a 2026-12-06 finał Pucharu Brazylii. Nie sprawdziłem tego przed zakładem, choć Chris wymienił „ważny mecz za kilka dni” jako punkt z listy. Stąd dominacja bez strzałów celnych (16 strzałów, 2 celne). **Od teraz portfel sam odrzuca zakład, gdy któraś drużyna ma puchar albo finał w ciągu 5 dni.**
 - Sprawdzone po fakcie w składach: **Palmeiras wystawił 0 z 11 podstawowych zawodników** (żaden z wyjściowej jedenastki nie zaczynał nawet 3 z ostatnich 5 meczów ligowych). Chapecoense 8 z 11. Faworyt z tabeli nie był tego dnia faworytem na boisku. **Portfel odrzuca teraz zakład, gdy drużyna ma mniej niż 6 podstawowych w wyjściowej jedenastce.**
 - Granica Chrisa do sprawdzenia: goniący faworyt musi strzelić do 75. minuty, inaczej nie zdąży z drugim golem.
+- 23:42, Coquimbo 0:1 La Calera (41'), ćwierćfinał Pucharu Chile. Na oko zasada nr 1: faworyt (1,53 przed meczem) przegrywa u siebie. Po sprawdzeniu: to rewanż, pierwszy mecz Coquimbo wygrało 2:0, więc w dwumeczu prowadzi 2:1 i **nie musi gonić**. Gonić musi La Calera. Do tego mecz bez statystyk i bez składów w naszym źródle. Żaden kurs nie pokrywał ryzyka po podatku. **Nie gram.** Typ bez stawki do rozliczenia: La Calera nie odrobi, Coquimbo strzeli w 2. połowie.
+- **Lekcja: w pucharach najpierw sprawdzić, czy to dwumecz i jaki jest wynik łączny. „Faworyt przegrywa” nic nie znaczy, jeśli faworyt i tak awansuje.** Portfel pokazuje teraz wynik dwumeczu przed zakładem.
 - Wynik dopiszę po meczu.
 
 ## 6. Źródła danych

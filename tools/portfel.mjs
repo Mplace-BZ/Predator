@@ -63,6 +63,11 @@ async function bet(fid, market, stake, note) {
   if (!f || !o) throw new Error('brak meczu albo kursów na żywo');
   const gh = f.goals.home, ga = f.goals.away, el = f.fixture.status.elapsed;
   if (o.teams.home.goals !== gh || o.teams.away.goals !== ga) throw new Error('kursy nie pasują do wyniku — odrzucam');
+  // Dwumecz (lekcja 2026-11-24: Coquimbo przegrywało 0:1, ale po 2:0 w pierwszym meczu nie musiało gonić): pokaż wynik łączny
+  if (!/regular season/i.test(f.league.round || '')) {
+    const first = (await af(`/fixtures/headtohead?h2h=${f.teams.home.id}-${f.teams.away.id}&last=3`)).find(x => x.fixture.id !== f.fixture.id && x.league.id === f.league.id && x.league.round === f.league.round && ['FT', 'AET', 'PEN'].includes(x.fixture.status.short) && Date.now() - new Date(x.fixture.date) < 45 * 864e5);
+    if (first) { const hA = gh + (first.teams.home.id === f.teams.home.id ? first.goals.home : first.goals.away), aA = ga + (first.teams.home.id === f.teams.away.id ? first.goals.home : first.goals.away); console.log(`DWUMECZ: pierwszy mecz ${first.teams.home.name} ${first.goals.home}:${first.goals.away} ${first.teams.away.name} → łącznie ${f.teams.home.name} ${hA}:${aA} ${f.teams.away.name}. ${hA === aA ? 'Remis w dwumeczu.' : 'Gonić musi ' + (hA < aA ? f.teams.home.name : f.teams.away.name) + '.'}`); }
+  }
   // Bramka „rezerwowy skład”: mniej niż 6 podstawowych w wyjściowej 11 → odrzucam (chyba że --mimo)
   const xi = await sklad(f); for (const t of xi) { const msg = `SKŁAD: ${t.name} — ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`; console.log(msg); if (t.reg < 6 && !process.argv.includes('--mimo')) throw new Error(msg + ' — rezerwowy skład. Dodaj --mimo, żeby zagrać mimo to.'); }
   // Bramka „ważny mecz za kilka dni” (lekcja 2026-11-24: Palmeiras 4 dni przed finałem Copa Libertadores): bez --mimo zakład jest odrzucany
