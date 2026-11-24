@@ -106,8 +106,9 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
+<div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 48 28" width="48" height="28"><path d="M4 26 A20 20 0 0 1 44 26" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><g class="nd" style="transform:rotate(0deg);transform-origin:24px 26px;transition:transform .8s"><line x1="24" y1="26" x2="24" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="24" cy="26" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
-<div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli w ich meczach">${f1(r.avgGoals)}<small>gole Ø</small></div>
+<div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
 <div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
 <div class="wx">${wxs(r.wx)}</div>
 <div class="plan">${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
@@ -146,7 +147,7 @@ footer{padding-bottom:45vh}}
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
 .lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}
-.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 50px 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
@@ -161,6 +162,7 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
 .m.fv{opacity:1!important;background:color-mix(in srgb,#fff 4%,var(--panel))}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}
 .sc{display:flex;flex-direction:column;font-weight:800;font-size:15px;color:var(--dim)}.sr{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:24px}
@@ -170,7 +172,7 @@ footer{padding-bottom:45vh}}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
 .m.goal{opacity:1!important;background:color-mix(in srgb,var(--red) 38%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
-@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/6;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
+@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 44px 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/7;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
@@ -232,6 +234,13 @@ async function live(){
         for(const t of (f.statistics||[])){const g=Object.fromEntries(t.statistics.map(x=>[x.type,x.value]));const now={el,sh:+g['Total Shots']||0,so:+g['Shots on Goal']||0,co:+g['Corner Kicks']||0};
           const h=(hist[id+'|'+t.team.id]||=[]);h.push(now);const b=h.filter(x=>x.el<=el-5).pop();
           if(b&&el<=85){const d={sh:now.sh-b.sh,so:now.so-b.so,co:now.co-b.co};if((d.so>=1&&d.sh>=2)||d.co>=3)hint(id+'n'+Math.floor(el/10),'🔥','Gol '+t.team.name,'naciska: od '+b.el+"' strzały +"+d.sh+', celne +'+d.so+', rożne +'+d.co,m,label);}}
+        // Presja (ostatnie 10 min): strzały + 2×celne + rożne; bez statystyk: gole z ostatnich 15 min ×3
+        const sides=[f.teams.home,f.teams.away],pres=sides.map(tm=>{const h=hist[id+'|'+tm.id];if(h&&h.length){const now=h[h.length-1],b=h.filter(x=>x.el<=el-10).pop()||h[0];return (now.sh-b.sh)+2*(now.so-b.so)+(now.co-b.co);}
+          return (f.events||[]).filter(e=>e.type==='Goal'&&e.team.id===tm.id&&e.time.elapsed>=el-15).length*3;});
+        // Zegar presji: -90° = gospodarze 100%, 0° = równo, +90° = goście 100%
+        const tot=pres[0]+pres[1],v=tot?(pres[1]-pres[0])/tot:0,gg=m.querySelector('.gg');
+        gg.querySelector('.nd').style.transform='rotate('+Math.round(v*90)+'deg)';gg.classList.toggle('on',tot>0);gg.classList.toggle('hot',tot>=4&&Math.abs(v)>=0.4);
+        gg.title='Presja (10 min): '+H+' '+pres[0]+' · '+A+' '+pres[1]+' (strzały + 2×celne + rożne)';
         // 2. MUSI, a nie wygrywa po 60'
         const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if(home?gh<=ga:ga<=gh)hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
         // 3. Ryzyko: faworyt z wyjazdu prowadzi → gol gospodarza
