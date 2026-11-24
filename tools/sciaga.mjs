@@ -379,10 +379,14 @@ async function live(){
       const gh=f.goals.home,ga=f.goals.away,g=gh+ga,h1=st==='1H',H=f.teams.home.name,A=f.teams.away.name,o1=+m.dataset.o1,o2=+m.dataset.o2,rate=rateOf(m,el);
       const remH=Math.max(1,47-el),remM=Math.max(1,93-el),fair=(lam)=>Math.max(1.9,1/((1-Math.exp(-lam))*0.88)),lbl=H+' '+gh+':'+ga+' '+A+' ('+el+"')";
       const reds=side=>(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id);
-      const ucl=f.league.id===2,add=(sc,act,why,lam)=>picks.push({sc:sc+(ucl?1.5:0),act,why,lbl,fid:f.fixture.id,fair:fair(lam)});
+      const ucl=f.league.id===2,add=(sc,act,why,lam)=>picks.push({sc:sc+(ucl?1.5:0),act,why,lbl,fid:f.fixture.id,fair:lam?fair(lam):(()=>{const L=rate*1.2*remM/90,p2=1-Math.exp(-L)*(1+L);return Math.max(1.9,1/(p2*0.88));})()});
       if(h1&&el>=8&&el<=38&&g>=2&&g/el*90>=4)add(5,'Kolejny gol do przerwy','tempo '+g+' goli w '+el+"' — mecz otwarty",rate*remH/90);
       if(reds('home')!==reds('away')){const ten=reds('home')?'away':'home',nm=f.teams[ten].name;add(6,'Gol '+nm,'rywal gra w dziesiątkę',rate*0.6*remM/90);}
       const fav=o1&&o1<=1.45?'home':o2&&o2<=1.45?'away':null;if(fav){const fn=fav==='home'?H:A,lead=fav==='home'?gh-ga:ga-gh;if(lead<=0&&el>=12&&(!h1||el<=36))add(h1?4:3,(h1?'Gol do przerwy: ':'Gol: ')+fn,'faworyt (kurs '+String(fav==='home'?o1:o2).replace('.',',')+') nie prowadzi',rate*0.7*(h1?remH:remM)/90);}
+      // Słabszy strzelił, faworyt goni → mecz się otwiera: kolejny gol (i często dwa)
+      if(fav){const lead=fav==='home'?gh-ga:ga-gh,fn=fav==='home'?H:A;if(lead<0&&el>=10&&el<=78){add(7,'Padnie gol w meczu (+'+(g+0.5).toString().replace('.',',')+')',fn+' (faworyt) przegrywa — musi się otworzyć, kontry też',rate*1.2*remM/90);
+        if(el<=60)add(6,'Jeszcze 2 gole w meczu (+'+(g+1.5).toString().replace('.',',')+')',fn+' goni wynik od '+el+"'",0);
+        if(!window._favHint)window._favHint={};if(!window._favHint[f.fixture.id+'_'+g]){window._favHint[f.fixture.id+'_'+g]=1;hint(f.fixture.id+'f'+g,'🔥','Padnie gol w meczu',fn+' (faworyt) przegrywa '+gh+':'+ga+' — otworzy się',m,lbl,fair(rate*1.2*remM/90)*0.88,null,'g');}}}
       const mu=m.dataset.must;if(mu&&el>=50){const home=mu===m.dataset.h,my=home?gh:ga,th=home?ga:gh;if(my<=th)add(4,'Padnie gol w meczu',mu+' MUSI, a jest '+gh+':'+ga+' — otworzy się, kontry też się liczą',rate*remM/90);}
       if(h1&&g===0&&el>=18&&el<=38&&(+m.dataset.g||0)>=3.5)add(3,'Gol do przerwy','ich mecze: średnio '+String(m.dataset.g).replace('.',',')+' gola, a jest 0:0',rate*remH/90);}
       picks.sort((a,b)=>b.sc-a.sc);const top=picks.filter(p=>p.fair<=3.5).slice(0,3),k2=x=>x.toFixed(2).replace('.',',');
