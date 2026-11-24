@@ -140,7 +140,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 60 36" width="60" height="36"><path d="M10 27 A20 20 0 0 1 50 27" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><line x1="30" y1="3" x2="30" y2="9" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><text x="21" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">H</text><text x="34" y="36" font-size="7.5" font-weight="700" fill="#8ba0a8">V</text><g class="nd" style="transform:rotate(0deg);transform-origin:30px 27px;transition:transform .8s"><line x1="30" y1="27" x2="30" y2="11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="30" cy="27" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
-<div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
+<div class="ow"><div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div><div class="lvo hide"><div class="lvr"></div><div class="lvc"><span class="cv"></span><input class="cst" inputmode="decimal" value="10" title="Stawka — zmień, przeliczy się"> zł <button class="ccb" title="Otwórz kalkulator">🧮</button></div></div></div>
 <div class="wx">${wxs(r.wx)}</div>
 <div class="plan">${r.h2h ? `<span class="h2" title="Ostatnie ${r.h2h.n} meczów między nimi: bilans ${esc(r.H)} (wygrane-remisy-porażki) i średnia goli">H2H ${r.h2h.w}-${r.h2h.d}-${r.h2h.l} · Ø ${r.h2h.avg.toFixed(1).replace('.', ',')} gola</span>` : ''}${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
 </div>`;
@@ -194,6 +194,9 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{white-space:nowrap}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
+.lvc{display:flex;align-items:center;gap:5px;margin-top:3px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
+.cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;font-size:14px;padding:0}
 .tb{background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer}
 .cm{position:fixed;inset:0;background:rgba(0,10,15,.7);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}
 .cb{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(460px,94vw);padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -316,10 +319,10 @@ async function live(){
         // 1. Nacisk: w 5 min celny + 2 strzały albo 3 rożne
         // Kursy na żywo w kafelkach: 1 · X · 2 i „+gol” = kolejny gol w meczu (Over aktualna liczba goli + 0,5)
         const OD=JSON.parse(localStorage.getItem('sciaga_odds')||'{}')[id],nextLine=(gh+ga+0.5).toFixed(1);let goOdd=null;
-        if(OD){const sp=m.querySelectorAll('.odds span'),v=(arr,val,hc)=>{const x=arr.find(y=>y.value===val&&(hc==null||+y.handicap===+hc));return x&&!x.suspended?(+x.odd).toFixed(2).replace('.',','):'🔒';};
+        if(OD){const sp=[],v=(arr,val,hc)=>{const x=arr.find(y=>y.value===val&&(hc==null||+y.handicap===+hc));return x&&!x.suspended?(+x.odd).toFixed(2).replace('.',','):'🔒';};
           const go=OD.mg.find(y=>y.value==='Over'&&+y.handicap===+nextLine);goOdd=go&&!go.suspended?+go.odd:null;
-          [v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)].forEach((t,k)=>{if(sp[k])sp[k].lastChild.textContent=t;});
-          if(sp[3])sp[3].querySelector('i').textContent='+gol';m.querySelector('.odds').classList.add('lv');}
+          const L=[v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)],lv=m.querySelector('.lvo');lv.classList.remove('hide');lv.querySelector('.lvr').innerHTML='<b>TERAZ</b> 1 <u>'+L[0]+'</u> X <u>'+L[1]+'</u> 2 <u>'+L[2]+'</u> · +gol <u>'+L[3]+'</u>';m.dataset.go=goOdd||'';m.dataset.el=el;miniCalc(m);
+          }
         // Uczciwy kurs: szansa gola w pozostałym czasie z Poissona (średnia goli drużyn × pozostałe minuty, presja jako waga)
         const R=Math.max(2,93-el),avgG=+m.dataset.g||2.6,lamT=avgG*R/90;
         const fairGoal=1/(1-Math.exp(-lamT)),fairTeam=i=>{const sh=Math.min(.8,Math.max(.25,(window._pt&&window._pt[id]&&window._pt[id].tot>=3)?window._pt[id].p[i]/window._pt[id].tot:.5));return 1/(1-Math.exp(-lamT*sh*1.1));};
@@ -424,6 +427,13 @@ document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.tog
     h+='Opłaca się od kursu: <b style="color:var(--warn)">'+k2(need)+'</b>'+(need<1.9?' · Twoje minimum 1,90':'');
     h+='<table><tr><th>Minuta</th><th>Szansa</th><th>Graj od kursu</th></tr>';for(let mm=Math.floor(min/5)*5;mm<=90;mm+=5){const q=chance(Math.max(mm,min));h+='<tr'+(mm===Math.floor(min/5)*5?' class="now"':'')+'><td>'+Math.max(mm,min)+"'</td><td>"+Math.round(q*100)+'%</td><td>'+k2(Math.max(1/(q*0.88),1.9))+'</td></tr>';}
     r.innerHTML=h+'</table>';}})();
+// Mini-kalkulator w wierszu: „+gol” (kolejny gol w meczu) dla wpisanej stawki
+function miniCalc(m){const od=+m.dataset.go,el=+m.dataset.el,cv=m.querySelector('.cv'),st=parseFloat(String(m.querySelector('.cst').value).replace(',','.'))||10;if(!cv)return;
+  const p=1-Math.exp(-(+m.dataset.g||2.7)*Math.max(1,93-el)/90),need=1/(p*0.88),f=x=>x.toFixed(2).replace('.',',');
+  if(!od){cv.className='cv';cv.textContent='szansa '+Math.round(p*100)+'% · od '+f(need);return;}
+  const ev=p*(st*0.88*od-st)-(1-p)*st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=(ev>0?'✅ ':'❌ ')+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł śr. · od '+f(need);}
+document.addEventListener('input',e=>{if(e.target.classList.contains('cst'))miniCalc(e.target.closest('.m'));});
+document.addEventListener('click',e=>{const b=e.target.closest('.ccb');if(!b)return;const m=b.closest('.m');document.getElementById('calcbtn').click();const c=document.getElementById('cm');c.value=m.dataset.fid;if(c.value!==m.dataset.fid){const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a;c.append(o);c.value=m.dataset.fid;}c.onchange();document.getElementById('cs').value=m.querySelector('.cst').value;document.getElementById('cmin').value=m.dataset.el||'';if(m.dataset.go)document.getElementById('co').value=String(m.dataset.go).replace('.',',');document.getElementById('cs').oninput();});
 </script>
 </body></html>`;
 mkdirSync(new URL('../sciaga/', import.meta.url), { recursive: true });
