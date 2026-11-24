@@ -4,7 +4,8 @@
 // (w oknie 5 min: celny strzał i co najmniej 2 strzały, albo 3 rożne).
 // Użycie: node tools/alarm.mjs "Ceuta" "Monza" "Levante"
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
-const names = process.argv.slice(2).map(s => s.toLowerCase());
+const ONLY_PRESS = process.argv.includes('--nacisk'); // tylko nacisk (gole i kartki Chris widzi w STS)
+const names = process.argv.slice(2).filter(a => !a.startsWith('--')).map(s => s.toLowerCase());
 const af = async p => (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json();
 const state = {}; let seen = false; // czekamy, aż mecze wystartują // id -> { score, reds, hist: { team: [{el,shots,sot,cor}] } }
 
@@ -19,7 +20,7 @@ for (let i = 0; i < 180; i++) {
     const id = f.fixture.id, el = f.fixture.status.elapsed, sc = `${f.goals.home}:${f.goals.away}`;
     const label = `${f.teams.home.name} ${sc} ${f.teams.away.name} (${el}')`;
     const s = (state[id] ||= { score: sc, reds: 0, hist: {} });
-    if (sc !== s.score) fire(`GOL — ${label}`);
+    if (sc !== s.score) { if (!ONLY_PRESS) fire(`GOL — ${label}`); s.score = sc; }
     const st = (await af(`/fixtures/statistics?fixture=${id}`)).response || [];
     let reds = 0;
     for (const t of st) {
@@ -34,7 +35,7 @@ for (let i = 0; i < 180; i++) {
           fire(`NACISK ${t.team.name} — od ${base.el}' do ${el}': strzały +${d.shots}, celne +${d.sot}, rożne +${d.cor} · ${label}`);
       }
     }
-    if (reds > s.reds && i > 0) fire(`CZERWONA KARTKA — ${label}`);
+    if (reds > s.reds && i > 0 && !ONLY_PRESS) fire(`CZERWONA KARTKA — ${label}`);
     s.reds = reds;
   }
   console.log(`${new Date().toLocaleTimeString('pl-PL')} ` + hits.map(f => `${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.fixture.status.elapsed}'`).join(' · '));
