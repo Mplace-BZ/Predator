@@ -87,6 +87,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Lekcja o kontrze:** gdy goniący rzuca wszystko do przodu (24 strzały, 10 rożnych), gol prowadzącego z kontry w końcówce jest realny i bukmacher płaci za niego najlepiej.
 - **Koniec: Chapecoense 3:0 Palmeiras. Wszystkie 4 zakłady przegrane (−55 zł), pula 45 zł.** Powody w kolejności ważności: rezerwowy skład Palmeiras (nie sprawdziłem), zakład „jeszcze 2 gole” poniżej progu kursu, trzy zakłady na ten sam scenariusz, spóźniony zakład w 90+2.
 - 23:58, Coquimbo 0:1 La Calera, przerwa. Chris podesłał kartę FootyStats ze statystykami na żywo, których nie mam w api-football: strzały 9:2, groźne ataki 36:13, posiadanie 60:40 dla Coquimbo. Faworyt dominuje i przegrywa po jedynym celnym strzale rywala. Etap 1: Coquimbo 2+ gole (2,38, 15 zł) i wygrana Coquimbo (3,20, 10 zł). Etap 2 (20 zł): po wyrównaniu przed 65. minutą gram „kolejny gol”, jeśli kurs będzie co najmniej 1,90 (baza: przy 1:1 w 60. minucie kolejny gol pada w 71%).
+- 00:33, gol Coquimbo w 71', 1:1. Etap 2 odpuszczony (wyrównanie po 65', kurs 1,62 poniżej progu). **Typ Chrisa do rozliczenia:** trzeci gol w meczu, gdy kurs przekroczy 2,20, 10 zł. Claude nie gra: przy świeżym wyrównaniu w 70.–75. minucie kolejny gol pada w ok. 50%, próg przy 2,20 to 52%, a portfel ma już 25 zł na gola Coquimbo.
 - Wynik dopiszę po meczu.
 
 ### Reguły-kandydatki do testu na sucho
