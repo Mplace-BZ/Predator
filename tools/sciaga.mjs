@@ -194,8 +194,8 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
-.ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{display:flex;gap:4px}.lvr u{flex:1;text-align:center}.lvr u:last-child{margin-left:8px}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
-.lvc{display:flex;align-items:center;gap:5px;margin-top:3px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
+.ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{display:flex;gap:4px;margin-left:10px}.lvr u{flex:1;text-align:center}.lvr u:last-child{margin-left:8px}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
+.lvc{display:flex;align-items:center;gap:5px;margin:3px 0 0 10px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
 .cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;padding:0;color:#fff;opacity:.85;display:inline-flex}.ccb:hover{opacity:1}
 .tb{background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer}
 .cm{position:fixed;inset:0;background:rgba(0,10,15,.7);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}
@@ -426,12 +426,13 @@ document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.tog
     else h+='Szansa na gol: <b>'+Math.round(p*100)+'%</b><br>';
     h+='Opłaca się od kursu: <b style="color:var(--warn)">'+k2(need)+'</b>'+(need<1.9?' · Twoje minimum 1,90':'');
     h+='<table><tr><th>Minuta</th><th>Szansa</th><th>Graj od kursu</th></tr>';for(let mm=Math.floor(min/5)*5;mm<=90;mm+=5){const q=chance(Math.max(mm,min));h+='<tr'+(mm===Math.floor(min/5)*5?' class="now"':'')+'><td>'+Math.max(mm,min)+"'</td><td>"+Math.round(q*100)+'%</td><td>'+k2(Math.max(1/(q*0.88),1.9))+'</td></tr>';}
-    r.innerHTML=h+'</table>';}})();
+    r.innerHTML=h+'</table><p style="color:var(--dim);font-size:11px;margin:10px 0 0"><b>Średnio na zakład</b> = ile zarabiasz albo tracisz na jednym takim zakładzie, gdybyś grał go wiele razy. Minus = bukmacher płaci za mało. <b>Opłaca się od kursu</b> = najniższy kurs w STS, przy którym wychodzisz na plus (po 12% podatku).</p>';}})();
 // Mini-kalkulator w wierszu: „+gol” (kolejny gol w meczu) dla wpisanej stawki
 function miniCalc(m){const od=+m.dataset.go,el=+m.dataset.el,cv=m.querySelector('.cv'),st=parseFloat(String(m.querySelector('.cst').value).replace(',','.'))||10;if(!cv)return;
   const p=1-Math.exp(-(+m.dataset.g||2.7)*Math.max(1,93-el)/90),need=1/(p*0.88),f=x=>x.toFixed(2).replace('.',',');
-  if(!od){cv.className='cv';cv.textContent='szansa '+Math.round(p*100)+'% · od '+f(need);return;}
-  const ev=p*(st*0.88*od-st)-(1-p)*st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=(ev>0?'✓ ':'✗ ')+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł śr. · od '+f(need);}
+  if(!od){cv.className='cv';cv.textContent='gol: szansa '+Math.round(p*100)+'%';cv.title='Kolejny gol opłaca się od kursu '+f(need);return;}
+  const ev=p*(st*0.88*od-st)-(1-p)*st,win=st*0.88*od-st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=ev>0?'✓ graj gol':'✗ nie graj · od '+f(need);
+  cv.title='Kolejny gol w meczu: szansa '+Math.round(p*100)+'%. Za '+st+' zł wygrasz na czysto '+f(win)+' zł, przegrasz '+st+' zł. Średnio na taki zakład: '+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł. Opłaca się od kursu '+f(need)+' (po podatku 12%).';}
 document.addEventListener('input',e=>{if(e.target.classList.contains('cst'))miniCalc(e.target.closest('.m'));});
 document.addEventListener('click',e=>{const b=e.target.closest('.ccb');if(!b)return;const m=b.closest('.m');document.getElementById('calcbtn').click();const c=document.getElementById('cm');c.value=m.dataset.fid;if(c.value!==m.dataset.fid){const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a;c.append(o);c.value=m.dataset.fid;}c.onchange();document.getElementById('cs').value=m.querySelector('.cst').value;document.getElementById('cmin').value=m.dataset.el||'';if(m.dataset.go)document.getElementById('co').value=String(m.dataset.go).replace('.',',');document.getElementById('cs').oninput();});
 </script>
