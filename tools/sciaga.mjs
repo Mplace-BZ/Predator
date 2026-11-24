@@ -386,7 +386,7 @@ async function live(){
       const mu=m.dataset.must;if(mu&&el>=50){const home=mu===m.dataset.h,my=home?gh:ga,th=home?ga:gh;if(my<=th)add(4,'Padnie gol w meczu',mu+' MUSI, a jest '+gh+':'+ga+' — otworzy się, kontry też się liczą',rate*remM/90);}
       if(h1&&g===0&&el>=18&&el<=38&&(+m.dataset.g||0)>=3.5)add(3,'Gol do przerwy','ich mecze: średnio '+String(m.dataset.g).replace('.',',')+' gola, a jest 0:0',rate*remH/90);}
       picks.sort((a,b)=>b.sc-a.sc);const top=picks.filter(p=>p.fair<=3.5).slice(0,3),k2=x=>x.toFixed(2).replace('.',',');
-      document.getElementById('plan').innerHTML=top.length?'<h4>PLAN NA TERAZ</h4>'+top.map(p=>'<div class="pl" data-fid="'+p.fid+'"><div><b>'+p.act+'</b><small>'+p.lbl+' · '+p.why+'</small></div><div class="po">graj od<br><b>'+k2(p.fair)+'</b></div></div>').join(''):'';}catch(e){console.error(e);}
+      document.getElementById('plan').innerHTML=top.length?'<h4>OBSERWUJ — grasz tylko, gdy kurs w STS ≥ „graj od”</h4>'+top.map(p=>'<div class="pl" data-fid="'+p.fid+'"><div><b>'+p.act+'</b><small>'+p.lbl+' · '+p.why+'</small></div><div class="po">graj od<br><b>'+k2(p.fair)+'</b></div></div>').join(''):'';}catch(e){console.error(e);}
     document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
   }catch(e){document.getElementById('lb').textContent='● na żywo: '+(/fetch|network/i.test(e.message)?'brak połączenia, ponawiam':'błąd strony ('+e.message+') — napisz Claude');console.error(e);}
