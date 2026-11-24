@@ -144,7 +144,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <div class="wx">${wxs(r.wx)}</div>
 <div class="plan">${r.h2h ? `<span class="h2" title="Ostatnie ${r.h2h.n} meczów między nimi: bilans ${esc(r.H)} (wygrane-remisy-porażki) i średnia goli">H2H ${r.h2h.w}-${r.h2h.d}-${r.h2h.l} · Ø ${r.h2h.avg.toFixed(1).replace('.', ',')} gola</span>` : ''}${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
 </div>`;
-const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span></div>${g.rs.map(row).join('')}</section>`;
+const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga" title="Zapal albo zgaś gwiazdki wszystkich meczów tej ligi">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span></div>${g.rs.map(row).join('')}</section>`;
 
 const FAV = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M8 38C8 24 20 16 30 2c2 9 6 12 11 8 2 6 7 8 13 3 0 7 4 10 8 14 2 10-4 20-16 26L20 58z" fill="#FF5A1F"/><path d="M16 36c2-9 10-14 16-22 1 6 4 8 8 5 2 5 6 6 10 3 1 6 4 9 6 12 0 7-5 13-14 17L22 54z" fill="#FFB347"/><circle cx="25" cy="40" r="20" fill="#fff" stroke="#00141e" stroke-width="2.6"/><path d="M25 31l7.6 5.5-2.9 9h-9.4l-2.9-9z" fill="#00141e"/><path d="M25 20v11M32.6 36.5l10-3.5M29.7 45.5l6 8.5M20.3 45.5l-6 8.5M17.4 36.5l-10-3.5" stroke="#00141e" stroke-width="2.3" fill="none"/></svg>';
 const updated = new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' });
@@ -414,7 +414,7 @@ document.title='⚽ GOL! '+m.dataset.h+' '+b.textContent+':'+sr[1].querySelector
 const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]'));
 const rows=[...document.querySelectorAll('.m')];
 rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★',m.classList.add('fv');
-s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();}});
+s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();lgSync();}});
 // Znaczniki drużyn: puste → pomarańczowy (obserwuj) → zielony (gram) → puste
 const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g','r'];
 document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.dot').forEach((b,i)=>{if(b.classList.contains('dm'))i='m';const k=m.dataset.fid+'|'+i;
@@ -450,7 +450,11 @@ const a=document.querySelector('.pills a.bot');if(a)a.innerHTML='AI BOT'+(n?'<sm
 function botLoad(){const s=document.createElement('script');s.src='portfel.js?t='+Date.now();s.onload=()=>{botMark();s.remove();};s.onerror=()=>s.remove();document.head.appendChild(s);}
 botLoad();setInterval(botLoad,30000);
 {const hb=document.querySelector('.pills [data-f="'+location.hash.slice(1).replace(/[^a-z]/g,'')+'"]');if(hb)hb.click();}
-document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
+// Gwiazdka ligi: zapala albo gasi gwiazdki wszystkich (niezakończonych) meczów tej ligi
+const lgRows=l=>{const a=[...l.querySelectorAll('.m:not(.fin)')];return a.length?a:[...l.querySelectorAll('.m')];};
+function lgSync(){document.querySelectorAll('.lg').forEach(l=>{const s=l.querySelector('.lh .star');if(!s)return;const ms=lgRows(l),on=ms.length>0&&ms.every(m=>fav.has(m.dataset.id));s.classList.toggle('on',on);s.textContent=on?'★':'☆';});}
+document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{const ms=lgRows(s.closest('.lg')),all=ms.every(m=>fav.has(m.dataset.id));ms.forEach(m=>{all?fav.delete(m.dataset.id):fav.add(m.dataset.id);const st=m.querySelector('.star');st.classList.toggle('on',!all);st.textContent=all?'☆':'★';m.classList.toggle('fv',!all);});localStorage.setItem(K,JSON.stringify([...fav]));lgSync();setFocus();applyFilter();});
+lgSync();
 // Kalkulator: szansa gola z Poissona (śr. goli × pozostałe minuty), podatek 12% od stawki
 (()=>{const $=id=>document.getElementById(id),num=v=>parseFloat(String(v).replace(',','.')),zl=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(2).replace('.',',')+' zł',k2=x=>x.toFixed(2).replace('.',',');
   const open=()=>{const sel=$('cm');sel.length=1;document.querySelectorAll('.m.live').forEach(m=>{const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a+' ('+m.querySelector('.time').firstChild.textContent+')';sel.append(o);});
