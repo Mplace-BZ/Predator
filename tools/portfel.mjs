@@ -3,7 +3,7 @@
 // (nie da się wpisać kursu „z głowy”), rozliczenie też robi skrypt. Podatek 12% od stawki jak w STS.
 //   node tools/portfel.mjs scan                      → kandydaci na żywo (kursy, faworyt przedmeczowy, statystyki)
 //   node tools/portfel.mjs bet <fixtureId> <rynek> <stawka> "<dlaczego>"
-//        rynki: over (kolejny gol w meczu) · over2 (jeszcze 2 gole) · next:home|away (kto strzeli następny) · win:home|draw|away
+//        rynki: over (kolejny gol w meczu) · over2 (jeszcze 2 gole) · tg:home|away:1.5 (gole drużyny powyżej) · dc:1x|x2|12 (podwójna szansa) · next:home|away (kto strzeli następny) · win:home|draw|away
 //   node tools/portfel.mjs watch                     → co 60 s rozlicza i odświeża sciaga/portfel.html; kończy się przy zmianie
 //   node tools/portfel.mjs reset [kwota]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -23,6 +23,8 @@ const liveOdds = (o, g) => ({
   over2: vals(o, b => b.id === 25).find(v => v.value === 'Over' && +v.handicap === g + 1.5)?.odd,
   next: Object.fromEntries(vals(o, b => /which team will score the \d+\w\w goal/i.test(b.name)).map(v => [v.value, v.odd])),
   ft: Object.fromEntries(vals(o, b => b.id === 59).map(v => [v.value, v.odd])),
+  tg: (side, line) => vals(o, b => b.id === (side === 'home' ? 58 : 39)).find(v => v.value === 'Over' && +v.handicap === +line)?.odd,
+  dc: Object.fromEntries(vals(o, b => b.id === 72).map(v => [v.value, v.odd])),
 });
 const balance = s => { const staked = s.bets.reduce((a, b) => a + b.stake, 0), back = s.bets.reduce((a, b) => a + (b.payout || 0), 0), open = s.bets.filter(b => b.status === 'open').reduce((a, b) => a + b.stake, 0); return { free: s.start - staked + back, open, total: s.start - staked + back + open, staked, back }; };
 
@@ -50,12 +52,13 @@ async function bet(fid, market, stake, note) {
   if (!f || !o) throw new Error('brak meczu albo kursów na żywo');
   const gh = f.goals.home, ga = f.goals.away, el = f.fixture.status.elapsed;
   if (o.teams.home.goals !== gh || o.teams.away.goals !== ga) throw new Error('kursy nie pasują do wyniku — odrzucam');
-  const lo = liveOdds(o, gh + ga), [kind, side] = market.split(':');
-  const odd = +(kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
+  const lo = liveOdds(o, gh + ga), [kind, side, line] = market.split(':'), DC = { '1x': 'Home or Draw', x2: 'Away or Draw', '12': 'Home or Away' };
+  const odd = +(kind === 'tg' ? lo.tg(side, line) : kind === 'dc' ? lo.dc[DC[side]] : kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
   if (!odd) throw new Error('rynek zawieszony albo niedostępny');
   stake = +stake; if (balance(s).free < stake) throw new Error('za mało wolnych środków');
-  const label = kind === 'over' ? `Kolejny gol w meczu (+${gh + ga}.5)` : kind === 'over2' ? `Jeszcze 2 gole (+${gh + ga + 1}.5)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
-  s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
+  const tn = side === 'home' ? f.teams.home.name : f.teams.away.name;
+  const label = kind === 'tg' ? `${tn}: powyżej ${String(line).replace('.', ',')} gola w meczu` : kind === 'dc' ? `Podwójna szansa: ${side === '1x' ? f.teams.home.name + ' lub remis' : side === 'x2' ? f.teams.away.name + ' lub remis' : 'nie będzie remisu'}` : kind === 'over' ? `Kolejny gol w meczu (+${gh + ga}.5)` : kind === 'over2' ? `Jeszcze 2 gole (+${gh + ga + 1}.5)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
+  s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', line: line ? +line : undefined, label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
   save(s); await render(s); console.log(`ZAPISANO #${s.bets.length}: ${f.teams.home.name} ${gh}:${ga} ${f.teams.away.name} (${el}') · ${label} · kurs ${odd} · ${stake} zł · do wygrania ${zl(stake * TAX * odd)}`);
 }
 
@@ -76,7 +79,9 @@ async function settle(s) {
         const gl = f.events.filter(e => e.type === 'Goal' && !/Missed/.test(e.detail)), e = gl[tot0];
         if (e) { let sd = e.team.id === f.teams.home.id ? 'home' : 'away'; res = b.side === sd; }
       } else if (fin) res = false;
-    } else if (b.kind === 'win') res = fin ? (b.side === 'home' ? h > a : b.side === 'away' ? a > h : h === a) : null;
+    } else if (b.kind === 'tg') { const tg = b.side === 'home' ? h : a; res = tg > b.line ? true : fin ? false : null; }
+    else if (b.kind === 'dc') res = fin ? (b.side === '1x' ? h >= a : b.side === 'x2' ? a >= h : h !== a) : null;
+    else if (b.kind === 'win') res = fin ? (b.side === 'home' ? h > a : b.side === 'away' ? a > h : h === a) : null;
     if (res !== null) { b.status = res ? 'won' : 'lost'; b.payout = res ? +(b.stake * TAX * b.odd).toFixed(2) : 0; b.end = now(); changed.push(b); }
   }
   save(s); return changed;
@@ -99,13 +104,15 @@ async function render(s) {
 td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}td small{display:block;color:var(--dim);font-size:11px;font-weight:400}.num{white-space:nowrap}
 tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--pos);font-weight:800}tr.lost .st,tr.lost .pl{color:var(--red);font-weight:800}tr.lost td:not(.st):not(.pl){opacity:.6}
 .rules{color:var(--dim);font-size:12px;margin-top:14px;line-height:1.6}.rules b{color:var(--text)}.empty{padding:24px;color:var(--dim)}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}.pills a{background:#0d2f3c;color:var(--text);border:1px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none}.pills a:hover{border-color:#2b6577}.pills a.on{background:var(--red);margin-left:auto}
 @media(max-width:800px){.kpi{grid-template-columns:1fr 1fr}}
 </style></head><body>
-<div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span><a href="index.html">← ściąga</a></div>
+<div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span></div>
 <div class="wrap">
+<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">LIKE</a><a href="index.html#moje">MINE</a><a href="index.html#hist">HISTORY</a><a class="on" href="portfel.html">AI BOT</a></div>
 <div class="kpi"><div><small>Pula teraz</small><b class="${bal.total > s.start ? 'up' : bal.total < s.start ? 'down' : ''}">${zl(bal.total)}</b></div><div><small>Wolne środki</small><b>${zl(bal.free)}</b></div><div><small>W grze</small><b>${zl(bal.open)}</b></div><div><small>Trafione</small><b>${won}/${done.length}</b></div></div>
 <div class="card">${s.bets.length ? `<table><tr><th>#</th><th>Godz.</th><th>Mecz</th><th>Zakład i powód</th><th>Wynik przy wejściu</th><th>Kurs</th><th>Stawka</th><th>Teraz</th><th>Status</th><th>Zysk</th></tr>${[...s.bets].reverse().map(row).join('')}</table>` : '<div class="empty">Jeszcze nic nie zagrałem. Czekam na okazję zgodną z regułami.</div>'}</div>
-<div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Jeden mecz = jeden zakład, stawka ok. 10% puli, bez AKO.<br>
+<div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Bez AKO.<br><b>Test przyspieszony (start 23:00, 60 minut gry):</b> cel 200 zł. Połowa puli (50 zł) jest nietykalna, drugą połową gram ostro — kilka zakładów na jeden scenariusz, wyższe kursy.<br>
 <b>Gram tylko trzy schematy:</b> 1) faworyt nie prowadzi po 45' → jego gol albo kolejny gol w meczu · 2) otwarty mecz, obie drużyny muszą → kolejny gol · 3) rywal w dziesiątkę. Kurs co najmniej 1,90.</div>
 </div></body></html>`;
   writeFileSync(HF, html);

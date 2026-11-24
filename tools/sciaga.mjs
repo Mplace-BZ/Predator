@@ -177,6 +177,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 footer{padding-bottom:45vh}}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
 .pills button{background:#0d2f3c;color:var(--text);border:2px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;cursor:pointer}
+.pills a.bot{background:#0d2f3c;color:var(--text);border:1px solid #2b6577;border-radius:8px;padding:8px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none;margin-left:auto}.pills a.bot:hover{border-color:var(--text)}
 .pills button.on{background:var(--red);border-color:#0b5cff}.pills small{opacity:.75;font-weight:600;margin-left:4px}
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
@@ -235,14 +236,14 @@ footer{padding-bottom:45vh}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
-<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><a class="tb" href="portfel.html" style="text-decoration:none">Portfel Claude</a><button id="sndbtn" class="tb" title="Dźwięk podpowiedzi i goli: włącz / wyłącz"></button><button id="calcbtn" class="tb"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg> Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
+<div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="sndbtn" class="tb" title="Dźwięk podpowiedzi i goli: włącz / wyłącz"></button><button id="calcbtn" class="tb"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg> Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
 <aside class="side"><h3><span>👉</span><span class="tx">POSTAW NA — podpowiedzi na żywo</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div id="plan" class="plan2"></div><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
 <div class="pills">
-<button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
-${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${TIER[k][1]}<small>${cnt(k)}</small></button>`).join('')}
-<button data-f="fav">☆ ULUBIONE</button><button data-f="moje">💰 MOJE ZAKŁADY</button><button data-f="hist">📒 HISTORIA</button>
+<button data-f="all" class="on">ALL<small>${rows.length}</small></button>
+${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${{ must: 'MUST', szansa: 'CHANCE', ryzyko: 'RISK', reszta: 'REST' }[k]}<small>${cnt(k)}</small></button>`).join('')}
+<button data-f="fav">☆ LIKE</button><button data-f="moje">💰 MINE</button><button data-f="hist">📒 HISTORY</button><a class="bot" href="portfel.html" title="Portfel Claude — wirtualna pula, moje typy i rozliczenie">AI BOT</a>
 </div>
 ${groups.map(league).join('')}
 <section id="hist" class="lg hide"></section>
@@ -442,6 +443,7 @@ let curF='all';function applyFilter(){const f=curF,H=f==='hist';document.getElem
 rows.forEach(m=>m.classList.toggle('hide',H||(m.classList.contains('fin')&&f!=='moje')||!(f==='all'||(f==='fav'?fav.has(m.dataset.id):f==='moje'?!!m.querySelector('.dot.r'):m.dataset.tier===f))));
 document.querySelectorAll('.lg[data-lid]').forEach(l=>l.classList.toggle('hide',!l.querySelector('.m:not(.hide)')));}
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));curF=b.dataset.f;applyFilter();});
+{const hb=document.querySelector('.pills [data-f="'+location.hash.slice(1).replace(/[^a-z]/g,'')+'"]');if(hb)hb.click();}
 document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';});
 // Kalkulator: szansa gola z Poissona (śr. goli × pozostałe minuty), podatek 12% od stawki
 (()=>{const $=id=>document.getElementById(id),num=v=>parseFloat(String(v).replace(',','.')),zl=x=>(x>=0?'+':'−')+Math.abs(x).toFixed(2).replace('.',',')+' zł',k2=x=>x.toFixed(2).replace('.',',');
