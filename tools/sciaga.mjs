@@ -3,7 +3,8 @@
 // Użycie: node tools/sciaga.mjs [YYYY-MM-DD]  → sciaga/index.html (poza gitem — repo jest publiczne)
 import { writeFileSync, mkdirSync } from 'node:fs';
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
-const DATE = process.argv[2] || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+const ARGS = process.argv.slice(2), PLUS = (ARGS.find(a => a.startsWith('--plus=')) || '').slice(7).split(',').filter(Boolean);
+const DATE = ARGS.find(a => /^\d{4}-\d\d-\d\d$/.test(a)) || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
 // [kod flagi flagcdn | null = logo ligi, KRAJ, nazwa ligi]
 const LEAGUES = { 2: ['eu', 'EUROPA', 'Liga Mistrzów'], 135: ['it', 'WŁOCHY', 'Serie A'], 136: ['it', 'WŁOCHY', 'Serie B'], 40: ['gb-eng', 'ANGLIA', 'Championship'], 39: ['gb-eng', 'ANGLIA', 'Premier League'], 41: ['gb-eng', 'ANGLIA', 'League One'], 179: ['gb-sct', 'SZKOCJA', 'Premiership'], 3: ['eu', 'EUROPA', 'Liga Europy'], 848: ['eu', 'EUROPA', 'Liga Konferencji'] };
 let last = 0;
@@ -27,9 +28,15 @@ async function weather(city, iso) {
 }
 
 // 1. Mecze dnia
-const fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
+let fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
   .filter(f => LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
-  .sort((a, b) => a.fixture.date.localeCompare(b.fixture.date));
+  ;
+// --plus=id,id → dodatkowe mecze spoza listy lig (np. test na żywo)
+if (PLUS.length) for (const f of (await af(`/fixtures?ids=${PLUS.join('-')}`)).response || []) {
+  LEAGUES[f.league.id] ||= [null, (f.league.country === 'World' ? 'ŚWIAT' : f.league.country).toUpperCase(), f.league.name];
+  if (!fx.some(x => x.fixture.id === f.fixture.id)) fx.push(f);
+}
+fx.sort((a, b) => a.fixture.date.localeCompare(b.fixture.date));
 
 // 2. Tabele
 const table = {};
@@ -95,7 +102,7 @@ const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
 const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span>${t ? `<span class="pos" title="Miejsce w tabeli">${t.rank}.</span>` : ''}${m ? `<span class="musi ${/MUSI/.test(m) ? '' : 'soft'}">${/MUSI/.test(m) ? 'MUSI' : 'TOP 8'}</span>` : ''}</div>`;
-const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}">
+const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
@@ -115,7 +122,13 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 Manrope,system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .top{background:var(--panel);padding:14px 16px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
 .top h1{margin:0;font-size:18px;letter-spacing:.02em}.top h1 b{color:var(--acc)}.top .meta{color:var(--dim);font-size:12px}
-.wrap{max-width:1100px;margin:0 auto;padding:12px}
+.wrap{max-width:1500px;margin:0 auto;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.side{order:2;position:sticky;top:12px;background:var(--panel);border-radius:8px;overflow:hidden;max-height:calc(100vh - 24px);display:flex;flex-direction:column}
+.side h3{margin:0;background:var(--lh);padding:10px 12px;font-size:13px;letter-spacing:.04em}.side .hl{overflow-y:auto}
+.side .empty{color:var(--dim);font-size:12px;padding:14px 12px}
+.hint{padding:10px 12px;border-top:1px solid var(--line);font-size:12px}.hint.new{background:color-mix(in srgb,var(--red) 18%,var(--panel))}
+.hint .hm{color:var(--dim)}.hint .ha{font-size:15px;font-weight:800;margin:3px 0}.hint .hw{color:var(--dim)}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}.side{position:static;order:-1;max-height:260px}}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
 .pills button{background:#0d2f3c;color:var(--text);border:2px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;cursor:pointer}
 .pills button.on{background:var(--red);border-color:#0b5cff}.pills small{opacity:.75;font-weight:600;margin-left:4px}
@@ -148,6 +161,8 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
 <div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
+<aside class="side"><h3>👉 POSTAW NA — podpowiedzi na żywo</h3><div class="hl" id="hl"><div class="empty">Pojawią się tu same, gdy coś się zacznie dziać: nacisk drużyny, drużyna MUSI a nie wygrywa, czerwona kartka prowadzącego. Sprawdzam co 30 s.</div></div></aside>
+<main>
 <div class="pills">
 <button data-f="all" class="on">WSZYSTKIE<small>${rows.length}</small></button>
 ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${TIER[k][1]}<small>${cnt(k)}</small></button>`).join('')}
@@ -155,9 +170,15 @@ ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="$
 </div>
 ${groups.map(league).join('')}
 <footer>Kursy przedmeczowe — na żywo sprawdzaj w STS. MUSI = drużyna w Lidze Mistrzów walczy o top 24, TOP 8 = walczy o 1/8. Odśwież: w czacie „odśwież ściągę”.</footer>
+</main>
 </div>
 <script>
 // Na żywo: co 30 s pobiera wyniki, minutę i czerwone kartki (api-football, 1-2 zapytania na odświeżenie)
+const H_KEY='sciaga_hints_${DATE}',hints=JSON.parse(localStorage.getItem(H_KEY)||'[]'),fired=new Set(hints.map(h=>h.id)),hist={};
+function beep(){try{const c=new AudioContext(),o=c.createOscillator();o.frequency.value=880;o.connect(c.destination);o.start();o.stop(c.currentTime+.25);}catch(e){}}
+function drawHints(){if(!hints.length)return;document.getElementById('hl').innerHTML=hints.map(h=>'<div class="hint'+(Date.now()-h.ts<120000?' new':'')+'"><div class="hm">'+h.clock+' · '+h.lg+'</div><div class="ha">'+h.icon+' '+h.act+'</div><div class="hw">'+h.match+' · '+h.why+'</div><div class="hw">20 zł · szukaj kursu ok. 1,9</div></div>').join('');}
+function hint(id,icon,act,why,m,label){if(fired.has(id))return;fired.add(id);hints.unshift({id,icon,act,why,match:label,lg:m.dataset.lg,clock:new Date().toLocaleTimeString('pl-PL').slice(0,5),ts:Date.now()});hints.splice(30);localStorage.setItem(H_KEY,JSON.stringify(hints));drawHints();beep();document.title='👉 '+act;}
+drawHints();
 const KEY='${KEY}',FIDS=[...document.querySelectorAll('.m')].map(m=>m.dataset.fid);const prev={};
 async function live(){
   try{
@@ -171,6 +192,21 @@ async function live(){
       if(f.goals.home!=null){const sc=m.querySelectorAll('.sc b');sc[0].textContent=f.goals.home;sc[1].textContent=f.goals.away;}
       const key=f.goals.home+':'+f.goals.away;if(prev[f.fixture.id]&&prev[f.fixture.id]!==key&&isLive){m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),90000);goals.push(f.teams.home.name+' '+key+' '+f.teams.away.name);}
       prev[f.fixture.id]=key;
+      if(isLive&&st!=='HT'&&el){
+        const gh=f.goals.home,ga=f.goals.away,H=f.teams.home.name,A=f.teams.away.name,label=H+' '+gh+':'+ga+' '+A+' ('+el+"')",id=f.fixture.id,tier=m.dataset.tier;
+        // 1. Nacisk: w 5 min celny + 2 strzały albo 3 rożne
+        for(const t of (f.statistics||[])){const g=Object.fromEntries(t.statistics.map(x=>[x.type,x.value]));const now={el,sh:+g['Total Shots']||0,so:+g['Shots on Goal']||0,co:+g['Corner Kicks']||0};
+          const h=(hist[id+'|'+t.team.id]||=[]);h.push(now);const b=h.filter(x=>x.el<=el-5).pop();
+          if(b&&el<=85){const d={sh:now.sh-b.sh,so:now.so-b.so,co:now.co-b.co};if((d.so>=1&&d.sh>=2)||d.co>=3)hint(id+'n'+Math.floor(el/10),'🔥','Gol '+t.team.name,'naciska: od '+b.el+"' strzały +"+d.sh+', celne +'+d.so+', rożne +'+d.co,m,label);}}
+        // 2. MUSI, a nie wygrywa po 60'
+        const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if(home?gh<=ga:ga<=gh)hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
+        // 3. Ryzyko: faworyt z wyjazdu prowadzi → gol gospodarza
+        if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh)hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, gospodarz goni',m,label);
+        // 4. Szansa: 0:0 lub 1:1 po 55'
+        if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label);
+        // 5. Czerwona dla prowadzącego od 70'
+        if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label);}
+      }
       const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
       m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('afterend','<span class="rc" title="Czerwona kartka"></span>');});
     }
