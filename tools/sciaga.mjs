@@ -194,6 +194,7 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.time small.add{cursor:pointer}.time small.ann{color:#fff;text-decoration:underline dotted}
 .ow{display:flex;flex-direction:column;gap:5px}.lvo{font-size:10px;color:var(--dim)}.lvr{display:flex;gap:4px;margin-left:10px}.lvr u{flex:1;text-align:center}.lvr u:last-child{margin-left:8px}.lvr b{color:var(--red);font-size:9px;letter-spacing:.06em;margin-right:4px}.lvr u{text-decoration:none;color:#fff;font-weight:800}
 .lvc{display:flex;align-items:center;gap:5px;margin:3px 0 0 10px}.lvc .cv{margin-right:auto;font-weight:700}.lvc .cv.ok{color:var(--pos)}.lvc .cv.ko{color:var(--red)}
 .cst{width:34px;background:#0d2f3c;border:1px solid #2c4f5c;border-radius:4px;color:#fff;font:700 11px inherit;text-align:center;padding:1px 2px}.ccb{background:none;border:0;cursor:pointer;padding:0;color:#fff;opacity:.85;display:inline-flex}.ccb:hover{opacity:1}
@@ -297,7 +298,8 @@ async function live(){
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
         const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60),ex?ex+1:0);
-        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">+'+mins+'</small>');}
+        const ann=+(localStorage.getItem('sciaga_add_'+id+(h2?'_2':'_1'))||0);m.dataset.add=h2?(ann||mins):'';m.dataset.ex=ex||0;
+        t.insertAdjacentHTML('beforeend','<small class="add'+(ann?' ann':'')+'" data-k="sciaga_add_'+id+(h2?'_2':'_1')+'" title="'+(ann?'Ogłoszone przez sędziego (wpisane przez Ciebie)':'Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s')+(ex?' · już gra się '+ex+' min doliczonego':'')+'. Kliknij, żeby wpisać czas z tablicy.">+'+(ann||mins)+'</small>');}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
@@ -324,7 +326,7 @@ async function live(){
           const L=[v(OD.ft,'Home'),v(OD.ft,'Draw'),v(OD.ft,'Away'),v(OD.mg,'Over',nextLine)],lv=m.querySelector('.lvo');lv.classList.remove('hide');lv.querySelector('.lvr').innerHTML=L.map(x=>'<u>'+x+'</u>').join('');m.dataset.go=goOdd||'';m.dataset.el=el;miniCalc(m);
           }
         // Uczciwy kurs: szansa gola w pozostałym czasie z Poissona (średnia goli drużyn × pozostałe minuty, presja jako waga)
-        const R=Math.max(2,93-el),avgG=+m.dataset.g||2.6,lamT=avgG*R/90;
+        const R=Math.max(1,90+(+m.dataset.add||3)-el-(+m.dataset.ex||0)),avgG=+m.dataset.g||2.6,lamT=avgG*R/90;
         const fairGoal=1/(1-Math.exp(-lamT)),fairTeam=i=>{const sh=Math.min(.8,Math.max(.25,(window._pt&&window._pt[id]&&window._pt[id].tot>=3)?window._pt[id].p[i]/window._pt[id].tot:.5));return 1/(1-Math.exp(-lamT*sh*1.1));};
         const fx2=x=>x.toFixed(2).replace('.',',');
         for(const t of (f.statistics||[])){const g=Object.fromEntries(t.statistics.map(x=>[x.type,x.value]));const now={el,sh:+g['Total Shots']||0,so:+g['Shots on Goal']||0,co:+g['Corner Kicks']||0};
@@ -429,12 +431,13 @@ document.querySelectorAll('.lh .star').forEach(s=>s.onclick=()=>{s.classList.tog
     r.innerHTML=h+'</table><p style="color:var(--dim);font-size:11px;margin:10px 0 0"><b>Średnio na zakład</b> = ile zarabiasz albo tracisz na jednym takim zakładzie, gdybyś grał go wiele razy. Minus = bukmacher płaci za mało. <b>Opłaca się od kursu</b> = najniższy kurs w STS, przy którym wychodzisz na plus (po 12% podatku).</p>';}})();
 // Mini-kalkulator w wierszu: „+gol” (kolejny gol w meczu) dla wpisanej stawki
 function miniCalc(m){const od=+m.dataset.go,el=+m.dataset.el,cv=m.querySelector('.cv'),st=parseFloat(String(m.querySelector('.cst').value).replace(',','.'))||10;if(!cv)return;
-  const p=1-Math.exp(-(+m.dataset.g||2.7)*Math.max(1,93-el)/90),need=1/(p*0.88),f=x=>x.toFixed(2).replace('.',',');
+  const p=1-Math.exp(-(+m.dataset.g||2.7)*Math.max(1,90+(+m.dataset.add||3)-el-(+m.dataset.ex||0))/90),need=1/(p*0.88),f=x=>x.toFixed(2).replace('.',',');
   if(!od){cv.className='cv';cv.textContent='gol: szansa '+Math.round(p*100)+'%';cv.title='Kolejny gol opłaca się od kursu '+f(need);return;}
   const ev=p*(st*0.88*od-st)-(1-p)*st,win=st*0.88*od-st;cv.className='cv '+(ev>0?'ok':'ko');cv.textContent=ev>0?'✓ graj gol':'✗ nie graj · od '+f(need);
   cv.title='Kolejny gol w meczu: szansa '+Math.round(p*100)+'%. Za '+st+' zł wygrasz na czysto '+f(win)+' zł, przegrasz '+st+' zł. Średnio na taki zakład: '+(ev>=0?'+':'−')+f(Math.abs(ev))+' zł. Opłaca się od kursu '+f(need)+' (po podatku 12%).';}
 document.addEventListener('input',e=>{if(e.target.classList.contains('cst'))miniCalc(e.target.closest('.m'));});
 document.addEventListener('click',e=>{const b=e.target.closest('.ccb');if(!b)return;const m=b.closest('.m');document.getElementById('calcbtn').click();const c=document.getElementById('cm');c.value=m.dataset.fid;if(c.value!==m.dataset.fid){const o=document.createElement('option');o.value=m.dataset.fid;o.textContent=m.dataset.h+' – '+m.dataset.a;c.append(o);c.value=m.dataset.fid;}c.onchange();document.getElementById('cs').value=m.querySelector('.cst').value;document.getElementById('cmin').value=m.dataset.el||'';if(m.dataset.go)document.getElementById('co').value=String(m.dataset.go).replace('.',',');document.getElementById('cs').oninput();});
+document.addEventListener('click',e=>{const a=e.target.closest('small.add');if(!a)return;const v=prompt('Ile minut doliczył sędzia? (z tablicy / STS)',a.textContent.replace('+',''));if(v===null)return;const n=parseInt(v);if(n>0)localStorage.setItem(a.dataset.k,n);else localStorage.removeItem(a.dataset.k);a.textContent='+'+(n>0?n:'?');a.classList.toggle('ann',n>0);const m=a.closest('.m');if(n>0)m.dataset.add=n;miniCalc(m);});
 </script>
 </body></html>`;
 mkdirSync(new URL('../sciaga/', import.meta.url), { recursive: true });
