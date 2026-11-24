@@ -156,7 +156,7 @@ footer{padding-bottom:45vh}}
 .pos{color:var(--dim);font-size:11px;background:#0d2f3c;border-radius:4px;padding:1px 0;width:24px;justify-content:center;text-align:center}
 .musi{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;letter-spacing:.05em}.musi.soft{background:#0b5cff}
 .g{text-align:center;font-weight:800;font-size:16px}.g small{display:block;font-size:10px;font-weight:500;color:var(--dim)}.g.hot{color:var(--acc)}.g.warm{color:var(--warn)}
-.odds{display:flex;gap:4px;margin-left:10px}.odds span{flex:1;background:#0d2f3c;border-radius:4px;text-align:center;padding:4px 0;font-weight:700;font-size:13px}.odds i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:500}
+.odds{display:flex;gap:4px;margin-left:10px}.odds span:last-child{margin-left:8px}.odds span{flex:1;background:#0d2f3c;border-radius:4px;text-align:center;padding:4px 0;font-weight:700;font-size:13px}.odds i{display:block;font-style:normal;font-size:10px;color:var(--dim);font-weight:500}
 .wx{color:var(--dim);font-size:12px;text-align:center}
 .plan{display:flex;flex-direction:column;gap:4px;font-size:12px}.pt{color:var(--text);font-weight:600}
 .badge{align-self:flex-start;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.05em}
@@ -218,7 +218,7 @@ async function live(){
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
         const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60));
-        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">+'+mins+" min</small>");}
+        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">+'+mins+'</small>');}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
