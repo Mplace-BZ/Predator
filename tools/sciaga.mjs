@@ -101,7 +101,7 @@ const cnt = k => rows.filter(r => r.tier === k).length;
 const groups = [];
 for (const r of rows) { let g = groups.find(x => x.lid === r.lid); if (!g) groups.push(g = { lid: r.lid, flag: r.flag, country: r.country, lname: r.lname, rs: [] }); g.rs.push(r); }
 
-const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span>${t ? `<span class="pos" title="Miejsce w tabeli">${t.rank}.</span>` : ''}${m ? `<span class="musi ${/MUSI/.test(m) ? '' : 'soft'}">${/MUSI/.test(m) ? 'MUSI' : 'TOP 8'}</span>` : ''}</div>`;
+const team = (name, logo, t, m) => `<div class="team"><img src="${esc(logo)}" alt="" loading="lazy"><span class="tn">${esc(name)}</span>${t ? `<span class="pos" title="Miejsce w tabeli">${t.rank}.</span>` : ''}${m ? `<span class="musi ${/MUSI/.test(m) ? '' : 'soft'}">${/MUSI/.test(m) ? 'MUSI' : 'TOP 8'}</span>` : ''}<button class="dot" title="Znacznik: 1 klik = obserwuj (pomarańczowy), 2 kliki = gram (zielony), 3 = wyłącz"></button></div>`;
 const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r.fid}" data-h="${esc(r.H)}" data-a="${esc(r.A)}" data-must="${esc(r.mH && /MUSI/.test(r.mH) ? r.H : r.mA && /MUSI/.test(r.mA) ? r.A : r.mH ? r.H : r.mA ? r.A : '')}" data-lg="${esc(r.country + ': ' + r.lname)}">
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
@@ -162,6 +162,9 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
+.dot{margin-left:auto;flex:none;width:12px;height:12px;border-radius:50%;border:1.5px solid #2c4f5c;background:none;padding:0;cursor:pointer}
+.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}
+.team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}
 .gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
 .m.fv{opacity:1!important;background:color-mix(in srgb,#fff 4%,var(--panel))}.m.fv .tn{font-weight:800;color:#fff}.m.fv .star{color:#ffd400;font-size:22px}
@@ -275,6 +278,11 @@ const K='sciaga_fav';const fav=new Set(JSON.parse(localStorage.getItem(K)||'[]')
 const rows=[...document.querySelectorAll('.m')];
 rows.forEach((m,i)=>{const id=m.querySelector('.tn').textContent+'|'+m.querySelectorAll('.tn')[1].textContent;m.dataset.id=id;const s=m.querySelector('.star');if(fav.has(id))s.classList.add('on'),s.textContent='★',m.classList.add('fv');
 s.onclick=()=>{fav.has(id)?fav.delete(id):fav.add(id);localStorage.setItem(K,JSON.stringify([...fav]));s.classList.toggle('on');s.textContent=s.classList.contains('on')?'★':'☆';m.classList.toggle('fv',fav.has(id));setFocus();}});
+// Znaczniki drużyn: puste → pomarańczowy (obserwuj) → zielony (gram) → puste
+const DK='sciaga_dots',dots=JSON.parse(localStorage.getItem(DK)||'{}'),ST=['','o','g'];
+document.querySelectorAll('.m').forEach(m=>m.querySelectorAll('.team').forEach((tm,i)=>{const b=tm.querySelector('.dot'),k=m.dataset.fid+'|'+i;
+  const show=()=>{b.classList.toggle('o',dots[k]==='o');b.classList.toggle('g',dots[k]==='g');};show();
+  b.onclick=e=>{e.stopPropagation();dots[k]=ST[(ST.indexOf(dots[k]||'')+1)%3];if(!dots[k])delete dots[k];localStorage.setItem(DK,JSON.stringify(dots));show();};}));
 function setFocus(){document.body.classList.toggle('focus',fav.size>0);}setFocus();
 document.querySelectorAll('.pills button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pills button').forEach(x=>x.classList.toggle('on',x===b));const f=b.dataset.f;
 rows.forEach(m=>m.classList.toggle('hide',!(f==='all'||(f==='fav'?fav.has(m.dataset.id):m.dataset.tier===f))));
