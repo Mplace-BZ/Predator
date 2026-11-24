@@ -382,10 +382,10 @@ async function live(){
       const ucl=f.league.id===2,add=(sc,act,why,lam)=>picks.push({sc:sc+(ucl?1.5:0),act,why,lbl,fid:f.fixture.id,fair:fair(lam)});
       if(h1&&el>=8&&el<=38&&g>=2&&g/el*90>=4)add(5,'Kolejny gol do przerwy','tempo '+g+' goli w '+el+"' — mecz otwarty",rate*remH/90);
       if(reds('home')!==reds('away')){const ten=reds('home')?'away':'home',nm=f.teams[ten].name;add(6,'Gol '+nm,'rywal gra w dziesiątkę',rate*0.6*remM/90);}
-      const fav=o1&&o1<=1.45?'home':o2&&o2<=1.45?'away':null;if(fav){const fn=fav==='home'?H:A,lead=fav==='home'?gh-ga:ga-gh;if(lead<=0&&el>=12)add(h1?4:3,(h1?'Gol do przerwy: ':'Gol: ')+fn,'faworyt (kurs '+String(fav==='home'?o1:o2).replace('.',',')+') nie prowadzi',rate*0.7*(h1?remH:remM)/90);}
+      const fav=o1&&o1<=1.45?'home':o2&&o2<=1.45?'away':null;if(fav){const fn=fav==='home'?H:A,lead=fav==='home'?gh-ga:ga-gh;if(lead<=0&&el>=12&&(!h1||el<=36))add(h1?4:3,(h1?'Gol do przerwy: ':'Gol: ')+fn,'faworyt (kurs '+String(fav==='home'?o1:o2).replace('.',',')+') nie prowadzi',rate*0.7*(h1?remH:remM)/90);}
       const mu=m.dataset.must;if(mu&&el>=50){const home=mu===m.dataset.h,my=home?gh:ga,th=home?ga:gh;if(my<=th)add(4,'Padnie gol w meczu',mu+' MUSI, a jest '+gh+':'+ga+' — otworzy się, kontry też się liczą',rate*remM/90);}
       if(h1&&g===0&&el>=18&&el<=38&&(+m.dataset.g||0)>=3.5)add(3,'Gol do przerwy','ich mecze: średnio '+String(m.dataset.g).replace('.',',')+' gola, a jest 0:0',rate*remH/90);}
-      picks.sort((a,b)=>b.sc-a.sc);const top=picks.slice(0,3),k2=x=>x.toFixed(2).replace('.',',');
+      picks.sort((a,b)=>b.sc-a.sc);const top=picks.filter(p=>p.fair<=3.5).slice(0,3),k2=x=>x.toFixed(2).replace('.',',');
       document.getElementById('plan').innerHTML=top.length?'<h4>PLAN NA TERAZ</h4>'+top.map(p=>'<div class="pl" data-fid="'+p.fid+'"><div><b>'+p.act+'</b><small>'+p.lbl+' · '+p.why+'</small></div><div class="po">graj od<br><b>'+k2(p.fair)+'</b></div></div>').join(''):'';}catch(e){console.error(e);}
     document.getElementById('lb').innerHTML='● na żywo: <b>'+nLive+'</b> w grze · odświeżono '+new Date().toLocaleTimeString('pl-PL');
     if(goals.length){document.title='⚽ GOL! '+goals[0];setTimeout(()=>document.title='Ściąga ${DATE}',60000);}
