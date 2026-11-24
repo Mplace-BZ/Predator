@@ -74,7 +74,7 @@ for (const f of fx) {
 
   // Koszyk: MUSZĄ > RYZYKO > SZANSA > reszta
   let tier = 'reszta', plan = '';
-  const awayFav = o2 && o1 && o2 < o1 && o2 <= 2.1;
+  const awayFav = o2 && o1 && o2 < o1 && o2 <= 2.1 && o1 <= 4.5;
   if (mH || mA) {
     tier = 'must';
     const who = mH && /MUSI/.test(mH) ? H.name : mA && /MUSI/.test(mA) ? A.name : mH ? H.name : A.name;
@@ -164,7 +164,7 @@ footer{padding-bottom:45vh}}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
 .dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
-.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
+.dot:focus{outline:none}.dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}.dot.r{background:var(--red);border-color:var(--red)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}.team:has(.dot.r) .tn{color:var(--red)}
 .gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.na{opacity:.45;position:relative}.gg.na::after{content:'?';position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
 .focus .m:not(.fv){opacity:.38}.focus .m:not(.fv):hover{opacity:.8}
@@ -249,9 +249,10 @@ async function live(){
         gg.querySelector('.nd').style.transform='rotate('+Math.round(v*90)+'deg)';gg.classList.toggle('on',tot>0);const na=!(f.statistics||[]).length;gg.classList.toggle('na',na);gg.classList.toggle('hot',tot>=4&&Math.abs(v)>=0.4);
         gg.title=na?'Brak statystyk w API dla tego meczu — nie wiadomo, kto naciska':'Presja (10 min): '+H+' '+pres[0]+' · '+A+' '+pres[1]+' (strzały + 2×celne + rożne)';
         // 2. MUSI, a nie wygrywa po 60'
-        const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if(home?gh<=ga:ga<=gh)hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
+        const press=i=>!na0&&tot>=3&&pres[i]/tot>=0.55;
+        const mu=m.dataset.must;if(tier==='must'&&mu&&el>=60&&el<=80){const home=mu===m.dataset.h;if((home?gh<=ga:ga<=gh)&&press(home?0:1))hint(id+'m','🔥','Gol '+mu,'musi wygrać, a jest '+gh+':'+ga,m,label);}
         // 3. Ryzyko: faworyt z wyjazdu prowadzi → gol gospodarza
-        if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh)hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, gospodarz goni',m,label);
+        if(tier==='ryzyko'&&el>=55&&el<=80&&ga>gh&&press(0))hint(id+'r'+gh+ga,'🎲','Gol '+H,'faworyt prowadzi, a '+H+' naciska ('+pres[0]+' vs '+pres[1]+')',m,label);
         // 4. Szansa: 0:0 lub 1:1 po 55'
         if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label);
         // 5. Czerwona dla prowadzącego od 70'
