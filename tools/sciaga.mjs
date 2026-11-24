@@ -144,7 +144,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <div class="wx">${wxs(r.wx)}</div>
 <div class="plan">${r.h2h ? `<span class="h2" title="Ostatnie ${r.h2h.n} meczów między nimi: bilans ${esc(r.H)} (wygrane-remisy-porażki) i średnia goli">H2H ${r.h2h.w}-${r.h2h.d}-${r.h2h.l} · Ø ${r.h2h.avg.toFixed(1).replace('.', ',')} gola</span>` : ''}${r.tier === 'reszta' ? '' : `<span class="badge b-${r.tier}">${TIER[r.tier][0]} ${TIER[r.tier][1]}</span><span class="pt">${esc(r.plan)}</span>`}</div>
 </div>`;
-const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga" title="Zapal albo zgaś gwiazdki wszystkich meczów tej ligi">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span></div>${g.rs.map(row).join('')}</section>`;
+const league = g => `<section class="lg" data-lid="${g.lid}"><div class="lh"><button class="star" aria-label="Ulubiona liga" title="Zapal albo zgaś gwiazdki wszystkich meczów tej ligi">☆</button><img src="${esc(g.flag)}" alt=""><span><b>${esc(g.country)}:</b> ${esc(g.lname)}</span><span class="n">${g.rs.length}</span><button class="cl" aria-label="Zwiń albo rozwiń ligę" title="Zwiń albo rozwiń mecze tej ligi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>${g.rs.map(row).join('')}</section>`;
 
 const FAV = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M8 38C8 24 20 16 30 2c2 9 6 12 11 8 2 6 7 8 13 3 0 7 4 10 8 14 2 10-4 20-16 26L20 58z" fill="#FF5A1F"/><path d="M16 36c2-9 10-14 16-22 1 6 4 8 8 5 2 5 6 6 10 3 1 6 4 9 6 12 0 7-5 13-14 17L22 54z" fill="#FFB347"/><circle cx="25" cy="40" r="20" fill="#fff" stroke="#00141e" stroke-width="2.6"/><path d="M25 31l7.6 5.5-2.9 9h-9.4l-2.9-9z" fill="#00141e"/><path d="M25 20v11M32.6 36.5l10-3.5M29.7 45.5l6 8.5M20.3 45.5l-6 8.5M17.4 36.5l-10-3.5" stroke="#00141e" stroke-width="2.3" fill="none"/></svg>';
 const updated = new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' });
@@ -182,7 +182,7 @@ footer{padding-bottom:45vh}}
 .pills button.on{background:var(--red);border-color:#0b5cff}.pills small{opacity:.75;font-weight:600;margin-left:4px}
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
-.lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}
+.lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}.lh .cl{background:none;border:0;color:var(--dim);cursor:pointer;padding:2px 4px;line-height:0;border-radius:6px}.lh .cl:hover{color:var(--text);background:#0d2f3c}.lh .cl svg{transition:transform .15s}.lg.col .cl svg{transform:rotate(-90deg)}.lg.col .m{display:none}
 .m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 62px 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
@@ -406,7 +406,7 @@ mn.onclick=e=>{e.stopPropagation();st.min=!st.min;localStorage.setItem(PK,JSON.s
 let d=null;h.addEventListener('pointerdown',e=>{if(!narrow()||e.target===mn)return;const r=sd.getBoundingClientRect();d={dx:e.clientX-r.left,dy:e.clientY-r.top};h.setPointerCapture(e.pointerId);});
 h.addEventListener('pointermove',e=>{if(!d)return;st.x=e.clientX-d.dx;st.y=e.clientY-d.dy;put();});
 h.addEventListener('pointerup',()=>{if(d){d=null;localStorage.setItem(PK,JSON.stringify(st));}});})();
-live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);});setInterval(live,15000);
+setTimeout(()=>live().then(()=>{if(location.hash==='#gol')setTimeout(simGol,1500);}),0);setInterval(live,15000); // start po wczytaniu całego skryptu (inaczej dane z drugiej karty trafiały na niegotowe funkcje)
 // Symulacja gola (otwórz stronę z #gol na końcu adresu): pierwszy mecz w grze, +1 dla gospodarzy
 function simGol(){const m=document.querySelector('.m.live')||document.querySelector('.m');const sr=m.querySelectorAll('.sr');const b=sr[0].querySelector('b');b.textContent=(+b.textContent||0)+1;
 sr.forEach((r,i)=>r.querySelector('b').classList.toggle('last',i===0));m.classList.add('goal');setTimeout(()=>m.classList.remove('goal'),10000);
@@ -450,6 +450,8 @@ const a=document.querySelector('.pills a.bot');if(a)a.innerHTML='AI BOT'+(n?'<sm
 function botLoad(){const s=document.createElement('script');s.src='portfel.js?t='+Date.now();s.onload=()=>{botMark();s.remove();};s.onerror=()=>s.remove();document.head.appendChild(s);}
 botLoad();setInterval(botLoad,30000);
 {const hb=document.querySelector('.pills [data-f="'+location.hash.slice(1).replace(/[^a-z]/g,'')+'"]');if(hb)hb.click();}
+// Zwijanie ligi: strzałka po prawej, stan pamiętany w przeglądarce
+{const CK='sciaga_col',col=new Set(JSON.parse(localStorage.getItem(CK)||'[]'));document.querySelectorAll('.lg[data-lid]').forEach(l=>{const b=l.querySelector('.lh .cl');if(!b)return;l.classList.toggle('col',col.has(l.dataset.lid));b.onclick=()=>{const on=l.classList.toggle('col');on?col.add(l.dataset.lid):col.delete(l.dataset.lid);localStorage.setItem(CK,JSON.stringify([...col]));};});}
 // Gwiazdka ligi: zapala albo gasi gwiazdki wszystkich (niezakończonych) meczów tej ligi
 const lgRows=l=>{const a=[...l.querySelectorAll('.m:not(.fin)')];return a.length?a:[...l.querySelectorAll('.m')];};
 function lgSync(){document.querySelectorAll('.lg').forEach(l=>{const s=l.querySelector('.lh .star');if(!s)return;const ms=lgRows(l),on=ms.length>0&&ms.every(m=>fav.has(m.dataset.id));s.classList.toggle('on',on);s.textContent=on?'★':'☆';});}
