@@ -36,7 +36,7 @@ for (let i = 0; i < 180; i++) {
           fire(`NACISK ${t.team.name} — od ${base.el}' do ${el}': strzały +${d.shots}, celne +${d.sot}, rożne +${d.cor} · ${label}`);
       }
     }
-    if (reds > s.reds && i > 0 && !ONLY_PRESS) fire(`CZERWONA KARTKA — ${label}`);
+    if (reds > s.reds && i > 0) fire(`CZERWONA KARTKA — ${label}`);
     s.reds = reds;
   }
   console.log(`${new Date().toLocaleTimeString('pl-PL')} ` + hits.map(f => `${f.teams.home.name} ${f.goals.home}:${f.goals.away} ${f.fixture.status.elapsed}'`).join(' · '));
