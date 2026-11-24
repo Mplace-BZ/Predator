@@ -106,7 +106,7 @@ const row = r => `<div class="m t-${r.tier}" data-tier="${r.tier}" data-fid="${r
 <button class="star" aria-label="Ulubiony">☆</button>
 <div class="time" data-t="${r.time}">${r.time}</div>
 <div class="teams">${team(r.H, r.hLogo, r.tH, r.mH)}${team(r.A, r.aLogo, r.tA, r.mA)}</div>
-<div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 48 28" width="48" height="28"><path d="M4 26 A20 20 0 0 1 44 26" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><g class="nd" style="transform:rotate(0deg);transform-origin:24px 26px;transition:transform .8s"><line x1="24" y1="26" x2="24" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="24" cy="26" r="2.5" fill="currentColor"/></svg></div>
+<div class="gg" title="Kto naciska (ostatnie 10 min): lewo = gospodarze, prawo = goście, góra = równo"><svg viewBox="0 0 60 30" width="60" height="30"><path d="M10 27 A20 20 0 0 1 50 27" fill="none" stroke="#163d4b" stroke-width="4" stroke-linecap="round"/><line x1="30" y1="3" x2="30" y2="9" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/><text x="1" y="29" font-size="8" font-weight="700" fill="#8ba0a8">H</text><text x="53" y="29" font-size="8" font-weight="700" fill="#8ba0a8">V</text><g class="nd" style="transform:rotate(0deg);transform-origin:30px 27px;transition:transform .8s"><line x1="30" y1="27" x2="30" y2="11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></g><circle cx="30" cy="27" r="2.5" fill="currentColor"/></svg></div>
 <div class="sc"><div class="sr"><i></i><i></i><b>–</b></div><div class="sr"><i></i><i></i><b>–</b></div></div>
 <div class="g ${goalsCls(r.avgGoals)}" title="Średnia goli na mecz w tym sezonie: mecze gospodarzy u siebie i gości na wyjeździe. Nie jest to prognoza na ten mecz.">${f1(r.avgGoals)}<small>śr. goli</small></div>
 <div class="odds"><span><i>1</i>${f2(r.o1)}</span><span><i>X</i>${f2(r.ox)}</span><span><i>2</i>${f2(r.o2)}</span><span><i>+2,5</i>${f2(r.ou)}</span></div>
@@ -147,7 +147,7 @@ footer{padding-bottom:45vh}}
 .lg{background:var(--panel);border-radius:8px;overflow:hidden;margin-bottom:12px}
 .lh{display:flex;align-items:center;gap:10px;background:var(--lh);padding:8px 12px;font-size:13px;text-transform:uppercase;letter-spacing:.02em}
 .lh img{width:22px;height:15px;object-fit:cover;border-radius:2px}.lh b{font-weight:800}.lh .n{margin-left:auto;color:var(--dim);font-size:12px}
-.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 50px 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.m{display:grid;grid-template-columns:28px 52px minmax(200px,1.4fr) 62px 76px 58px 220px 44px minmax(190px,1.2fr);align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
 .m:hover{background:#062634}
 .star{background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1}.star.on{color:#ffd400}
 .time{color:var(--dim);font-weight:700;font-size:14px}
@@ -172,7 +172,7 @@ footer{padding-bottom:45vh}}
 .rc{display:inline-block;width:9px;height:13px;background:var(--red);border-radius:2px;margin-left:2px}
 .m.goal{opacity:1!important;background:color-mix(in srgb,var(--red) 38%,var(--panel))}.m.goal .time::after{content:' GOL';color:var(--red);font-size:11px}
 .livebar{color:var(--dim);font-size:12px}.livebar b{color:var(--red)}
-@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 44px 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/7;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
+@media(max-width:820px){.m{grid-template-columns:24px 44px minmax(0,1fr) 60px 28px 50px;row-gap:6px;gap:8px;padding:8px}.odds,.wx,.sr i{display:none}.plan{grid-column:2/7;min-width:0}.top .meta{font-size:11px}.pills button{padding:7px 10px}}
 .m>*{min-width:0}
 footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
