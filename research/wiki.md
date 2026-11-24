@@ -52,6 +52,7 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Słabszy strzelił pierwszy, więc mocniejszy musi się otworzyć i padają gole.**
 - **Dwumecz:** w pucharach liczy się wynik łączny, nie wynik tego meczu. Kto prowadzi w dwumeczu, nie musi gonić.
 - **Jaka to stawka:** Liga Mistrzów i mecz, w którym ktoś MUSI wygrać, to inna gra niż środek tabeli zwykłej ligi.
+- **Kurs nie pasuje do tabeli:** wicelider gra z ostatnią drużyną, a kurs na niego to 2,15 zamiast ok. 1,40. Bukmacher już wie o rezerwach. Taki rozjazd to sygnał, żeby sprawdzić skład, a nie okazja.
 - **Ważny mecz za kilka dni:** drużyna może oszczędzać skład. Potwierdzone 2026-11-24 na Palmeiras (finał Copa Libertadores za 4 dni). Sprawdzać ZAWSZE przed zakładem na faworyta.
 - **Odbicie po porażce w pucharach:** mocna drużyna wraca do ligi i chce się pokazać. Do sprawdzenia na liczbach.
 - **Tabela:** kto walczy o tytuł, kto o utrzymanie, kto gra o nic.
@@ -84,7 +85,8 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 
 - **api-football (mamy, plan Ultra):** wyniki i statystyki na żywo, kursy na żywo, wyjściowe składy (ok. 40 minut przed meczem), kontuzje, najbliższe mecze drużyny, H2H, tabela.
 - **AiScore (Chris ogląda ręcznie):** ataki i groźne ataki, pasek przebiegu meczu. Tego w naszym źródle nie ma.
-- **FootyStats (29,99 funta miesięcznie, nie mamy):** średnie sezonowe xG i groźnych ataków, historia meczów z kursami i minutami goli. Nie ma danych na żywo (wyniki co 20 minut), kontuzji ani najbliższych meczów drużyny. Przydatne tylko do jednorazowego sprawdzenia zasady nr 1 na historii.
+- **FootyStats (publiczne karty meczów, za darmo, bez logowania):** xG u siebie i na wyjeździe, gole w przedziałach minut, kto strzela pierwszy, ostatnio używany skład, kontuzje. Adres: footystats.org/kraj/gospodarz-vs-gość-h2h-stats. Logowanie automatem blokuje ich zabezpieczenie i nie jest potrzebne. Płatne API (29,99 funta miesięcznie) dałoby to samo maszynowo plus historię z kursami.
+- **Uwaga na FootyStats:** pokazuje „ostatnio używany skład”, a nie skład na dziś. Przy Palmeiras 2026-11-24 pokazał gwiazdy i kurs 1,38, a na boisko wyszły rezerwy. Prawdziwy skład jest tylko w api-football, 40 minut przed meczem.
 
 ## 6. Do sprawdzenia
 
