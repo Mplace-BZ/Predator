@@ -162,7 +162,7 @@ footer{padding-bottom:45vh}}
 .b-must{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}.b-szansa{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}.b-ryzyko{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .t-reszta{opacity:.55}
 .hide{display:none!important}
-.dot{margin-left:auto;flex:none;width:12px;height:12px;border-radius:50%;border:1.5px solid #2c4f5c;background:none;padding:0;cursor:pointer}
+.dot{margin-left:auto;flex:none;width:8px;height:8px;border-radius:50%;border:1px solid #2c4f5c;background:none;padding:0;cursor:pointer}
 .dot:hover{border-color:var(--dim)}.dot.o{background:var(--acc);border-color:var(--acc)}.dot.g{background:var(--pos);border-color:var(--pos)}
 .team:has(.dot.o) .tn{color:var(--acc)}.team:has(.dot.g) .tn{color:var(--pos)}
 .gg{color:#3a5a66;display:flex;justify-content:center}.gg.on{color:var(--dim)}.gg.hot{color:var(--acc)}.gg svg{display:block}
@@ -217,7 +217,7 @@ async function live(){
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
         const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60));
-        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">dolicz. ~'+mins+"'</small>");}
+        t.insertAdjacentHTML('beforeend','<small title="Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s'+(ex?' · już gra się '+ex+' min doliczonego':'')+'">d. ~'+mins+" min</small>");}
       if(f.goals.home!=null){
         const sr=m.querySelectorAll('.sr'),ht=f.score?.halftime||{},sides=['home','away'];
         // Kto strzelił ostatni: gole z osi zdarzeń; samobój liczymy tak, by suma zgadzała się z wynikiem
