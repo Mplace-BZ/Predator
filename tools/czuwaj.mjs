@@ -5,7 +5,9 @@
 const KEY = '3821c5caa752d0533003cfa14a4c2650';
 const af = async p => { for (let k = 0; k < 4; k++) { try { return (await (await fetch('https://v3.football.api-sports.io' + p, { headers: { 'x-apisports-key': KEY } })).json()).response || []; } catch { await new Promise(r => setTimeout(r, 10_000)); } } return []; };
 const spec = Object.fromEntries(process.argv.slice(2).map(a => { const [id, m = ''] = a.split(':'); return [id, m.split(',').filter(Boolean).map(Number)]; }));
-const prev = {}, hist = {}, lastP = {};
+import fs from 'fs'; import os from 'os'; import path from 'path';
+const MEM = path.join(os.tmpdir(), 'czuwaj-' + Object.keys(spec).sort().join('-') + '.json'); // historia statystyk przetrwa restart budzika
+const prev = {}, { hist = {}, lastP = {} } = fs.existsSync(MEM) ? JSON.parse(fs.readFileSync(MEM, 'utf8')) : {};
 const t = () => new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' });
 for (;;) {
   const fx = await af(`/fixtures?ids=${Object.keys(spec).join('-')}`), out = [];
@@ -34,6 +36,7 @@ for (;;) {
     prev[id] = { sc, reds, st, el };
   }
   console.log(t(), fx.map(f => `${f.teams.home.name} ${f.goals.home ?? '-'}:${f.goals.away ?? '-'} ${f.teams.away.name} ${f.fixture.status.short} ${f.fixture.status.elapsed ?? ''}`).join(' · '));
+  fs.writeFileSync(MEM, JSON.stringify({ hist, lastP }));
   if (out.length) { out.forEach(x => console.log('SYGNAŁ: ' + x)); process.exit(0); }
   if (fx.length && fx.every(f => ['FT', 'AET', 'PEN', 'PST', 'CANC'].includes(f.fixture.status.short))) process.exit(0);
   await new Promise(r => setTimeout(r, 60_000));
