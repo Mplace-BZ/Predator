@@ -21,7 +21,8 @@ while (i < lines.length) {
   else if (l.startsWith('|')) {
     const rows = []; while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++].split('|').slice(1, -1).map(c => c.trim()));
     html += '<div class="card"><table><tr>' + rows[0].map(c => `<th>${inl(c)}</th>`).join('') + '</tr>' + rows.slice(2).map(r => '<tr>' + r.map(c => `<td${VERD[c] ? ` class="v ${VERD[c]}"` : ''}>${inl(c)}</td>`).join('') + '</tr>').join('') + '</table></div>';
-  } else if (l.trim()) { html += `<p>${inl(l)}</p>`; i++; } else i++;
+  } else if (l.startsWith('<')) { html += l; i++; } // gotowy HTML (wykresy) wklejony do notatki
+  else if (l.trim()) { html += `<p>${inl(l)}</p>`; i++; } else i++;
 }
 const out = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <style>
@@ -32,6 +33,10 @@ const out = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta na
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}.pills a{background:#0d2f3c;color:var(--text);border:1px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none}.pills a:hover{border-color:#2b6577}.pills a.on{background:var(--red)}.pills a.r{margin-left:auto}
 h2{font-size:16px;margin:28px 0 10px}h3{font-size:13px;margin:18px 0 6px;color:var(--warn)}p{margin:8px 0;color:var(--text)}ul{margin:6px 0;padding-left:20px}li{margin:5px 0}
 .card{background:var(--panel);border-radius:12px;overflow-x:auto;margin:10px 0}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);padding:10px 12px;background:var(--lh);font-weight:600}
+.ch{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0}.ch>div{background:var(--panel);border-radius:12px;padding:16px}.ch h4{margin:0 0 10px;font-size:13px}.ch small{color:var(--dim);font-weight:400}
+.bars{display:flex;align-items:flex-end;gap:6px;height:150px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--dim)}.bars i{display:block;width:100%;border-radius:4px 4px 0 0;background:linear-gradient(to top,#2f7d55,#d9b95b 60%,#c0472b)}.bars b{color:var(--text);font-weight:700;margin-bottom:3px}.bars span{margin-top:4px;white-space:nowrap}
+.tl{background:var(--panel);border-radius:12px;padding:10px 16px;margin:10px 0}.tl .r{display:grid;grid-template-columns:230px 1fr 44px;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:12px}.tl .r:first-child{border-top:0}.tl .ln{position:relative;height:18px}.tl .ln:before{content:'';position:absolute;left:0;right:0;top:8px;height:2px;background:#1f5a44}.tl .ln u{position:absolute;left:50%;top:0;height:18px;border-left:1px dashed var(--dim);text-decoration:none}.tl .g{position:absolute;top:3px;width:12px;height:12px;border-radius:50%;margin-left:-6px}.tl .h{background:#fff}.tl .a{background:#8ba0a8}.tl .sc{text-align:right;font-weight:800}
+@media(max-width:700px){.ch{grid-template-columns:1fr}.tl .r{grid-template-columns:120px 1fr 36px}}
 td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}.v{font-weight:800;white-space:nowrap}.ok{color:var(--pos)}.no{color:var(--red)}.mid{color:var(--warn)}
 </style></head><body>
 <div class="top"><h1>${ISWIKI ? 'Wiki <b>typowania</b>' : esc(title).replace(/^(\S+ \S+)/, '$1 <b>') + '</b>'}</h1><span class="meta">${ISWIKI ? 'nasza wiedza: liczby, lekcje, przeczucia do sprawdzenia · ' : ''}zaktualizowano ${new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}</span></div>
