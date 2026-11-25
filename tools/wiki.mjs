@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Wiki typowania: research/wiki.md → sciaga/wiki.html (strona lokalna obok ściągi i portfela).
 // Użycie: node tools/wiki.mjs   (po każdej zmianie research/wiki.md)
+//        node tools/wiki.mjs research/lm-2026-11-25.md lm.html   (dowolna notatka .md → sciaga/<plik>.html)
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-const lines = fs.readFileSync(path.join(ROOT, 'research/wiki.md'), 'utf8').split('\n');
+const SRC = process.argv[2] || 'research/wiki.md', OUT = process.argv[3] || 'wiki.html', ISWIKI = OUT === 'wiki.html';
+const lines = fs.readFileSync(path.join(ROOT, SRC), 'utf8').split('\n');
 let html = '', i = 0, title = 'Wiki typowania';
 const VERD = { 'TAK': 'ok', 'NIE': 'no', 'SŁABO': 'mid', 'TAK, ale lekko': 'mid' };
 while (i < lines.length) {
@@ -32,11 +34,11 @@ h2{font-size:16px;margin:28px 0 10px}h3{font-size:13px;margin:18px 0 6px;color:v
 .card{background:var(--panel);border-radius:12px;overflow-x:auto;margin:10px 0}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);padding:10px 12px;background:var(--lh);font-weight:600}
 td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}.v{font-weight:800;white-space:nowrap}.ok{color:var(--pos)}.no{color:var(--red)}.mid{color:var(--warn)}
 </style></head><body>
-<div class="top"><h1>Wiki <b>typowania</b></h1><span class="meta">nasza wiedza: liczby, lekcje, przeczucia do sprawdzenia · zaktualizowano ${new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}</span></div>
+<div class="top"><h1>${ISWIKI ? 'Wiki <b>typowania</b>' : esc(title).replace(/^(\S+ \S+)/, '$1 <b>') + '</b>'}</h1><span class="meta">${ISWIKI ? 'nasza wiedza: liczby, lekcje, przeczucia do sprawdzenia · ' : ''}zaktualizowano ${new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}</span></div>
 <div class="wrap">
-<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a class="r" href="portfel.html">AI BOT</a><a class="on" href="wiki.html">WIKI</a></div>
+<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a class="r${OUT === 'lm.html' ? ' on' : ''}" href="lm.html">LM DZIŚ</a><a href="portfel.html">AI BOT</a><a${ISWIKI ? ' class="on"' : ''} href="wiki.html">WIKI</a></div>
 ${html}
 </div></body></html>`;
 fs.mkdirSync(path.join(ROOT, 'sciaga'), { recursive: true });
-fs.writeFileSync(path.join(ROOT, 'sciaga/wiki.html'), out);
-console.log('gotowe: sciaga/wiki.html');
+fs.writeFileSync(path.join(ROOT, 'sciaga', OUT), out);
+console.log('gotowe: sciaga/' + OUT);

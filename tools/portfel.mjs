@@ -132,7 +132,7 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
 </style></head><body>
 <div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span></div>
 <div class="wrap">
-<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a class="on" href="portfel.html">AI BOT</a><a href="wiki.html">WIKI</a></div>
+<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a href="lm.html" style="margin-left:auto">LM DZIŚ</a><a class="on" href="portfel.html" style="margin-left:0">AI BOT</a><a href="wiki.html">WIKI</a></div>
 <div class="kpi"><div><small>Pula teraz</small><b class="${bal.total > s.start ? 'up' : bal.total < s.start ? 'down' : ''}">${zl(bal.total)}</b></div><div><small>Wolne środki</small><b>${zl(bal.free)}</b></div><div><small>W grze</small><b>${zl(bal.open)}</b></div><div><small>Trafione</small><b>${won}/${done.length}</b></div><div><small>Pula, gdy wejdą wszystkie</small><b class="up">${zl(bal.free + s.bets.filter(b => b.status === 'open').reduce((a, b) => a + b.stake * TAX * b.odd, 0))}</b></div></div>
 <div class="card">${s.bets.length ? `<table><tr><th>#</th><th>Godz.</th><th>Mecz</th><th>Zakład i powód</th><th>Wynik przy wejściu</th><th>Kurs</th><th>Stawka</th><th>Teraz</th><th>Status</th><th>Zysk</th></tr>${[...s.bets].reverse().map(row).join('')}</table>` : '<div class="empty">Jeszcze nic nie zagrałem. Czekam na okazję zgodną z regułami.</div>'}</div>
 <div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Bez AKO.<br><b>Test przyspieszony (start 23:00, 60 minut gry):</b> cel 200 zł. Połowa puli (50 zł) jest nietykalna, drugą połową gram ostro — kilka zakładów na jeden scenariusz, wyższe kursy.<br>
@@ -144,6 +144,7 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
 const [cmd, ...a] = process.argv.slice(2);
 if (cmd === 'scan') await scan();
 else if (cmd === 'sklad') { const f = (await af(`/fixtures?id=${a[0]}`))[0]; for (const t of await sklad(f)) console.log(`${t.name}: ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`); }
+else if (cmd === 'render') await render(load());
 else if (cmd === 'bet') await bet(a[0], a[1], a[2], a[3] || '');
 else if (cmd === 'reset') { const s = { start: +(a[0] || 100), bets: [] }; save(s); await render(s); console.log('portfel wyzerowany:', zl(s.start)); }
 else if (cmd === 'watch') {

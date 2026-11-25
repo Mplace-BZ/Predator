@@ -244,7 +244,7 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 <div class="pills">
 <button data-f="all" class="on">ALL<small>${rows.length}</small></button>
 ${['must', 'szansa', 'ryzyko', 'reszta'].filter(cnt).map(k => `<button data-f="${k}">${TIER[k][0]} ${{ must: 'MUST', szansa: 'CHANCE', ryzyko: 'RISK', reszta: 'REST' }[k]}<small>${cnt(k)}</small></button>`).join('')}
-<button data-f="fav">☆ FAVOURITE</button><button data-f="moje">💰 MY BETS</button><button data-f="hist">📒 HISTORY</button><a class="bot" href="portfel.html" title="Portfel Claude — wirtualna pula, moje typy i rozliczenie">AI BOT</a><a class="bot" href="wiki.html" style="margin-left:0" title="Nasza wiki typowania: liczby, lekcje, tezy">WIKI</a>
+<button data-f="fav">☆ FAVOURITE</button><button data-f="moje">💰 MY BETS</button><button data-f="hist">📒 HISTORY</button><a class="bot" href="lm.html" title="Analiza dzisiejszych meczów Ligi Mistrzów">LM DZIŚ</a><a class="bot" style="margin-left:0" href="portfel.html" title="Portfel Claude — wirtualna pula, moje typy i rozliczenie">AI BOT</a><a class="bot" href="wiki.html" style="margin-left:0" title="Nasza wiki typowania: liczby, lekcje, tezy">WIKI</a>
 </div>
 ${groups.map(league).join('')}
 <section id="hist" class="lg hide"></section>
