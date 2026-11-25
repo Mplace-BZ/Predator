@@ -34,7 +34,7 @@ for (const id of ids) {
 const file = path.join(ROOT, md);
 let s = fs.readFileSync(file, 'utf8');
 const H = '## 5. Wyjściowe składy';
-if (!s.includes(H)) s += `\n${H}\n\nPodstawowi = 11 zawodników, którzy najczęściej zaczynali w ostatnich 8 meczach (wszystkie rozgrywki). 8 i więcej to pełny skład, 5–7 sporo zmian (często kontuzje), 4 i mniej to rezerwy. Wczoraj City wyszło z 6 podstawowymi i i tak odrobiło 0:1, Palmeiras z 0 przegrał 0:3.\n`;
+if (!s.includes(H)) s += `\n${H}\n\nPodstawowi = 11 zawodników, którzy najczęściej zaczynali w ostatnich 8 meczach (wszystkie rozgrywki). 8 i więcej to pełny skład, 5–7 sporo zmian (często kontuzje), 4 i mniej to rezerwy. Wczoraj City wyszło z 6 podstawowymi i tak odrobiło 0:1, Palmeiras z 0 przegrał 0:3.\n`;
 s += `\n${now()}:\n\n${lines.join('\n')}\n`;
 fs.writeFileSync(file, s);
 execFileSync('node', [path.join(ROOT, 'tools/wiki.mjs'), md, html], { stdio: 'inherit' });
