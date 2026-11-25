@@ -105,6 +105,16 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **„8 z 11 podstawowych” nie znaczy „pełny skład”.** Narzędzie liczy podstawowych z ostatnich meczów, więc gwiazda z dłuższą kontuzją (Kane, Olise) już się w tym nie liczy. Bayern wyszedł bez Kane'a, Olise i Neuera, z Musialą i Díazem na ławce, a ja zagrałem na jego gola.
 - **Od teraz przed zakładem na faworyta sprawdzam listę nieobecnych z nazwiska**, a nie samą liczbę podstawowych.
 
+### 2026-11-25, Liga Mistrzów — rozliczenie
+
+- **Portfel Chrisa: 100 → 74,20 zł** (1 z 5 trafionych). **Portfel Claude: 120 → 94,20 zł.** Te same zakłady w obu.
+- **Test 2. połowy, 8 par po 10–25 zł:** PROSTY (moje „X strzeli”) 5 z 8 trafionych, ale **100 → 58,23 zł**. ODWROTNY („X NIE strzeli”) 4 z 8, **100 → 133,70 zł**.
+- **Dlaczego odwrotny zarobił:** moje typy grały faworytów po kursach 1,17–1,53. Wygrana daje grosze, przegrana zabiera całą stawkę. Odwrotne miały kursy 2,4–5,0.
+- **Konkret z bazy:** gospodarz prowadzący 2:0 w przerwie strzela jeszcze w 2. połowie w **64%** meczów (292 mecze). Bukmacher dał na Atlético 1,17, czyli ok. 85%. „Atlético NIE strzeli” po 5,00 miało dużą przewagę i weszło.
+- **Hipoteza do sprawdzenia na sucho:** gdy faworyt już prowadzi albo jest osłabiony (Bayern bez Kane'a), zakład „NIE strzeli” po kursie 2,5+ bywa wart więcej niż „strzeli” po 1,2–1,4. To kłóci się z optymizmem Chrisa (zawsze gra „ktoś strzeli”), dlatego trzeba to sprawdzić na liczbach, a nie na jednym wieczorze.
+- **Typy Chrisa:** gole w 1. połowie trafił lepiej ode mnie. Kupon AKO (Barcelona 5+ i 2 gole w Slavii) przegrał.
+- **Podpowiedzi w panelu wyłączone** po tym, jak Chris na nich stracił (inny model niż w czacie).
+
 ## 6. Źródła danych
 
 - **api-football (mamy, plan Ultra):** wyniki i statystyki na żywo, kursy na żywo, wyjściowe składy (ok. 40 minut przed meczem), kontuzje, najbliższe mecze drużyny, H2H, tabela.
