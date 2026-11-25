@@ -74,6 +74,12 @@ async function bet(fid, market, stake, note) {
     const first = (await af(`/fixtures/headtohead?h2h=${f.teams.home.id}-${f.teams.away.id}&last=3`)).find(x => x.fixture.id !== f.fixture.id && x.league.id === f.league.id && x.league.round === f.league.round && ['FT', 'AET', 'PEN'].includes(x.fixture.status.short) && Date.now() - new Date(x.fixture.date) < 45 * 864e5);
     if (first) { const hA = gh + (first.teams.home.id === f.teams.home.id ? first.goals.home : first.goals.away), aA = ga + (first.teams.home.id === f.teams.away.id ? first.goals.home : first.goals.away); console.log(`DWUMECZ: pierwszy mecz ${first.teams.home.name} ${first.goals.home}:${first.goals.away} ${first.teams.away.name} → łącznie ${f.teams.home.name} ${hA}:${aA} ${f.teams.away.name}. ${hA === aA ? 'Remis w dwumeczu.' : 'Gonić musi ' + (hA < aA ? f.teams.home.name : f.teams.away.name) + '.'}`); }
   }
+  // Bramka „nieobecni z nazwiska” (lekcja 2026-11-25: Bayern bez Kane'a, Olise, Neuera, a liczba podstawowych pokazała „pełny skład”)
+  { const sideTeam = ['sc', 'scn', 'h1', 'tg', 'next'].includes(kind) || kind === 'win' ? (side === 'away' ? f.teams.away : side === 'home' ? f.teams.home : null) : null;
+    const inj = (await af(`/injuries?fixture=${fid}`)).filter(x => x.player.type === 'Missing Fixture');
+    for (const t of [f.teams.home, f.teams.away]) { const miss = inj.filter(x => x.team.id === t.id).map(x => x.player.name); if (miss.length) console.log(`BRAKUJE ${t.name}: ${miss.join(', ')}`); }
+    if (sideTeam && !process.argv.includes('--mimo')) { const miss = inj.filter(x => x.team.id === sideTeam.id); if (miss.length >= 3) throw new Error(`${sideTeam.name} bez ${miss.length} zawodników (${miss.map(x => x.player.name).join(', ')}) — sprawdź, czy to nie kluczowi. Dodaj --mimo, żeby zagrać mimo to.`); }
+  }
   // Bramka „rezerwowy skład”: mniej niż 6 podstawowych w wyjściowej 11 → odrzucam (chyba że --mimo)
   const xi = await sklad(f); for (const t of xi) { const msg = `SKŁAD: ${t.name} — ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`; console.log(msg); if (t.reg < 6 && !process.argv.includes('--mimo')) throw new Error(msg + ' — rezerwowy skład. Dodaj --mimo, żeby zagrać mimo to.'); }
   // Bramka „ważny mecz za kilka dni” (lekcja 2026-11-24: Palmeiras 4 dni przed finałem Copa Libertadores): bez --mimo zakład jest odrzucany
