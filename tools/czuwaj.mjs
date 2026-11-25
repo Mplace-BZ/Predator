@@ -11,12 +11,14 @@ for (;;) {
   const fx = await af(`/fixtures?ids=${Object.keys(spec).join('-')}`), out = [];
   for (const f of fx) {
     const id = String(f.fixture.id), st = f.fixture.status.short, el = f.fixture.status.elapsed || 0;
-    const reds = f.events.filter(e => /Red/.test(e.detail)).length, sc = `${f.goals.home}:${f.goals.away}`;
+    const redOk = e => e.type === 'Card' && /Red/.test(e.detail) && !f.events.some(v => v.type === 'Var' && /red card cancelled/i.test(v.detail || '') && v.player?.id === e.player?.id);
+    const reds = f.events.filter(redOk).length, sc = `${f.goals.home}:${f.goals.away}`;
     const name = `${f.teams.home.name} ${sc} ${f.teams.away.name} (${st === 'HT' ? 'przerwa' : el + "'"})`;
     const p = prev[id];
     if (p) {
       if (p.sc !== sc && !p.sc.includes('null')) { const g = f.events.filter(e => e.type === 'Goal' && !/Missed/.test(e.detail)).at(-1); out.push(`GOL — ${name}${g ? ` · ${g.time.elapsed}' ${g.team.name}${/Penalty/.test(g.detail) ? ' (karny)' : ''}` : ''}`); }
-      if (reds > p.reds) { const r = f.events.filter(e => /Red/.test(e.detail)).at(-1); out.push(`CZERWONA — ${name} · ${r.time.elapsed}' ${r.team.name}`); }
+      if (reds < p.reds) out.push(`CZERWONA ANULOWANA (VAR) — ${name}`);
+      if (reds > p.reds) { const r = f.events.filter(redOk).at(-1); out.push(`CZERWONA — ${name} · ${r.time.elapsed}' ${r.team.name}`); }
       if (p.st !== st && ['HT', 'FT', 'AET', 'PEN'].includes(st)) out.push(`${st === 'HT' ? 'PRZERWA' : 'KONIEC'} — ${name}`);
       for (const m of spec[id]) if (p.el < m && el >= m && ['1H', '2H'].includes(st)) out.push(`MINUTA ${m} — ${name}`);
     }

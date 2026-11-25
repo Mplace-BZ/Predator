@@ -265,6 +265,8 @@ ${groups.map(league).join('')}
 <script>
 // Na żywo: co 30 s pobiera wyniki, minutę i czerwone kartki (api-football, 1-2 zapytania na odświeżenie)
 const H_KEY='sciaga_hints_v3_${DATE}',hints=JSON.parse(localStorage.getItem(H_KEY)||'[]'),fired=new Set(hints.map(h=>h.id)),hist={};
+// Czerwona kartka liczy się tylko, gdy VAR jej nie anulował (2026-11-25 Slavia–Villarreal: czerwona 44', anulowana 45+1')
+function redOk(f,e){return e.type==='Card'&&/Red/.test(e.detail)&&!(f.events||[]).some(v=>v.type==='Var'&&/red card cancelled/i.test(v.detail||'')&&v.player&&e.player&&v.player.id===e.player.id);}
 function beep(){const v=localStorage.getItem('sciaga_vol')||'loud';if(v==='off'||localStorage.getItem('sciaga_mute')==='1')return;try{const c=new AudioContext(),o=c.createOscillator(),g=c.createGain();g.gain.value=v==='quiet'?0.08:0.6;o.frequency.value=880;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.25);}catch(e){}}
 const TAGS={g:['k-g','🟢 MOCNA SZANSA'],y:['k-y','🟡 OKAZJA'],r:['k-r','🔴 RYZYKO']};const lvlOf=h=>h.lvl||(h.icon==='🎲'?'r':h.icon==='🟢'?'y':'y');
 const DEP='sciaga_dep';function stake(h){const d=+(localStorage.getItem(DEP)||0),l=lvlOf(h);if(!d)return l==='g'?'20 zł':'10 zł';const p=l==='g'?0.10:l==='y'?0.07:0.04;return Math.max(10,Math.min(50,Math.round(d*p)))+' zł';}
@@ -316,7 +318,7 @@ async function live(){
       const t=m.querySelector('.time');t.textContent=st==='HT'?'Przerwa':isLive?(el+(ex?'+'+ex:'')+"'"):isFin?'Koniec':t.dataset.t;
       // Szacunek doliczonego czasu (metoda Chrisa): zmiany w tej samej minucie = 1 okno × 30 s; gol 45 s, VAR 60 s, czerwona 30 s
       if(isLive&&st!=='HT'&&el>=30){const h2=st==='2H'||el>45,lo=h2?47:1,hi=h2?90:45,ev=(f.events||[]).filter(e=>e.time.elapsed>=lo&&e.time.elapsed<=hi);
-        const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>e.type==='Card'&&/Red/.test(e.detail)).length;
+        const subW=new Set(ev.filter(e=>e.type==='subst').map(e=>e.time.elapsed)).size,gol=ev.filter(e=>e.type==='Goal').length,va=ev.filter(e=>e.type==='Var').length,rc=ev.filter(e=>redOk(f,e)).length;
         const sec=subW*30+gol*45+va*60+rc*30,mins=Math.max(h2?2:1,Math.round(sec/60),ex?ex+1:0);
         const ann=+(localStorage.getItem('sciaga_add_'+f.fixture.id+(h2?'_2':'_1'))||0);m.dataset.add=h2?(ann||mins):'';m.dataset.ex=ex||0;
         t.insertAdjacentHTML('beforeend','<small class="add'+(ann?' ann':'')+'" data-k="sciaga_add_'+f.fixture.id+(h2?'_2':'_1')+'" title="'+(ann?'Ogłoszone przez sędziego (wpisane przez Ciebie)':'Szacunek: '+subW+' okna zmian ×30 s, gole '+gol+' ×45 s, VAR '+va+' ×60 s, czerwone '+rc+' ×30 s')+(ex?' · już gra się '+ex+' min doliczonego':'')+'. Kliknij, żeby wpisać czas z tablicy.">+'+(ann||mins)+'</small>');}
@@ -367,14 +369,14 @@ async function live(){
         // 4. Szansa: 0:0 lub 1:1 po 55'
         if(tier==='szansa'&&el>=55&&el<=70&&gh===ga&&gh<=1)hint(id+'s'+gh,'🟢','Padnie gol w meczu','liga z dużą liczbą goli, a jest '+gh+':'+ga,m,label,fairGoal,goOdd);
         // 6. Rywal w dziesiątkę, a drużyna z 11 nie prowadzi (Arsenal U19 vs Dortmund 2026-11-24)
-        if(el>=50&&el<=85){[0,1].forEach(i=>{const me=sides[i],op=sides[1-i],my=i?ga:gh,their=i?gh:ga;const opRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===op.id),meRed=(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===me.id);
+        if(el>=50&&el<=85){[0,1].forEach(i=>{const me=sides[i],op=sides[1-i],my=i?ga:gh,their=i?gh:ga;const opRed=(f.events||[]).some(e=>redOk(f,e)&&e.team.id===op.id),meRed=(f.events||[]).some(e=>redOk(f,e)&&e.team.id===me.id);
           if(opRed&&!meRed&&my<=their&&their-my<=1)hint(id+'x'+i+my+their,'🔥','Gol '+me.name,op.name+' gra w dziesiątkę, a jest '+gh+':'+ga,m,label,fairTeam(i),null,'g');});}
         // 7. Końcówka otwartego meczu: kolejny gol (kurs po 80' zwykle 1,9-2,5, w doliczonym nawet 3)
         if(el>=78&&el<=88&&(gh+ga>=3||tot>=6))hint(id+'l'+(gh+ga),'🟢','Padnie kolejny gol','otwarty mecz ('+(gh+ga)+' goli'+(tot?', presja '+tot:'')+')',m,label,fairGoal,goOdd);
         // 5. Czerwona dla prowadzącego od 70'
-        if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label,fairTeam(gh>ga?1:0),null,'g');}
+        if(el>=70&&gh!==ga&&Math.abs(gh-ga)<=2){const lead=gh>ga?f.teams.home:f.teams.away,trail=gh>ga?A:H;if((f.events||[]).some(e=>redOk(f,e)&&e.team.id===lead.id))hint(id+'c','🔥','Gol '+trail,'prowadzący gra w dziesiątkę (historia: TAK)',m,label,fairTeam(gh>ga?1:0),null,'g');}
       }
-      const reds=side=>(f.events||[]).filter(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id).length;
+      const reds=side=>(f.events||[]).filter(e=>redOk(f,e)&&e.team.id===f.teams[side].id).length;
       m.querySelectorAll('.team').forEach((tm,i)=>{tm.querySelectorAll('.rc').forEach(x=>x.remove());const n=reds(i?'away':'home');for(let k=0;k<n;k++)tm.querySelector('.tn').insertAdjacentHTML('beforeend','<span class="rc" title="Czerwona kartka"></span>');});
     }
     if(typeof applyFilter==='function')applyFilter();
@@ -382,7 +384,7 @@ async function live(){
     try{const picks=[];for(const f of out){const m=document.querySelector('.m[data-fid="'+f.fixture.id+'"]');if(!m)continue;const st=f.fixture.status.short,el=f.fixture.status.elapsed||0;if(!['1H','2H'].includes(st))continue;
       const gh=f.goals.home,ga=f.goals.away,g=gh+ga,h1=st==='1H',H=f.teams.home.name,A=f.teams.away.name,o1=+m.dataset.o1,o2=+m.dataset.o2,rate=rateOf(m,el);
       const remH=Math.max(1,47-el),remM=Math.max(1,93-el),fair=(lam)=>Math.max(1.9,1/((1-Math.exp(-lam))*0.88)),lbl=H+' '+gh+':'+ga+' '+A+' ('+el+"')";
-      const reds=side=>(f.events||[]).some(e=>e.type==='Card'&&/Red/.test(e.detail)&&e.team.id===f.teams[side].id);
+      const reds=side=>(f.events||[]).some(e=>redOk(f,e)&&e.team.id===f.teams[side].id);
       const ucl=f.league.id===2,add=(sc,act,why,lam)=>picks.push({sc:sc+(ucl?1.5:0),act,why,lbl,fid:f.fixture.id,fair:lam?fair(lam):(()=>{const L=rate*1.2*remM/90,p2=1-Math.exp(-L)*(1+L);return Math.max(1.9,1/(p2*0.88));})()});
       if(h1&&el>=8&&el<=38&&g>=2&&g/el*90>=4)add(5,'Kolejny gol do przerwy','tempo '+g+' goli w '+el+"' — mecz otwarty",rate*remH/90);
       if(reds('home')!==reds('away')){const ten=reds('home')?'away':'home',nm=f.teams[ten].name;add(6,'Gol '+nm,'rywal gra w dziesiątkę',rate*0.6*remM/90);}
