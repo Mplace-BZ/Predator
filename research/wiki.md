@@ -100,6 +100,11 @@ Tego w bazie jeszcze nie ma. To obserwacje Chrisa do sprawdzania mecz po meczu.
 - **Kontra gospodarza:** gospodarz prowadzi 2:0 po 60. minucie, rywal ciśnie, kurs na „następny gol: gospodarz” co najmniej 4,00 → gram. Zastrzeżenie: w bazie prowadzący gospodarz to zwykle mocniejsza drużyna, więc dla słabeusza szansa jest trochę niższa.
 - **Zgoda bazy i Chrisa:** liczby z bazy i przeczucie Chrisa mówią to samo, kurs powyżej progu → gram bez dyskusji.
 
+### 2026-11-25, lekcja o składach
+
+- **„8 z 11 podstawowych” nie znaczy „pełny skład”.** Narzędzie liczy podstawowych z ostatnich meczów, więc gwiazda z dłuższą kontuzją (Kane, Olise) już się w tym nie liczy. Bayern wyszedł bez Kane'a, Olise i Neuera, z Musialą i Díazem na ławce, a ja zagrałem na jego gola.
+- **Od teraz przed zakładem na faworyta sprawdzam listę nieobecnych z nazwiska**, a nie samą liczbę podstawowych.
+
 ## 6. Źródła danych
 
 - **api-football (mamy, plan Ultra):** wyniki i statystyki na żywo, kursy na żywo, wyjściowe składy (ok. 40 minut przed meczem), kontuzje, najbliższe mecze drużyny, H2H, tabela.
