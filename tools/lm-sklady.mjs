@@ -28,6 +28,9 @@ for (const id of ids) {
     const out = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 11).filter(([pid]) => !t.startXI.some(p => p.player.id === +pid)).length;
     row.push(`${t.team.name} ${n} z 11 podstawowych${n <= 4 ? ' (REZERWY, nie gram na tę drużynę)' : n <= 7 ? ' (sporo zmian, sprawdź kto nie gra)' : ' (pełny skład)'}`);
   }
+  // Lekcja 2026-11-25 (Bayern bez Kane'a, a narzędzie pisało „pełny skład”): podstawowi liczeni z ostatnich meczów nie widzą gwiazd z długą kontuzją — dopisujemy nieobecnych z listy kontuzji
+  const inj = (await af(`/injuries?fixture=${id}`)).filter(x => x.player.type === 'Missing Fixture');
+  for (const t of [f.teams.home, f.teams.away]) { const miss = inj.filter(x => x.team.id === t.id).map(x => x.player.name); if (miss.length) row.push(`${t.name} BEZ: ${miss.join(', ')}`); }
   const line = `- **${f.teams.home.name} – ${f.teams.away.name}:** ${row.length ? row.join('; ') : 'składów brak'}.`;
   lines.push(line); console.log(line.replace(/\*\*/g, ''));
 }
