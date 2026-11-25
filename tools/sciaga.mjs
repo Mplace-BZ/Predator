@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Ściąga meczowa na dziś: 3 koszyki (MUSZĄ / SZANSA / RYZYKO), lokalny plik HTML.
-// Użycie: node tools/sciaga.mjs [YYYY-MM-DD]  → sciaga/index.html (poza gitem — repo jest publiczne)
+// Użycie: node tools/sciaga.mjs [YYYY-MM-DD] [--ligi=2] [--plus=id,...]  → sciaga/index.html (poza gitem — repo jest publiczne)
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io';
 const ARGS = process.argv.slice(2), PLUS = (ARGS.find(a => a.startsWith('--plus=')) || '').slice(7).split(',').filter(Boolean);
+// --ligi=2 → tylko te ligi (np. w dzień Ligi Mistrzów: sama LM, bez Serie B i Championship)
+const ONLY = (ARGS.find(a => a.startsWith('--ligi=')) || '').slice(7).split(',').filter(Boolean);
 const DATE = ARGS.find(a => /^\d{4}-\d\d-\d\d$/.test(a)) || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
 // [kod flagi flagcdn | null = logo ligi, KRAJ, nazwa ligi]
 const LEAGUES = { 2: ['eu', 'EUROPA', 'Liga Mistrzów'], 135: ['it', 'WŁOCHY', 'Serie A'], 136: ['it', 'WŁOCHY', 'Serie B'], 40: ['gb-eng', 'ANGLIA', 'Championship'], 39: ['gb-eng', 'ANGLIA', 'Premier League'], 41: ['gb-eng', 'ANGLIA', 'League One'], 179: ['gb-sct', 'SZKOCJA', 'Premiership'], 3: ['eu', 'EUROPA', 'Liga Europy'], 848: ['eu', 'EUROPA', 'Liga Konferencji'] };
@@ -35,7 +37,7 @@ async function weather(city, iso) {
 
 // 1. Mecze dnia
 let fx = (await af(`/fixtures?date=${DATE}&timezone=Europe/Warsaw`)).response
-  .filter(f => LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
+  .filter(f => (!ONLY.length || ONLY.includes(String(f.league.id))) && LEAGUES[f.league.id] && !['PST', 'CANC', 'ABD', 'AWD', 'WO'].includes(f.fixture.status.short))
   ;
 // --plus=id,id → dodatkowe mecze spoza listy lig (np. test na żywo)
 // Kraje, których STS (Polska) nie oferuje
