@@ -11,9 +11,12 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 const KEY = '3821c5caa752d0533003cfa14a4c2650', B = 'https://v3.football.api-sports.io', TAX = 0.88;
 const NO_STS = ['Russia', 'Belarus', 'Iran'];
 const DIR = new URL('../sciaga/', import.meta.url); mkdirSync(DIR, { recursive: true });
-const SF = new URL('portfel.json', DIR), HF = new URL('portfel.html', DIR);
+// --p=chris → osobny portfel (sciaga/portfel-chris.json/.html); bez flagi portfel Claude
+const PID = (process.argv.find(x => x.startsWith('--p=')) || '').slice(4), SUF = PID ? '-' + PID : '';
+const TITLE = PID ? 'Portfel <b>Chrisa</b>' : 'Portfel <b>Claude</b>';
+const SF = new URL(`portfel${SUF}.json`, DIR), HF = new URL(`portfel${SUF}.html`, DIR);
 const load = () => existsSync(SF) ? JSON.parse(readFileSync(SF, 'utf8')) : { start: 100, bets: [] };
-const save = s => { writeFileSync(SF, JSON.stringify(s, null, 1)); writeFileSync(new URL('portfel.js', DIR), 'window.PORTFEL=' + JSON.stringify(s) + ';'); }; // .js czyta ściąga (oznacza mecze AI BOT)
+const save = s => { writeFileSync(SF, JSON.stringify(s, null, 1)); if (!PID) writeFileSync(new URL('portfel.js', DIR), 'window.PORTFEL=' + JSON.stringify(s) + ';'); }; // .js czyta ściąga (oznacza mecze AI BOT)
 const af = async p => { for (let k = 0; k < 3; k++) { try { return (await (await fetch(B + p, { headers: { 'x-apisports-key': KEY } })).json()).response || []; } catch { await new Promise(r => setTimeout(r, 8000)); } } return []; };
 const zl = x => x.toFixed(2).replace('.', ',') + ' zł', k2 = x => (+x).toFixed(2).replace('.', ',');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -115,7 +118,7 @@ async function render(s) {
   const row = b => `<tr class="${b.status}"><td>${b.n}</td><td>${b.time}</td><td><b>${esc(b.home)} – ${esc(b.away)}</b><small>${esc(b.league)}</small></td><td><b>${esc(b.label)}</b><small>${esc(b.note)}</small></td>
 <td class="num">${b.at.join(':')}<small>${b.min}'</small></td><td class="num">${k2(b.odd)}</td><td class="num">${zl(b.stake)}</td><td class="num">${b.cur.join(':')}<small>${b.curMin}${typeof b.curMin === 'number' ? "'" : ''}</small></td>
 <td class="st">${b.status === 'open' ? 'GRA' : b.status === 'won' ? '✓ WYGRANY' : '✗ PRZEGRANY'}</td><td class="num pl">${b.status === 'open' ? `<small>do wygrania</small>${zl(b.stake * TAX * b.odd)}` : (b.payout - b.stake >= 0 ? '+' : '−') + zl(Math.abs(b.payout - b.stake))}</td></tr>`;
-  const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="30"><title>Portfel Claude</title>
+  const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="30"><title>${TITLE.replace(/<\/?b>/g, '')}</title>
 <style>
 :root{--bg:#001e28;--panel:#00141e;--lh:#0b2a36;--line:#0e3442;--text:#e6eef0;--dim:#8ba0a8;--red:#ff0046;--acc:#FF5A1F;--pos:#4ADE80;--warn:#FFB347}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Manrope,system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
@@ -130,9 +133,9 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}.pills a{background:#0d2f3c;color:var(--text);border:1px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none}.pills a:hover{border-color:#2b6577}.pills a.on{background:var(--red);margin-left:auto}
 @media(max-width:800px){.kpi{grid-template-columns:1fr 1fr}}
 </style></head><body>
-<div class="top"><h1>Portfel <b>Claude</b></h1><span class="meta">wirtualna pula · start ${zl(s.start)} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span></div>
+<div class="top"><h1>${TITLE}</h1><span class="meta">wirtualna pula · wpłaty razem ${zl(s.start)}${(s.deposits || []).length ? ' (' + s.deposits.map(d => d.date + ' ' + zl(d.amount)).join(', ') + ')' : ''} · odświeżono ${new Date().toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw' })} · strona odświeża się sama co 30 s</span></div>
 <div class="wrap">
-<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a href="lm.html" style="margin-left:auto">LM DZIŚ</a><a class="on" href="portfel.html" style="margin-left:0">AI BOT</a><a href="wiki.html">WIKI</a></div>
+<div class="pills"><a href="index.html#all">ALL</a><a href="index.html#must">MUST</a><a href="index.html#szansa">CHANCE</a><a href="index.html#ryzyko">RISK</a><a href="index.html#fav">FAVOURITE</a><a href="index.html#moje">MY BETS</a><a href="index.html#hist">HISTORY</a><a href="lm.html" style="margin-left:auto">LM DZIŚ</a><a${PID ? '' : ' class="on"'} href="portfel.html" style="margin-left:0">AI BOT</a><a${PID ? ' class="on"' : ''} href="portfel-chris.html">PORTFEL CHRISA</a><a href="wiki.html">WIKI</a></div>
 <div class="kpi"><div><small>Pula teraz</small><b class="${bal.total > s.start ? 'up' : bal.total < s.start ? 'down' : ''}">${zl(bal.total)}</b></div><div><small>Wolne środki</small><b>${zl(bal.free)}</b></div><div><small>W grze</small><b>${zl(bal.open)}</b></div><div><small>Trafione</small><b>${won}/${done.length}</b></div><div><small>Pula, gdy wejdą wszystkie</small><b class="up">${zl(bal.free + s.bets.filter(b => b.status === 'open').reduce((a, b) => a + b.stake * TAX * b.odd, 0))}</b></div></div>
 <div class="card">${s.bets.length ? `<table><tr><th>#</th><th>Godz.</th><th>Mecz</th><th>Zakład i powód</th><th>Wynik przy wejściu</th><th>Kurs</th><th>Stawka</th><th>Teraz</th><th>Status</th><th>Zysk</th></tr>${[...s.bets].reverse().map(row).join('')}</table>` : '<div class="empty">Jeszcze nic nie zagrałem. Czekam na okazję zgodną z regułami.</div>'}</div>
 <div class="rules"><b>Zasady:</b> kurs i wynik w chwili zakładu zapisuje skrypt prosto z API (kursy bukmacherskie na żywo, mogą się różnić od STS o kilka setnych). Podatek 12% od stawki jak w STS. Bez AKO.<br><b>Test przyspieszony (start 23:00, 60 minut gry):</b> cel 200 zł. Połowa puli (50 zł) jest nietykalna, drugą połową gram ostro — kilka zakładów na jeden scenariusz, wyższe kursy.<br>
@@ -141,11 +144,12 @@ tr.open .st{color:var(--warn);font-weight:800}tr.won .st,tr.won .pl{color:var(--
   writeFileSync(HF, html);
 }
 
-const [cmd, ...a] = process.argv.slice(2);
+const [cmd, ...a] = process.argv.slice(2).filter(x => !x.startsWith('--'));
 if (cmd === 'scan') await scan();
 else if (cmd === 'sklad') { const f = (await af(`/fixtures?id=${a[0]}`))[0]; for (const t of await sklad(f)) console.log(`${t.name}: ${t.reg} z 11 podstawowych (z ostatnich ${t.n} meczów)`); }
 else if (cmd === 'render') await render(load());
 else if (cmd === 'bet') await bet(a[0], a[1], a[2], a[3] || '');
+else if (cmd === 'wplata') { const s = load(); s.start = +(s.start + +a[0]).toFixed(2); (s.deposits ||= []).push({ date: new Date().toISOString().slice(0, 10), amount: +a[0] }); save(s); await render(s); console.log('wpłata', zl(+a[0]), '→ wpłaty razem', zl(s.start), '· pula', zl(balance(s).total)); }
 else if (cmd === 'reset') { const s = { start: +(a[0] || 100), bets: [] }; save(s); await render(s); console.log('portfel wyzerowany:', zl(s.start)); }
 else if (cmd === 'watch') {
   for (let i = 0; i < 240; i++) {
