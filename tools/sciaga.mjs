@@ -177,6 +177,7 @@ const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta n
 .side{position:fixed;right:10px;bottom:10px;top:auto;width:min(340px,calc(100vw - 20px));max-height:45vh;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid var(--line)}
 .side h3{cursor:move;touch-action:none;user-select:none}.side .mn{display:block}.side.min .hl{display:none}.side.min{width:auto}.side.min h3 .tx{display:none}
 footer{padding-bottom:45vh}}
+#plan{display:none!important}
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
 .pills button{background:#0d2f3c;color:var(--text);border:2px solid transparent;border-radius:8px;padding:7px 14px;font:700 12px/1 inherit;letter-spacing:.06em;cursor:pointer}
 .pills a.bot{background:#0d2f3c;color:var(--text);border:1px solid #2b6577;border-radius:8px;padding:8px 14px;font:700 12px/1 inherit;letter-spacing:.06em;text-decoration:none;margin-left:auto}.pills a.bot:hover{border-color:var(--text)}
@@ -241,7 +242,7 @@ footer{color:var(--dim);font-size:12px;padding:8px 4px 32px}
 </style></head><body>
 <div class="top"><h1>📋 ŚCIĄGA <b>${DATE}</b></h1><label class="dep" title="Wpisz, ile masz w STS — stawki w podpowiedziach liczę od tej kwoty">Depozyt <input id="dep" inputmode="decimal" placeholder="0"> zł</label><button id="sndbtn" class="tb" title="Dźwięk podpowiedzi i goli: włącz / wyłącz"></button><button id="calcbtn" class="tb"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg> Kalkulator</button><button id="simbtn" onclick="simGol()" style="background:#0d2f3c;color:var(--text);border:0;border-radius:8px;padding:6px 10px;font:700 12px inherit;cursor:pointer">⚽ Test gola</button><span class="livebar" id="lb">● na żywo: łączę…</span><span class="meta">${rows.length} meczów · kursy Bet365 przedmeczowe · odświeżono ${updated}</span></div>
 <div class="wrap">
-<aside class="side"><h3><span>👉</span><span class="tx">POSTAW NA — podpowiedzi na żywo</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div id="plan" class="plan2"></div><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
+<aside class="side"><h3><span>👉</span><span class="tx">PODPOWIEDZI WYŁĄCZONE — typy tylko w czacie</span><button class="mn" title="Zwiń / rozwiń">▾</button></h3><div id="plan" class="plan2"></div><div class="hl" id="hl"><div class="empty"><b>😴 Cisza — na razie nic pilnego.</b><br>Gdy będzie okazja, zobaczysz tu 🔥 GRAJ TERAZ, usłyszysz sygnał, a na górze ekranu wyskoczy pomarańczowy pasek.</div></div></aside>
 <main>
 <div class="pills">
 <button data-f="all" class="on">ALL<small>${rows.length}</small></button>
@@ -277,7 +278,9 @@ setInterval(drawHints,15000);
 function toast(h,ms=90000,kind=''){document.querySelector('.toast')?.remove();const d=document.createElement('div');d.className='toast '+kind;d.innerHTML=h.icon+' '+h.act+'<small>'+h.match+' · '+h.why+'</small>';d.onclick=()=>d.remove();document.body.append(d);setTimeout(()=>d.remove(),ms);}
 // Historia 3849 meczów (2025): szansa, że przegrywający strzeli do końca, wg różnicy i minuty
 const HIST={1:{55:.46,60:.43,65:.39,70:.35,75:.31,80:.26},2:{55:.44,60:.39,65:.35,70:.30,75:.25,80:.21},3:{55:.40,60:.34,65:.30,70:.25,75:.20,80:.15}};
-function hint(id,icon,act,why,m,label,fair,now,lvl){
+// 2026-11-25: podpowiedzi „Postaw na” wyłączone — ich model (stare progi) rozjechał się z typami w czacie i Chris na nich stracił. Wracają dopiero po ujednoliceniu.
+const HINTS_OFF=true;
+function hint(id,icon,act,why,m,label,fair,now,lvl){if(HINTS_OFF)return;
   // Gol drużyny, która przegrywa: nie taniej niż historia mówi; naciskający faworyt nadziewa się na kontry → podpowiedz „gol w meczu”
   if(/^Gol /.test(act)){const side=act.slice(4)===m.dataset.a?1:0,sc=[...m.querySelectorAll('.sr b')].map(x=>+x.textContent||0),diff=sc[1-side]-sc[side],el0=parseInt(m.querySelector('.time').textContent)||60;
     if(diff>=1&&el0>=53){const mm=[55,60,65,70,75,80].reduce((b,x)=>Math.abs(x-el0)<Math.abs(b-el0)?x:b,55),ph=HIST[Math.min(diff,3)][mm];fair=Math.max(fair||0,1/ph);why+=' · historia: przegrywający '+diff+' gol'+(diff>1?'ami':'em')+' strzela w '+Math.round(ph*100)+'%';if(diff>=2&&lvl==='g')lvl='y';}
