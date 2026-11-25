@@ -30,7 +30,8 @@ const liveOdds = (o, g) => ({
   tg: (side, line) => vals(o, b => b.id === (side === 'home' ? 58 : 39)).find(v => v.value === 'Over' && +v.handicap === +line)?.odd,
   dc: Object.fromEntries(vals(o, b => b.id === 72).map(v => [v.value, v.odd])),
   h1: () => vals(o, b => b.id === 30).find(v => v.value === 'Yes')?.odd, // obie strzelą w 1. połowie (gdy rywal już strzelił = ta drużyna strzeli do przerwy)
-  sc: side => vals(o, b => b.id === (side === 'home' ? 27 : 70)).find(v => v.value === 'Yes')?.odd, // drużyna strzeli w 2. połowie
+  sc: side => vals(o, b => b.id === (side === 'home' ? 27 : 70)).find(v => v.value === 'Yes')?.odd,
+  scn: side => vals(o, b => b.id === (side === 'home' ? 27 : 70)).find(v => v.value === 'No')?.odd, // drużyna NIE strzeli w 2. połowie // drużyna strzeli w 2. połowie
 });
 const balance = s => { const staked = s.bets.reduce((a, b) => a + b.stake, 0), back = s.bets.reduce((a, b) => a + (b.payout || 0), 0), open = s.bets.filter(b => b.status === 'open').reduce((a, b) => a + b.stake, 0); return { free: s.start - staked + back, open, total: s.start - staked + back + open, staked, back }; };
 
@@ -82,12 +83,12 @@ async function bet(fid, market, stake, note) {
   }
   const lo = liveOdds(o, gh + ga), [kind, side, line] = market.split(':'), DC = { '1x': 'Home or Draw', x2: 'Away or Draw', '12': 'Home or Away' };
   if (kind === 'h1' && (f.fixture.status.short !== '1H' || (side === 'home' ? ga : gh) === 0 || (side === 'home' ? gh : ga) > 0)) throw new Error('rynek h1: tylko w 1. połowie, gdy rywal już strzelił, a ta drużyna jeszcze nie');
-  if (kind === 'sc' && f.fixture.status.short !== '2H') throw new Error('rynek „strzeli w 2. połowie” tylko w trakcie 2. połowy');
-  const odd = +(kind === 'h1' ? lo.h1() : kind === 'sc' ? lo.sc(side) : kind === 'tg' ? lo.tg(side, line) : kind === 'dc' ? lo.dc[DC[side]] : kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
+  if ((kind === 'sc' || kind === 'scn') && f.fixture.status.short !== '2H') throw new Error('rynek „strzeli w 2. połowie” tylko w trakcie 2. połowy');
+  const odd = +(kind === 'scn' ? lo.scn(side) : kind === 'h1' ? lo.h1() : kind === 'sc' ? lo.sc(side) : kind === 'tg' ? lo.tg(side, line) : kind === 'dc' ? lo.dc[DC[side]] : kind === 'over' ? lo.over : kind === 'over2' ? lo.over2 : kind === 'next' ? lo.next[side === 'home' ? '1' : '2'] : lo.ft[{ home: 'Home', draw: 'Draw', away: 'Away' }[side]]);
   if (!odd) throw new Error('rynek zawieszony albo niedostępny');
   stake = +stake; if (balance(s).free < stake) throw new Error('za mało wolnych środków');
   const tn = side === 'home' ? f.teams.home.name : f.teams.away.name;
-  const label = kind === 'h1' ? `${tn} strzeli do przerwy` : kind === 'sc' ? `${tn} strzeli jeszcze gola (2. połowa)` : kind === 'tg' ? `${tn}: powyżej ${String(line).replace('.', ',')} gola w meczu` : kind === 'dc' ? `Podwójna szansa: ${side === '1x' ? f.teams.home.name + ' lub remis' : side === 'x2' ? f.teams.away.name + ' lub remis' : 'nie będzie remisu'}` : kind === 'over' ? `Kolejny gol w meczu (razem ${gh + ga + 1} lub więcej)` : kind === 'over2' ? `Jeszcze 2 gole w meczu (razem ${gh + ga + 2} lub więcej)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
+  const label = kind === 'scn' ? `${tn} NIE strzeli już gola (2. połowa)` : kind === 'h1' ? `${tn} strzeli do przerwy` : kind === 'sc' ? `${tn} strzeli jeszcze gola (2. połowa)` : kind === 'tg' ? `${tn}: powyżej ${String(line).replace('.', ',')} gola w meczu` : kind === 'dc' ? `Podwójna szansa: ${side === '1x' ? f.teams.home.name + ' lub remis' : side === 'x2' ? f.teams.away.name + ' lub remis' : 'nie będzie remisu'}` : kind === 'over' ? `Kolejny gol w meczu (razem ${gh + ga + 1} lub więcej)` : kind === 'over2' ? `Jeszcze 2 gole w meczu (razem ${gh + ga + 2} lub więcej)` : kind === 'next' ? `Następny gol: ${side === 'home' ? f.teams.home.name : f.teams.away.name}` : `Wynik: ${side === 'draw' ? 'remis' : side === 'home' ? f.teams.home.name : f.teams.away.name}`;
   s.bets.push({ n: s.bets.length + 1, time: now(), fid: +fid, league: `${f.league.country}: ${f.league.name}`, home: f.teams.home.name, away: f.teams.away.name, kind, side: side || '', line: line ? +line : undefined, xi: xi.map(t => `${t.name} ${t.reg}/11`).join(' · '), label, odd, stake, at: [gh, ga], min: el, note, status: 'open', cur: [gh, ga], curMin: el });
   save(s); await render(s); console.log(`ZAPISANO #${s.bets.length}: ${f.teams.home.name} ${gh}:${ga} ${f.teams.away.name} (${el}') · ${label} · kurs ${odd} · ${stake} zł · do wygrania ${zl(stake * TAX * odd)}`);
 }
@@ -110,6 +111,7 @@ async function settle(s) {
         if (e) { let sd = e.team.id === f.teams.home.id ? 'home' : 'away'; res = b.side === sd; }
       } else if (fin) res = false;
     } else if (b.kind === 'h1') { const ht = f.score.halftime, past = !['1H', 'NS'].includes(st); const now = b.side === 'home' ? h : a, was = b.at[b.side === 'home' ? 0 : 1]; res = (past ? (b.side === 'home' ? ht.home : ht.away) > was : now > was) ? true : past ? false : null;
+    } else if (b.kind === 'scn') { const now = b.side === 'home' ? h : a, was = b.at[b.side === 'home' ? 0 : 1]; res = now > was ? false : fin ? true : null;
     } else if (b.kind === 'sc') { const now = b.side === 'home' ? h : a, was = b.at[b.side === 'home' ? 0 : 1]; res = now > was ? true : fin ? false : null; }
     else if (b.kind === 'tg') { const tg = b.side === 'home' ? h : a; res = tg > b.line ? true : fin ? false : null; }
     else if (b.kind === 'dc') res = fin ? (b.side === '1x' ? h >= a : b.side === 'x2' ? a >= h : h !== a) : null;
